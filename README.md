@@ -23,3 +23,7 @@ This project uses firebase cloud functions and database.
 firebase experiments:enable webframeworks```
     3. trying firebase init yet again: I skipped GitHub actions and it worked
 
+# First ```firebase deploy```
+
+1. changed version 10.5.2 in src tags to 12.7.0
+2. UNDO the above change to make it work! changed back to 10.5.2
