@@ -1,3 +1,7 @@
+# added by duppy
+.firebase/
+
+###### below here added by firebase install process ######
 # Logs
 logs
 *.log
