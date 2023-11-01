@@ -1,3 +1,4 @@
+/* vvv from firebase getting started template (mostly) vvv */
 body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
 #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
 #message h2 { color: #b59f3b; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
@@ -9,4 +10,419 @@ body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvet
 @media (max-width: 600px) {
     body, #message { margin-top: 0; background: white; box-shadow: none; }
     body { border-top: 16px solid #b59f3b; }
+}
+/* ^^^ from firebase getting started template (mostly) ^^^ */
+
+/* vvv from guessumwordum.com vvv */
+html {
+    --green: #6aaa64;
+    --darkendGreen: #40a030;
+    --yellow: #c9b458;
+    --darkendYellow: #ddaa11;
+    --lightGray: #d8d8d8;
+    --gray: #86888a;
+    --darkGray: #939598;
+    --white: #fff;
+    --black: #212121;
+    /* high contrast */
+    --orange: #f5793a;
+    --blue: #85c0f9;
+    font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 18px;
+    --header-height: 28px;
+    --score-height: 80px;
+    --keyboard-height: 152px;
+    --game-max-width: 375px;
+}
+
+/* too bright */
+html {
+    --color-tone-1: #000000;
+    --color-tone-2: #787c7e;
+    --color-tone-3: #878a8c;
+    --color-tone-4: #d3d6da;
+    --color-tone-5: #edeff1;
+    --color-tone-6: #f6f7f8;
+    --color-tone-7: #ffffff;
+    --color-nav-hover: #f4f4f4;
+    --opacity-50: rgba(255, 255, 255, 0.5);
+}
+
+/* night mode */
+.nightmode {
+    --color-tone-1: #ffffff;
+    --color-tone-2: #818384;
+    --color-tone-3: #565758;
+    --color-tone-4: #3a3a3c;
+    --color-tone-5: #272729;
+    --color-tone-6: #1a1a1b;
+    --color-tone-7: #121213;
+    --color-nav-hover: #2f2f31;
+    --opacity-50: rgba(0, 0, 0, 0.5);
+}
+
+/* Constant colors and colors derived from theme */
+html,
+.nightmode {
+    --color-background: var(--color-tone-7);
+}
+
+html {
+    --color-present: var(--yellow);
+    --color-correct: var(--green);
+    --color-invalid: #941919;
+    --color-absent: var(--color-tone-1);
+    --tile-text-color: var(--color-tone-7);
+    --key-text-color: var(--color-tone-1);
+    --key-evaluated-text-color: var(--color-tone-7);
+    --key-bg: var(--color-tone-3);
+    --key-bg-present: var(--color-present);
+    --key-bg-correct: var(--color-correct);
+    --key-bg-absent: var(--color-absent);
+    --modal-content-bg: var(--color-tone-7);
+}
+
+.nightmode {
+    --color-present: var(--darkendYellow);
+    --color-correct: var(--darkendGreen);
+    --color-invalid: #700000;
+    --color-absent: var(--color-tone-5);
+    --tile-text-color: var(--color-tone-1);
+    --key-text-color: var(--color-tone-1);
+    --key-evaluated-text-color: var(--color-tone-1);
+    --key-bg: var(--color-tone-4);
+    --key-bg-present: var(--color-present);
+    --key-bg-correct: var(--color-correct);
+    --key-bg-absent: var(--color-absent);
+    --modal-content-bg: var(--color-tone-7);
+}
+
+.colorblind {
+    --color-correct: var(--orange);
+    --color-present: var(--blue);
+    --tile-text-color: var(--white);
+    --key-bg-present: var(--color-present);
+    --key-bg-correct: var(--color-correct);
+    --key-bg-absent: var(--color-absent);
+}
+
+body {
+    min-height: 100vh;
+    min-width: 100vw;
+    /* mobile viewport bug fix */
+    /* https://allthingssmitty.com/2020/05/11/css-fix-for-100vh-in-mobile-webkit/ */
+    min-height: -webkit-fill-available;
+    min-width: -webkit-fill-available;
+}
+
+body {
+    background-color: var(--color-background);
+    margin: 0;
+    padding: 0;
+    /* Prevent scrollbar appearing on page transition */
+    overflow: hidden;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+html {
+    /* try a fix I found */
+    /* https://allthingssmitty.com/2020/05/11/css-fix-for-100vh-in-mobile-webkit/ */
+    height: -webkit-fill-available;
+    width: -webkit-fill-available;
+}
+
+#challenge {
+    max-width: var(--game-max-width);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    width: 100%;
+    max-width: var(--game-max-width);
+    margin: 0 auto;
+    height: var(--header-height);
+    display: flex;		
+    color: var(--color-tone-1);
+    border-bottom: 1px solid var(--color-tone-4);
+}
+
+header .title {
+    margin: auto auto auto 4px;
+    font-weight: bold;
+    font-size: larger;
+    line-height: 90%;
+    text-align: bottom;
+}
+
+header .uid {
+    margin: auto;
+    font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 200;
+    font-size: normal;
+    line-height: 90%;
+    text-align: center;
+}
+
+#challenge-score {
+    height: var(--score-height);
+    width: calc(var(--game-max-width)-0);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    color: var(--color-tone-1);
+    border-bottom: 1px solid var(--color-tone-4);
+    padding: 4px;
+}
+
+.mini-puzzle {
+    margin-left: 0px;
+    display: grid;
+    grid-template-rows: repeat(6, 1fr);
+    gap: 4px;
+    color: var(--color-tone-1);
+}
+
+.mini-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 2px;
+}
+
+.mini-tile {
+    background-color: magenta;
+    width: 10px;
+}
+
+.mini-tile[clue='tbd'] {
+    background-color: var(--color-tone-3);
+}
+
+.mini-tile[clue='correct'] {
+    background-color: var(--color-correct);
+}
+
+.mini-tile[clue='present'] {
+    background-color: var(--color-present);
+}
+
+.mini-tile[clue='absent'] {
+    background-color: var(--color-absent);
+}
+
+.mini-tile[clue='invalid'] {
+    background-color: var(--color-invalid);
+}
+
+.mini-tile[clue='solution'] {
+    background-color: transparent;
+}
+
+.mini-tile[clue='finished'] {
+    background-color: transparent;
+}
+
+#challenge-puzzles {
+    overflow: hidden;
+    width: var(--game-max-width);
+    height: calc(1rem + var(--game-max-width)*.75*6/5);
+    color: var(--tile-text-color);
+    position: relative;
+}
+
+.puzzle {
+    position: absolute;
+    display: grid;
+    gap: 5px;
+    padding: 0px 0px 10px 0px;
+    box-sizing: border-box;
+    color: var(--color-tone-1);
+    width: calc(var(--game-max-width) * .75);
+}
+
+.puzzle .row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+}
+
+.puzzle .tile {
+    width: 100%;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    line-height: 1.5rem;
+    font-weight: bold;
+    vertical-align: middle;
+    box-sizing: border-box;
+    color: var(--tile-text-color);
+    text-transform: uppercase;
+}
+
+.puzzle .tile::before {
+    content: '';
+    padding-bottom: 100%;
+}
+
+.puzzle .tile[clue='tbd'] {
+    background-color: var(--key-bg);
+    border: 2px solid var(--color-tone-2);
+}
+
+.puzzle .tile[clue='correct'] {
+    background-color: var(--color-correct);
+}
+
+.puzzle .tile[clue='present'] {
+    background-color: var(--color-present);
+}
+
+.puzzle .tile[clue='absent'] {
+    background-color: var(--color-absent);
+}
+
+.puzzle .tile[clue='invalid'] {
+    background-color: var(--color-invalid);
+}
+
+.puzzle .tile[clue='finished'] {
+    background-color:transparent;
+    /* Hide the text. */
+    color: transparent;
+}
+
+.puzzle .tile[clue='solution-reveal'] {
+    background-color: transparent
+    ;
+    /* Hide the text. */
+    color: transparent;
+}
+
+.puzzle .tile[clue='solution'] {
+    width: 100%;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    line-height: 1.5rem;
+    font-weight: bold;
+    vertical-align: middle;
+    box-sizing: border-box;
+    background-color: var(--color-tone-1);
+    color: #000000;
+    text-transform: uppercase;
+}
+
+/* Finish and Share Screen */
+
+#challenge div.finish-and-share {
+    color: var(--color-tone-1);
+    background-color: var(--color-tone-4);				
+}
+
+#challenge div.finish-and-share {
+    color: var(--color-tone-1);
+    background-color: var(--key-bg-correct);		
+}
+
+#keyboard {
+    display: grid;
+    gap: 2px;
+}
+
+#keyboard .row {
+    display: flex;
+    width: 100%;
+    gap: 2px;
+    /* https://stackoverflow.com/questions/46167604/ios-html-disable-double-tap-to-zoom */
+    touch-action: manipulation;
+}
+
+#keyboard button {
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: 1px solid;
+    padding: 0;
+    margin: 0;
+    height: 52px;
+    border-radius: 8px;
+    background-color: var(--key-bg);
+    color: var(--key-text-color);
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-transform: uppercase;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+}
+
+#keyboard button:focus {
+    outline: none;
+}
+
+#keyboard button.fade {
+    transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+#keyboard button:last-of-type {
+    margin: 0;
+}
+
+#keyboard .half {
+    flex: 0.5;
+}
+
+#keyboard .one {
+    flex: 1;
+}
+
+#keyboard .one-and-a-half {
+    flex: 1.5;
+    font-size: 12px;
+}
+
+#keyboard .two {
+    flex: 2;
+}
+
+#keyboard button[clue='tbd'] {
+    background-color: var(--key-bg);
+    color: var(--key-evaluated-text-color);
+}
+
+#keyboard button[clue='correct'] {
+    background-color: var(--key-bg-correct);
+    color: var(--key-evaluated-text-color);
+    border: 0;
+}
+
+#keyboard button[clue='present'] {
+    background-color: var(--key-bg-present);
+    color: var(--key-evaluated-text-color);
+    border: 0;
+}
+
+#keyboard button[clue='absent'] {
+    background-color: var(--key-bg-absent);
+    color: var(--key-evaluated-text-color);
+    border: 0;
+}
+
+@media (max-width: 360px) {
+    html {
+        font-size: 15px;
+        --header-height: 24px;
+        --score-height: 68px;
+        --keyboard-height: 120px;
+        --game-max-width: 320px;	
+    }
+
+    #keyboard button {
+        height: 2rem;
+    }
 }
