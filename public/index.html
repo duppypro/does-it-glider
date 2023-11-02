@@ -17,16 +17,22 @@
       to avoid connecting the SDK to running emulators.
     -->
     <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+		<script src="https://d3js.org/d3.v7.min.js"></script>
 
     <link rel="stylesheet" href="css/style.css">
   </head>
   <body>
     <div id="message">
       <h2>Coming Soon</h2>
-      <h1>Seed Conway's Game of Life with your Wordle solution!</h1>
+      <h1>Seed Conway's Game of Life with your Wordle solution</h1>
       <p>See if it makes a glider!</p>
-      <div class="conway-life">
-        <center><img text-align:c src="media/glider-animation.png" alt="steps of a glider"></center>
+      <div class="conway-life glider-seed" style="text-align:center">
+        <img  src="media/glider-animation.png" alt="steps of a glider">
+      </div>
+      <!-- make a div with height of h2 text as a gap -->
+      <div style="height: 2.5em"></div>
+      <div class="conway-life pasted-seed" style="text-align:center">
+        <div>Paste your shared Wordle solution here.</div>
       </div>
     </div>
     <p id="load">Loading libraries&hellip;</p>
@@ -42,6 +48,65 @@
           loadEl.textContent = 'Error loading libraries, check the console.';
         }
       });
+      let pasted_clipboard = ''
+      let pasted_lines = []
+      let wordle_guesses = []
+      let life_seed = []
+      document.addEventListener('paste', function(event) {
+        pasted_clipboard = (event.clipboardData || window.clipboardData).getData('text')
+        console.log(`paste event heard:\r\n${pasted_clipboard}`)
+        pasted_lines = pasted_clipboard.split(/[\r\n]{1,2}/)
+        pasted_lines = pasted_lines.map(line => line ? line : ' ')
+        console.log(`split lines: ${pasted_lines}`)
+        // filter pasted_lines for only lines that are length 5 and contain only '⬜', '🟨', '🟩', or '⬛'
+        wordle_guesses = pasted_lines.filter(line => line.match(/⬜|🟨|🟩|⬛|🟦|🟧/ug)?.length == 5)
+        // this is only lines with exactly 5 wordle squares
+        console.log(`filter wordle_guesses: ${wordle_guesses}`)
+        // convert all '🟨', '🟩' in wordle_guesses to 'o' and '⬜' and '⬛' to 'b'
+        life_seed = []
+        wordle_guesses.map(guess =>
+          life_seed.push(
+              guess
+                .replace(/🟨|🟩|🟦|🟧/g,'o')
+                .replace(/⬜|⬛/g,'b')
+          )
+        )
+        console.log(`convert to life_seed: ${life_seed}`)
+
+        d3.select('.conway-life.pasted-seed')
+          .selectAll('div').remove()
+          .data(pasted_lines)
+          .join(
+            enter => enter.append('div')
+              .text(line => line ? line : ' '),
+            update => update
+              .text(line => line ? line : ' '),
+            exit => exit
+              .remove()
+          )
+        setTimeout(() => {
+          d3.select('.conway-life.pasted-seed')
+          .selectAll('div')
+          .data(life_seed)
+          // d3js.data() stores the array life_seed on the parent DOM element
+          // then d3js.join() compares new data to previous data
+          // and calls enter, update, or exit as appropriate for the new data
+          .join(
+            enter => enter.append('div')
+              .text((d, i) => wordle_guesses[i])
+              .transition().duration(667)
+              .transition().duration(0)
+              .text(d => d.replace(/o/g,'⬛').replace(/b/g,'⬜')),
+            update => update
+              .text((d, i) => wordle_guesses[i])
+              .transition().duration(667)
+              .transition().duration(0)
+              .text(d => d.replace(/o/g,'⬛').replace(/b/g,'⬜')),
+            exit => exit
+            .remove()
+          )
+        }, 667)
+      })
     </script>
   </body>
 </html>
