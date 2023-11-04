@@ -1,115 +1,17 @@
 <!DOCTYPE html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Does it Glider?</title>
+	<link rel="stylesheet" href="./css/does-it-glider.css">
+</head>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Does it Glider?</title>
-
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/10.5.2/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/10.5.2/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/10.5.2/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/10.5.2/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/10.5.2/firebase-analytics-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+	<body style="margin: 0px;">
+		<div class="does-it-glider-app">
+			<!-- app will live here -->
+		</div>
 		<script src="https://d3js.org/d3.v7.min.js"></script>
-
-    <link rel="stylesheet" href="css/style.css">
-  </head>
-  <body>
-    <div id="message">
-      <h2>Coming Soon</h2>
-      <h1>Seed Conway's Game of Life with your Wordle solution</h1>
-      <p>See if it makes a glider!</p>
-      <div class="conway-life glider-seed" style="text-align:center">
-        <img  src="media/glider-animation.png" alt="steps of a glider">
-      </div>
-      <!-- make a div with height of h2 text as a gap -->
-      <div style="height: 2.5em"></div>
-      <div class="conway-life pasted-seed" style="text-align:center"
-      contenteditable="true" tabindex="0">
-        <div contenteditable="true">Paste your shared Wordle solution here.</div>
-      </div>
-    </div>
-    <p id="load">Loading libraries&hellip;</p>
-
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        try {
-          let app = firebase.app();
-          loadEl.remove();
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading libraries, check the console.';
-        }
-      });
-      let pasted_clipboard = ''
-      let pasted_lines = []
-      let wordle_guesses = []
-      let life_seed = []
-      document.addEventListener('paste', function(event) {
-        pasted_clipboard = (event.clipboardData || window.clipboardData).getData('text')
-        console.log(`paste event heard:\r\n${pasted_clipboard}`)
-        pasted_lines = pasted_clipboard.split(/[\r\n]{1,2}/)
-        pasted_lines = pasted_lines.map(line => line ? line : ' ')
-        console.log(`split lines: ${pasted_lines}`)
-        // filter pasted_lines for only lines that are length 5 and contain only '⬜', '🟨', '🟩', or '⬛'
-        wordle_guesses = pasted_lines.filter(line => line.match(/⬜|🟨|🟩|⬛|🟦|🟧/ug)?.length == 5)
-        // this is only lines with exactly 5 wordle squares
-        console.log(`filter wordle_guesses: ${wordle_guesses}`)
-        // convert all '🟨', '🟩' in wordle_guesses to 'o' and '⬜' and '⬛' to 'b'
-        life_seed = []
-        wordle_guesses.map(guess =>
-          life_seed.push(
-              guess
-                .replace(/🟨|🟩|🟦|🟧/g,'o')
-                .replace(/⬜|⬛/g,'b')
-          )
-        )
-        console.log(`convert to life_seed: ${life_seed}`)
-
-        d3.select('.conway-life.pasted-seed')
-          .selectAll('div').remove()
-          .data(pasted_lines)
-          .join(
-            enter => enter.append('div').attr('contenteditable', 'true')
-              .text(line => line ? line : ' '),
-            update => update
-              .text(line => line ? line : ' '),
-            exit => exit
-              .remove()
-          )
-        setTimeout(() => {
-          d3.select('.conway-life.pasted-seed')
-          .selectAll('div')
-          .data(life_seed)
-          // d3js.data() stores the array life_seed on the parent DOM element
-          // then d3js.join() compares new data to previous data
-          // and calls enter, update, or exit as appropriate for the new data
-          .join(
-            enter => enter.append('div').attr('contenteditable', 'true')
-              .text((d, i) => wordle_guesses[i])
-              .transition().duration(667)
-              .transition().duration(0)
-              .text(d => d.replace(/o/g,'⬛').replace(/b/g,'⬜')),
-            update => update
-              .text((d, i) => wordle_guesses[i])
-              .transition().duration(667)
-              .transition().duration(0)
-              .text(d => d.replace(/o/g,'⬛').replace(/b/g,'⬜')),
-            exit => exit
-            .remove()
-          )
-        }, 667)
-        
-        event.preventDefault()
-      })
-    </script>
-  </body>
+		<!-- TODO: use the import module version of d3js -->
+		<script type="module" src="./scripts/does-it-glider-app.js"></script>
+	</body>
 </html>
