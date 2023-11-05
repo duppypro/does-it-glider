@@ -13,12 +13,21 @@ d3.select('body').style('margin', '0px')
 const app = d3.select('.does-it-glider-app')
 
 // Create the title
-app.append("div")
+let touch_target = app.append("span")
+    .classed("touch-target", true)
+    .style("z-index", "2")
+
+const _title =                 "Does it Glider?"
+const _sub_title =      "Tap here to paste Wordle score."
+// max width reference: "##################################"
+// abbove is max width on smallest mobile (iPhone SE)
+
+touch_target.append("div")
     .attr("class", "title")
-                                    .html("Does it Glider?")
-app.append("div")
+    .html(_title)
+touch_target.append("div")
     .attr("class", "title sub-title")
-                                    .html("Paste a Wordle score here.")
+    .html(_sub_title)
 
 // make a gol field in the app DOM element
 const field = gol_field(app)
@@ -62,16 +71,29 @@ setInterval(() => {
 
 let life_seed = []
 
-d3.select('body').on('paste', event => {
-    event.preventDefault()
+// d3.select('body').on('paste', event => {
+d3.selectAll('.touch-target').on('drag', e => {
+    console.log('drag event blocked')
+    e.stopPropagation()
+    e.preventDefault()
+})
+d3.selectAll('.touch-target').on('zoom', e => {
+    console.log('zoom event blocked')
+    e.stopPropagation()
+    e.preventDefault()
+})
+d3.selectAll('.touch-target').on('scroll', e => {
+    console.log('scroll event blocked')
+    e.stopPropagation()
+    e.preventDefault()
+})
 
-    let pasted_clipboard = ''
+const get_clipboard = (pasted_clipboard) => {
+    console.log('click event heard')
+
     let pasted_lines = []
-    pasted_clipboard = (event.clipboardData || window.clipboardData || window.Clipboard).getData('text')
-    console.log(`paste event heard:\r\n${pasted_clipboard}`)
-    // split on \r\n or \r or \n
-    pasted_lines = pasted_clipboard.split(/[\r\n]{1,2}/)
-    pasted_lines = pasted_lines.map(line => line ? line : '<br/>')
+    console.log(`pasted_clipboard: ${pasted_clipboard}`)
+    pasted_lines = pasted_clipboard.split(/\r\n|\r|\n/ug)
     console.log(`split lines: ${pasted_lines}`)
 
     // filter pasted_lines for only lines that are length 5
@@ -95,39 +117,57 @@ d3.select('body').on('paste', event => {
     )
     console.log(`life_seed: ${life_seed}`)
 
-    // fade in pasted_lines
-    app
-        .selectAll('.paste-line')//.remove()
-        .data(pasted_lines)
-        .join(
-            enter => enter.append('div').classed('paste-line', true)
-                .style('min-height', '1.5em'),
-            update => update,
-            exit => exit
-                .remove()
-        )
-        // new line effect on both enter and join
-        .html(line => line)
+    let beat_pasted = beat
+    let beat_wordle_guesses = beat
+    let beat_life_seed = beat
+    // draw/render pasted_lines in the .paste-line divs
+    const draw_pasted_lines = () => {
+        app
+            .selectAll('.paste-line')
+            .data(pasted_lines)
+            .join(
+                enter => enter.append('div').classed('paste-line', true)
+                    .style('min-height', '1.5em'),
+                update => update,
+                exit => exit
+                    .remove()
+            )
+            // new line effect on both enter and update
+            .html(line => line || '&nbsp;')
+            .transition()
+            .delay(0)
+            .duration(beat_pasted)
+            .remove()
+    }
 
-    const fade_in_guesses = () => {
+    const draw_guesses = () => {
         app
             .selectAll('.paste-line')
             .data(life_seed)
-            // d3js.data() stores the array life_seed on the parent DOM element
-            // then d3js.join() compares new data to previous data
-            // and calls enter, update, or exit as appropriate for the new data
+            // d3.data() stores the array life_seed on the parent DOM element
+            // then d3.join() compares new data to previous data
+            // and calls enter, update, or exit on each element of data array
+            // as appropriate for diff of new data comapred to previous data
             .join(
-            enter => enter.append('div').classed('paste-line', true)
-                .style('min-height', '1.5em'),
-            update => update,
-            exit => exit
-                .remove()
+                enter => enter.append('div').classed('paste-line', true),
+                update => update,
+                exit => exit
+                    .remove()
             ) //join returns enter and update merged
-            .html((d, i) => wordle_guesses[i])
-            .transition().duration(beat)
-            .transition().duration(0)
-            .text(d => d)
-            .transition().duration(beat)
+            .selection(0)
+            .transition()
+            .delay(beat_pasted)
+            .duration(0)
+            .selection()
+            .html((_data, i) => wordle_guesses[i])
+            .transition()
+            .delay(beat_wordle_guesses)
+            .duration(0)
+            .selection()
+            .html(d => d)
+            .transition()
+            .delay(beat_wordle_guesses)
+            .duration(0)
             .remove()
 
     }
@@ -141,9 +181,18 @@ d3.select('body').on('paste', event => {
         set_state(life_seed, state)
         draw(field, state)
     }
-    // wait before applying the next effect
-    // log time of call in milliseconds
-    console.log(`Queue load_new_state: ${new Date().getTime()}`)
-    setTimeout(load_new_state(life_seed), beat * 100)
-    setTimeout(fade_in_guesses, beat)
+
+    draw_pasted_lines()
+    // draw_guesses()
+    setTimeout(
+        load_new_state.bind(null, life_seed),
+        beat_pasted + beat_wordle_guesses + beat_life_seed
+    )
+}
+
+d3.select('.touch-target').on('click', event => {
+    event.preventDefault()
+    navigator.clipboard.readText().then(get_clipboard)
 })
+
+

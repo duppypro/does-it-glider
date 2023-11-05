@@ -3,9 +3,9 @@
 .does-it-glider-app {
     /* width: 100%;
     height: 100vh; */
-    z-index: 1;
-    pointer-events: none;
-    user-select: none;
+    /* z-index: 1; */
+    /* pointer-events: none;
+    user-select: none; */
     overflow: hidden;
     --green: #6aaa64;
     --darkendGreen: #40a030;
@@ -31,7 +31,7 @@
 .does-it-glider-app .title {
     background-color: rgba(0, 0, 0, 0.4);
     /* pointer-events: none; */
-    /* user-select: none; */
+    user-select: none;
     padding-top: 0.25em;
     text-align: center;
     font-size: 2em;
@@ -47,3 +47,15 @@
     font-size: 1em;
     padding-bottom: 0.25em;
 }
+
+.does-it-glider-app .touch-target {
+    z-index: 10;
+}
+
+.does-it-glider-app .paste-line {
+    color: var(--white);
+    min-height: 1em;
+    padding: 0;
+    text-align: left;
+}
+

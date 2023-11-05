@@ -1,4 +1,4 @@
-// gol-field.js - Game of Life field
+// gol-field.js - Game of Life - field
 // INPUT a d3 selection
 //     adds a graph paper pattern to it
 //     makes it zoom+pan in response to mouse and touch events
@@ -46,6 +46,7 @@ export const gol_field = (app) => {
         .attr("fill", "url(#grid)")
     
     function zoomed({transform}) {
+        // use svg zoom and drag units to transform the g element
         g.attr("transform", transform)
     }
 
@@ -53,7 +54,7 @@ export const gol_field = (app) => {
     // it's important that the transform is relative to the svg
     // then applied to the g element
     svg.call(d3.zoom()
-        .scaleExtent([.25, 2])
+        .scaleExtent([.25, 2]) // 1/4 zoom limit because default size is 400%
         .on("zoom", zoomed)
     )
 

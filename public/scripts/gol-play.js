@@ -17,9 +17,6 @@ export const set_state = (start, dest) => {
             let wrap_y = (y + Math.round((height - start.length) / 2) + height) % height
             let wrap_x = (x + Math.round((width - start[0].length) / 2) + width) % width
             dest[wrap_y][wrap_x] = start[y][x]
-            if (start[y][x] == '⬜') {
-                console.log(`set_state: ${wrap_y}, ${wrap_x}`)
-            }
         }
     }
 }
@@ -30,7 +27,7 @@ export const set_state = (start, dest) => {
 //     makes it zoom+pan in response to mouse and touch events
 // RETURN a 2D array of the new state    
 export const apply_rules = (state) => {
-    // Cpway's Game of Life rules are:
+    // Conway's Game of Life rules are:
     // 1. Any live cell with two or three live neighbours survives.
     // 2. Any dead cell with three live neighbours becomes a live cell.
     // 3. All other live cells die in the next generation. Similarly, all other dead cells stay dead.
