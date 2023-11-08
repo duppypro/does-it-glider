@@ -7,26 +7,29 @@ import {draw} from './does-it-glider-draw.js'
 
 console.log('script started')
 
+// Configuration
+let beat = (60 * 1000) / 180 // 180bpm for animations, units are in msec
+
 // initialize
 d3.select('body').style('margin', '0px')
 
 const app = d3.select('.does-it-glider-app')
 
 // Create the title
-let touch_target = app.append("span")
-    .classed("touch-target", true)
-    .style("z-index", "2")
+let touch_target = app.append('span')
+    .classed('touch-target', true)
+    .style('z-index', '2')
 
-const _title =                 "Does it Glider?"
-const _sub_title =      "Tap here to paste Wordle score."
-// max width reference: "##################################"
+const _title =                 'Does it Glider?'
+const _sub_title =      'Tap here to paste Wordle score.'
+// max width reference: '##################################'
 // abbove is max width on smallest mobile (iPhone SE)
 
-touch_target.append("div")
-    .attr("class", "title")
+touch_target.append('div')
+    .attr('class', 'title')
     .html(_title)
-touch_target.append("div")
-    .attr("class", "title sub-title")
+touch_target.append('div')
+    .attr('class', 'title sub-title')
     .html(_sub_title)
 
 // make a gol field in the app DOM element
@@ -37,10 +40,44 @@ let start = []
 // set the start pattern using life_seed format
 start[0] = '⬛⬛⬛⬛⬛'
 start[1] = '⬛⬛⬛⬛⬛'
-start[2] = '⬛⬛⬜⬛⬛'
-start[3] = '⬛⬛⬛⬜⬛'
-start[4] = '⬛⬜⬜⬜⬛'
+start[2] = '⬛⬛🟦⬛⬛'
+start[3] = '⬛⬛⬛🟦⬛'
+start[4] = '⬛B🟥🟥⬛'
 start[5] = '⬛⬛⬛⬛⬛'
+
+//test a wordle fight pattern
+/*
+ooRRRoooooBoooB
+ooRRRoooooooBBo
+RRRRRoooooBBBBB
+ooooooooooooooo
+ooooooooooooooo
+ooooooooooooooo
+*/
+
+let red_team = []
+red_team[0] = 'ooRRR'
+red_team[1] = 'ooRRR'
+red_team[2] = 'RRRRR'
+red_team[3] = 'ooooo'
+red_team[4] = 'ooooo'
+red_team[5] = 'ooooo'
+
+let blue_team = []
+blue_team[0] = 'BoooB'
+blue_team[1] = 'ooBBo'
+blue_team[2] = 'BBBBB'
+blue_team[3] = 'ooooo'
+blue_team[4] = 'ooooo'
+blue_team[5] = 'ooooo'
+
+// join red team and blue team into start with red team on left and 5 dead cells in between
+start = red_team.map((row, i) => row + 'ooooo' + blue_team[i])
+// start = blue_team.map((row, i) => row + 'ooooo' + red_team[i])
+
+start.forEach((row, i) => {
+    start[i] = row.replace(/🟦/g,'B').replace(/🟥/g,'R').replace(/⬜/g,'b').replace(/⬛/g,'o')
+})
 
 // get the width and height of the gol_field
 let field_h = field.node().getBoundingClientRect().height
@@ -49,8 +86,7 @@ let field_w = field.node().getBoundingClientRect().width
 field_h = Math.round(field_h / 20)
 field_w = Math.round(field_w / 20)
 // make a new 2D array the size of the g element divide by 20px
-// let state = new Array(field_h).fill(new Array(field_w).fill('⬛'))
-let state = Array.from({length: field_h}, () => Array.from({length: field_w}, () => '⬛'))
+let state = Array.from({length: field_h}, () => Array.from({length: field_w}, () => 'o'))
 
 // copy the start into the center of the state
 set_state(start, state)
@@ -58,15 +94,14 @@ set_state(start, state)
 // render start as a 2D array of rects in the svg
 draw(field, state)
 
-let beat = (60 * 1000) / 180 // 180bpm for animations, units are in msec
 
 // run the game of life
 // call apply_rules() and draw() every beat msecs
 setInterval(() => {
     // apply the rules to the state
     state = apply_rules(state)
-    // draw the state
-    draw(field, state)
+    // draw the state smoothly before next animation frame
+    requestAnimationFrame(draw.bind(null, field, state))
 }, beat/4)
 
 let life_seed = []
@@ -92,7 +127,7 @@ const get_clipboard = (pasted_clipboard) => {
     console.log('click event heard')
 
     let pasted_lines = []
-    console.log(`pasted_clipboard: ${pasted_clipboard}`)
+    console.log(`pasted_clipboard:\r\n${pasted_clipboard}`)
     pasted_lines = pasted_clipboard.split(/\r\n|\r|\n/ug)
     console.log(`split lines: ${pasted_lines}`)
 
@@ -100,7 +135,7 @@ const get_clipboard = (pasted_clipboard) => {
     // and contain only '⬜', '🟨', '🟩', or '⬛'
     let wordle_guesses = []
     wordle_guesses = pasted_lines
-        .filter(line => line.match(/⬜|🟨|🟩|⬛|🟦|🟧|o|b/ug)?.length == 5)
+        .filter(line => line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B)+$/ug))
     // this is only lines with exactly 5 wordle squares
     console.log(`filtered wordle_guesses: ${wordle_guesses}`)
 
@@ -110,9 +145,10 @@ const get_clipboard = (pasted_clipboard) => {
         life_seed.push(
             guess
                 // need an intermediate character to avoid double replacement
-                .replace(/🟨|🟩|🟦|🟧|o/g,'o')
-                .replace(/⬜|⬛|b/g,'⬛')
-                .replace(/o/g,'⬜') // replace intermediate character
+                // try red team 🟥 blue team 🟦 fight idea
+                .replace(/🟨|🟧/g,'R') // hits in wrong location are red team
+                .replace(/🟩|🟦/g,'B') // hits in correct location are blue team
+                .replace(/⬜|⬛/g,'o')
         )
     )
     console.log(`life_seed: ${life_seed}`)
@@ -121,29 +157,30 @@ const get_clipboard = (pasted_clipboard) => {
     let beat_wordle_guesses = beat
     let beat_life_seed = beat
     // draw/render pasted_lines in the .paste-line divs
-    const draw_pasted_lines = () => {
-        app
+    const draw_pasted_lines = async () => {
+        const transition = app
             .selectAll('.paste-line')
             .data(pasted_lines)
             .join(
-                enter => enter.append('div').classed('paste-line', true)
-                    .style('min-height', '1.5em'),
+                enter => enter.append('div').classed('paste-line', true),
                 update => update,
                 exit => exit
                     .remove()
             )
             // new line effect on both enter and update
             .html(line => line || '&nbsp;')
-            .transition()
-            .delay(0)
-            .duration(beat_pasted)
+            .transition().duration(beat_pasted)
             .remove()
+
+        await transition.end()
+
+        draw_wordle_guesses()
     }
 
-    const draw_guesses = () => {
-        app
+    const draw_wordle_guesses = async () => {
+        const transiton = app
             .selectAll('.paste-line')
-            .data(life_seed)
+            .data(wordle_guesses)
             // d3.data() stores the array life_seed on the parent DOM element
             // then d3.join() compares new data to previous data
             // and calls enter, update, or exit on each element of data array
@@ -154,45 +191,45 @@ const get_clipboard = (pasted_clipboard) => {
                 exit => exit
                     .remove()
             ) //join returns enter and update merged
-            .selection(0)
-            .transition()
-            .delay(beat_pasted)
-            .duration(0)
-            .selection()
-            .html((_data, i) => wordle_guesses[i])
-            .transition()
-            .delay(beat_wordle_guesses)
-            .duration(0)
-            .selection()
+            // .selection()
             .html(d => d)
-            .transition()
-            .delay(beat_wordle_guesses)
-            .duration(0)
+            .transition().duration(beat_wordle_guesses)
+            .remove()
+            
+        await transiton.end()
+
+        load_new_state(life_seed || start)
+        draw_life_seed()
+    }
+        
+    const draw_life_seed = async () => {
+        const transition = app
+            .selectAll('.paste-line')
+            .data(life_seed)
+            .html(d => d)
+            .transition().duration(beat_life_seed)
             .remove()
 
+        await transition.end()   
     }
-
+    
     const load_new_state = (life_seed) => {
         // log time of event
         console.log(`Enter load_new_state: ${new Date().getTime()}`)
         // clear the state
-        state = Array.from({length: field_h}, () => Array.from({length: field_w}, () => '⬛'))
+        state = Array.from({length: field_h}, () => Array.from({length: field_w}, () => 'o'))
         // copy the life_seed into the center of the state
         set_state(life_seed, state)
-        draw(field, state)
+        draw(field, state) // TODO: is this needed or does the next setInterval() call draw()? Should make it pause on initial seed for a few seconds.
     }
-
+        
     draw_pasted_lines()
-    // draw_guesses()
-    setTimeout(
-        load_new_state.bind(null, life_seed),
-        beat_pasted + beat_wordle_guesses + beat_life_seed
-    )
+    // draw_wordle_guesses()
+    // load_new_state(life_seed || start)
+    // draw_life_seed()
 }
 
 d3.select('.touch-target').on('click', event => {
     event.preventDefault()
     navigator.clipboard.readText().then(get_clipboard)
 })
-
-

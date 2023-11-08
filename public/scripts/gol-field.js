@@ -23,11 +23,11 @@ export const gol_field = (app) => {
 
     // Create the graph paper pattern
     const pattern = g.append("defs")
-            .append("pattern")
-            .attr("id", "grid")
-            .attr("width", "20px")
-            .attr("height", "20px")
-            .attr("patternUnits", "userSpaceOnUse");
+        .append("pattern")
+        .attr("id", "grid")
+        .attr("width", "20px")
+        .attr("height", "20px")
+        .attr("patternUnits", "userSpaceOnUse");
 
     pattern.append("path")
         .attr("fill", "none")
@@ -53,6 +53,7 @@ export const gol_field = (app) => {
     // hook the drag and zoom events to the svg
     // it's important that the transform is relative to the svg
     // then applied to the g element
+    // TODO: figureout how to use .extent() or .translateExtent() properly
     svg.call(d3.zoom()
         .scaleExtent([.25, 2]) // 1/4 zoom limit because default size is 400%
         .on("zoom", zoomed)
