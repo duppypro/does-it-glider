@@ -71,8 +71,9 @@ blue_team[3] = 'ooooo'
 blue_team[4] = 'ooooo'
 blue_team[5] = 'ooooo'
 
-// join red team and blue team into start with red team on left and 5 dead cells in between
-start = red_team.map((row, i) => row + 'ooooo' + blue_team[i])
+let fight_paces = 5
+// join red team and blue team into start with red team on left and fight_paces dead cells in between
+start = red_team.map((row, i) => row + 'o'.repeat(fight_paces) + blue_team[i])
 // start = blue_team.map((row, i) => row + 'ooooo' + red_team[i])
 
 start.forEach((row, i) => {
