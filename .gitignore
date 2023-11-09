@@ -1,6 +1,7 @@
 # added by duppy
 .firebase/
 .vscode/
+.DS_Store
 
 ###### below here added by firebase install process ######
 # Logs
