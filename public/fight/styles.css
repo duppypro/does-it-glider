@@ -1,0 +1,42 @@
+/* styles.css */
+div.montserrat {
+    background: linear-gradient(to bottom, #001F3F, #333333); /* Neutral Gradient */
+    color: #2ECC40; /* Electric Green */
+    font-family: "Montserrat", sans-serif;
+    text-align: center;
+}
+
+div.arcade {
+    background-color: #000; /* Solid black background */
+    color: #00A8E8; /* Electric Blue */
+    font-family: "ARCADE", sans-serif;
+    text-align: center;
+}
+
+div.eighties {
+    background-color: #000; /* Solid black background */
+    color: #FF6EFF; /* Neon Pink */
+    font-family: "Press Start 2P", cursive;
+    text-align: center;
+}
+
+div.mono {
+    background-color: #000; /* Solid black background */
+    color: #9B00E8; /* Neon Purple */
+    font-family: "IBM Plex Mono", monospace;
+    text-align: center;
+}
+div.raleway {
+    background: linear-gradient(to bottom, #001F3F, #333333); /* Neutral Gradient */
+    color: #2ECC40; /* Electric Green */
+    font-family: "Montserrat", sans-serif;
+    text-align: center;
+}
+
+.title {
+    font-size: 48px;
+}
+
+.subtitle {
+    font-size: 24px;
+}

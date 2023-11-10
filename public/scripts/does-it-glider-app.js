@@ -62,12 +62,15 @@ let beat = (60 * 1000) / 180 // 180bpm for animations, units are in msec
 
 // run the game of life
 // call apply_rules() and draw() every beat msecs
-setInterval(() => {
-    // apply the rules to the state
-    state = apply_rules(state)
-    // draw the state
-    draw(field, state)
-}, beat/4)
+setInterval(
+    () => {
+        // apply the rules to the state
+        state = apply_rules(state)
+        // draw the state
+        draw(field, state)
+    },
+    beat/4 // repeat 4 times per beat
+)
 
 let life_seed = []
 
@@ -185,7 +188,7 @@ const get_clipboard = (pasted_clipboard) => {
     draw_pasted_lines()
     // draw_guesses()
     setTimeout(
-        load_new_state.bind(null, life_seed),
+        () => load_new_state(life_seed),
         beat_pasted + beat_wordle_guesses + beat_life_seed
     )
 }
