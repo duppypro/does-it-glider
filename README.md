@@ -32,5 +32,6 @@ These are some example goals that can change the way the code is implemented:
   * limited modularity
 * **Large dev team**
   * add modularity, smaller files
+  * add an .env or config file for often used constants
   * consider using a framework
   * add automated tests so if your changes break other function, it is detected early
