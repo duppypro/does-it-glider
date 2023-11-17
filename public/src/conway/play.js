@@ -19,7 +19,7 @@ export const set_state = (start, dest) => {
             dest[wrap_y][wrap_x] = start[y][x]
         }
     }
-}
+} // end set_state
 
 // apply_rules
 // INPUT a 2D array of the old state
@@ -121,4 +121,4 @@ export const apply_rules = (state) => {
         }
     }
     return new_state
-}
+} // end apply_rules

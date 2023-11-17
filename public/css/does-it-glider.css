@@ -70,9 +70,6 @@
     100% {fill: red;}
 }
 
-.does-it-glider-app skip {
-    fill: var(--black);
-}
 .does-it-glider-app .live-cell {
     fill: var(--white);
 }

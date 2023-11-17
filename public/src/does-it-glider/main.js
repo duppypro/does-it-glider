@@ -1,11 +1,13 @@
 // does it glider app
 //
 
-import {gol_field} from './gol-field.js'
-import {apply_rules, set_state} from './gol-play.js'
-import {draw} from './does-it-glider-draw.js'
+import {grid} from '/src/conway/grid.js'
+import {apply_rules, set_state} from '/src/conway/play.js'
+import {draw} from '/src/does-it-glider/draw.js'
 
 console.log('script started')
+// log the last modified time stamp of this file
+console.log(`last modified: ${document.lastModified}`)
 
 // Configuration
 let beat = (60 * 1000) / 180 // 180bpm for animations, units are in msec
@@ -33,7 +35,7 @@ touch_target.append('div')
     .html(_sub_title)
 
 // make a gol field in the app DOM element
-const field = gol_field(app)
+const field = grid(app)
 
 // make a new 2D array the size of the 5x6 start pattern
 let start = []
@@ -102,7 +104,9 @@ setInterval(() => {
     // apply the rules to the state
     state = apply_rules(state)
     // draw the state smoothly before next animation frame
-    requestAnimationFrame(draw.bind(null, field, state))
+    // requestAnimationFrame(draw.bind(null, field, state))
+    // don't call requestAnimationFrame() inside setInterval() callback
+    draw(field, state)
 }, beat/4)
 
 let life_seed = []
