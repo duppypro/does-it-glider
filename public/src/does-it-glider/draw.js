@@ -1,4 +1,10 @@
-// does-it-glider-draw.js
+////////////////////////////////////////////////////////////////////////////////
+//  (c) 2023, David 'Duppy' Proctor, Interface Arts
+//
+//  does it glider
+//      draw
+////////////////////////////////////////////////////////////////////////////////
+
 // modify the DOM from a 2D array of Conway's Game of Life (gol_state)
 export const draw = (g, state) => {
     // render/draw each live cell in state as a white rect in the svg

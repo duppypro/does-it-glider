@@ -1,4 +1,11 @@
-// gol-play.js - play Conway's Game of Life
+////////////////////////////////////////////////////////////////////////////////
+//  (c) 2023, David 'Duppy' Proctor, Interface Arts
+//
+//  conway
+//      play
+////////////////////////////////////////////////////////////////////////////////
+
+// play Conway's Game of Life
 
 // set_state
 // INPUT a 2D array for start and 2D array for destination
@@ -19,7 +26,7 @@ export const set_state = (start, dest) => {
             dest[wrap_y][wrap_x] = start[y][x]
         }
     }
-} // end set_state
+} // end set_state()
 
 // apply_rules
 // INPUT a 2D array of the old state
@@ -121,4 +128,4 @@ export const apply_rules = (state) => {
         }
     }
     return new_state
-} // end apply_rules
+} // end apply_rules()

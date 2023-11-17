@@ -1,20 +1,18 @@
-// does it glider app
+////////////////////////////////////////////////////////////////////////////////
+//  (c) 2023, David 'Duppy' Proctor, Interface Arts
 //
+//  does it glider
+//      main
+////////////////////////////////////////////////////////////////////////////////
 
 import {grid} from '/src/conway/grid.js'
 import {apply_rules, set_state} from '/src/conway/play.js'
 import {draw} from '/src/does-it-glider/draw.js'
 
-console.log('script started')
-// log the last modified time stamp of this file
-console.log(`last modified: ${document.lastModified}`)
-
 // Configuration
 let beat = (60 * 1000) / 180 // 180bpm for animations, units are in msec
 
 // initialize
-d3.select('body').style('margin', '0px')
-
 const app = d3.select('.does-it-glider-app')
 
 // Create the title
