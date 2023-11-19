@@ -22,7 +22,7 @@ export const draw = (g, state) => {
         for(let x = 0; x < state[0].length; x++) {
             if (COLOR_TO_CLASS[state[y][x]]) {
                 // draw a white rect in the svg
-                g.append('rect')
+                g.insert('rect', '.grid-lines') // render this before/below grid-lines but after grid-background
                     .classed('cell', true)
                     .classed(COLOR_TO_CLASS[state[y][x]], true)
                     .attr('x', `${x * 20}px`)

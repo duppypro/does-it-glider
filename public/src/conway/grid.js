@@ -10,11 +10,14 @@
 //     makes it zoom+pan in response to mouse and touch events
 // RETURN a d3 selection of the field that other gol functions can use    
 export const grid = (app) => {
+    // define configuration of the grid total size in cells and the individual cell size in pixels
+    const GRID_SIZE = 300
+    const CELL_SIZE = 20
+
     // Create the SVG
-    const svg = app.append('svg')
-        .style('pointer-events', 'all')
-        //make this element behind all others
-        .style('z-index', '-1')
+    const svg = app.insert('svg', 'span.touch-target') // insert before the touch target so it renders underneath
+    // BUG: this depends on app already having a span.touch-target
+        // .style('pointer-events', 'all')
         .attr('width', '400%')
         .attr('height', '400%')
         .style('position', 'absolute')
@@ -32,26 +35,27 @@ export const grid = (app) => {
         .attr('id', 'grid')
         .attr('width', '20px')
         .attr('height', '20px')
-        .attr('patternUnits', 'userSpaceOnUse')
+        .attr('patternUnits', 'userSpaceOnUse') // this makes the pattern scale with the svg zoom (according to Copilot)
 
     pattern.append('path')
-        .attr('fill', 'none')
-        .attr('d', 'M 16 0 L 0 0 0 16') // draw left and bottom edges of each cell
-        .attr('stroke-width', '1.5px')
-        .attr('stroke', '#86888a')
+        .attr('class', 'cell-highlight')
+        .attr('d', 'M 15,0 L 5,0 0,5 0,15') // draw left and top edges of each cell
 
-    g.append('rect')
+    pattern.append('path').attr('class', 'cell-shadow')
+        .attr('d', 'M 15,0 L 20,5 20,15 15,20 5,20 0,15'); // draw right and bottom edges of each cell
+
+    g.append('rect').classed('grid-background', true)
         .attr('width', '100%')
         .attr('height', '100%')
-        .attr('fill', '#212121')
 
-    g.append('rect')
+    g.append('rect').classed('grid-lines', true)
         .attr('width', '100%')
         .attr('height', '100%')
         .attr('fill', 'url(#grid)')
 
     function zoomed({ transform }) {
         // use svg zoom and drag units to transform the g element
+        // avoid the common bug of applying the transform to the svg
         g.attr('transform', transform)
     }
 

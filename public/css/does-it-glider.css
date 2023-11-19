@@ -9,7 +9,6 @@
 .does-it-glider-app {
     /* width: 100%;
     height: 100vh; */
-    /* z-index: 1; */
     /* pointer-events: none;
     user-select: none; */
     overflow: hidden;
@@ -33,6 +32,11 @@
     touch-action: manipulation;
 }
 
+.does-it-glider-app .touch-target {
+    position: relative;
+    text-align: center;
+}
+
 .does-it-glider-app .paste-line,
 .does-it-glider-app .title {
     background-color: rgba(0, 0, 0, 0.4);
@@ -54,10 +58,6 @@
     padding-bottom: 0.25em;
 }
 
-.does-it-glider-app .touch-target {
-    z-index: 10;
-}
-
 .does-it-glider-app .paste-line {
     color: var(--white);
     min-height: 1em;
@@ -77,15 +77,29 @@
 }
 
 .does-it-glider-app .cell {
-    z-index: -2;
+    fill: #880;
+}
+
+.does-it-glider-app .grid-background {
+    fill: var(--black);
+}
+
+.does-it-glider-app .cell-highlight {
+    fill: transparent;
+    stroke-width: 1.5px;
+    stroke: #fff;
+    opacity: 1;
+}
+
+.does-it-glider-app .cell-shadow {
+    fill: transparent;
+    stroke-width: 1.5px;
+    stroke: #000;
+    opacity: 1;
 }
 
 .does-it-glider-app .live-cell {
     fill: var(--white);
-}
-
-.does-it-glider-app .dead-cell {
-    fill: var(--black);
 }
 
 .does-it-glider-app .red-team-cell {

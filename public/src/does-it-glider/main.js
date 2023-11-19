@@ -5,6 +5,32 @@
 //      main
 ////////////////////////////////////////////////////////////////////////////////
 
+// I asked Copilot:
+// "add a method to d3 selection that parses a selector string such as 'foo#name.c1.c2' and calls .append('foo').attr('class', 'c1 c2')"
+// it generated the following code and added the id correctly even though I skipped it from the description.
+d3.selection.prototype.appendParsed = function(selector) {
+    var match = selector.match(/^(\w+)(?:#([\w-]+))?(?:\.([\w-.]+))?$/);
+    if (!match) {
+        throw new Error('Invalid selector');
+    }
+
+    var tag = match[1];
+    var id = match[2];
+    var classes = match[3];
+
+    var selection = this.append(tag);
+
+    if (id) {
+        selection.attr('id', id);
+    }
+
+    if (classes) {
+        selection.attr('class', classes.replace(/\./g, ' '));
+    }
+
+    return selection;
+}
+
 import {grid} from '/src/conway/grid.js'
 import {apply_rules, set_state} from '/src/conway/play.js'
 import {draw} from '/src/does-it-glider/draw.js'
@@ -18,7 +44,6 @@ const app = d3.select('.does-it-glider-app')
 // Create the title
 let touch_target = app.append('span')
     .classed('touch-target', true)
-    .style('z-index', '2')
 
 const _title =                 'Does it Glider?'
 const _sub_title =      'Tap here to paste Wordle score.'
@@ -77,7 +102,11 @@ start = red_team.map((row, i) => row + 'o'.repeat(fight_paces) + blue_team[i])
 // start = blue_team.map((row, i) => row + 'ooooo' + red_team[i])
 
 start.forEach((row, i) => {
-    start[i] = row.replace(/🟦/g,'B').replace(/🟥/g,'R').replace(/⬜/g,'b').replace(/⬛/g,'o')
+    start[i] = row
+        .replace(/🟦/g,'B')
+        .replace(/🟥/g,'R')
+        .replace(/⬜/g,'b')
+        .replace(/⬛/g,'o')
 })
 
 // get the width and height of the gol_field
@@ -109,22 +138,22 @@ setInterval(() => {
 
 let life_seed = []
 
-// d3.select('body').on('paste', event => {
-d3.selectAll('.touch-target').on('drag', e => {
-    console.log('drag event blocked')
-    e.stopPropagation()
-    e.preventDefault()
-})
-d3.selectAll('.touch-target').on('zoom', e => {
-    console.log('zoom event blocked')
-    e.stopPropagation()
-    e.preventDefault()
-})
-d3.selectAll('.touch-target').on('scroll', e => {
-    console.log('scroll event blocked')
-    e.stopPropagation()
-    e.preventDefault()
-})
+// // d3.select('body').on('paste', event => {
+// d3.selectAll('.touch-target').on('drag', e => {
+//     console.log('drag event blocked')
+//     e.stopPropagation()
+//     e.preventDefault()
+// })
+// d3.selectAll('.touch-target').on('zoom', e => {
+//     console.log('zoom event blocked')
+//     e.stopPropagation()
+//     e.preventDefault()
+// })
+// d3.selectAll('.touch-target').on('scroll', e => {
+//     console.log('scroll event blocked')
+//     e.stopPropagation()
+//     e.preventDefault()
+// })
 
 const get_clipboard = (pasted_clipboard) => {
     console.log('click event heard')
@@ -230,7 +259,7 @@ const get_clipboard = (pasted_clipboard) => {
     // draw_wordle_guesses()
     // load_new_state(life_seed || start)
     // draw_life_seed()
-}
+} // end get_clipboard()
 
 d3.select('.touch-target').on('click', event => {
     event.preventDefault()
