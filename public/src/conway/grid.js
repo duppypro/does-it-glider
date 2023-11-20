@@ -32,14 +32,15 @@ export const grid = (app) => {
     // Create the graph paper pattern
     const pattern = g.append('defs')
         .append('pattern')
-        .attr('id', 'grid')
+        .attr('id', 'grid-pattern')
+        .attr('class', 'cell dead')
         .attr('width', '20px')
         .attr('height', '20px')
         .attr('patternUnits', 'userSpaceOnUse') // this makes the pattern scale with the svg zoom (according to Copilot)
 
-    pattern.append('path')
-        .attr('class', 'cell-highlight')
-        .attr('d', 'M 15,0 L 5,0 0,5 0,15') // draw left and top edges of each cell
+    // pattern.append('path')
+    //     .attr('class', 'cell-highlight')
+    //     .attr('d', 'M 15,0 L 5,0 0,5 0,15') // draw left and top edges of each cell
 
     pattern.append('path').attr('class', 'cell-shadow')
         .attr('d', 'M 15,0 L 20,5 20,15 15,20 5,20 0,15'); // draw right and bottom edges of each cell
@@ -51,7 +52,6 @@ export const grid = (app) => {
     g.append('rect').classed('grid-lines', true)
         .attr('width', '100%')
         .attr('height', '100%')
-        .attr('fill', 'url(#grid)')
 
     function zoomed({ transform }) {
         // use svg zoom and drag units to transform the g element
