@@ -283,17 +283,6 @@ const event_loop = () => {
 
 setInterval(event_loop, beat);
 
-// run the game of life
-// call apply_rules() and draw() every beat msecs
-// setInterval(async () => {
-//     // apply the rules to the state
-//     state = apply_rules(state)
-//     // draw the state smoothly before next animation frame
-//     // requestAnimationFrame(draw.bind(null, field, state))
-//     // don't call requestAnimationFrame() inside setInterval() callback
-//     await draw(field, state)
-// }, beat/4)
-
 let life_seed = []
 
 // // d3.select('body').on('paste', event => {

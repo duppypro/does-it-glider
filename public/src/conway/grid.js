@@ -40,10 +40,15 @@ export const grid = (app) => {
 
     // pattern.append('path')
     //     .attr('class', 'cell-highlight')
-    //     .attr('d', 'M 15,0 L 5,0 0,5 0,15') // draw left and top edges of each cell
+    //     .attr('d', 'M 15,0 A 5,5 0 0,1 5,0 L 0,5 A 5,5 0 0,1 0,15') // draw left and top edges of each cell with arcs
+
+    // color the background of the entire parttern
+    pattern.append('rect').attr('class', 'cell-background')
+        .attr('width', '100%')
+        .attr('height', '100%')
 
     pattern.append('path').attr('class', 'cell-shadow')
-        .attr('d', 'M 15,0 L 20,5 20,15 15,20 5,20 0,15'); // draw right and bottom edges of each cell
+        .attr('d', 'M 15,0 A 5,5 0 0,1 20,5 L 20,15 A 5,5 0 0,1 15,20 L 5,20 A 5,5 0 0,1 0,15'); // draw right and bottom edges of each cell with arcs
 
     g.append('rect').classed('grid-background', true)
         .attr('width', '100%')
@@ -64,7 +69,7 @@ export const grid = (app) => {
     // then applied to the g element
     // TODO: figure out how to use .extent() or .translateExtent() properly
     svg.call(d3.zoom()
-        .scaleExtent([.25, 2]) // 1/4 zoom limit because default size is 400%
+        .scaleExtent([.25, 4]) // 1/4 zoom limit because default size is 400%
         .on('zoom', zoomed)
     )
 

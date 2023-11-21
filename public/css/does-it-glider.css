@@ -86,39 +86,32 @@ body
 
 .cell
 {
-    fill: #880;
+    fill: transparent;
 }
 
+.cell-background,
 .cell.dead
 {
-    background-color: grey;
-    fill: lightgreen;
-    stroke: yellow;
-    stroke-width: 4;
+    fill: transparent;
+    stroke: transparent;
+    stroke-width: 2;
 }
 
 .cell-highlight
 {
-    fill: #fff;
-}
-
-#grid-pattern
-{
-    fill: grey;
-    stroke: var(--darkGray);
-    stroke-width: 0.5;
+    stroke: #fff;
 }
 
 .cell-shadow
 {
-    fill: currentColor;
-    stroke: lightpink;
-    stroke-width: 4;
+    /* fill: transparent; */
+    stroke: #000;
+    stroke-width: 1;
 }
 
 .grid-background
 {
-    fill: --var(--black);
+    fill: #212121;
 }
 
 .grid-lines
