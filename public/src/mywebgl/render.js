@@ -49,7 +49,7 @@ export const webgl_context = (parent) => {
                 return;
             }
 
-            fetch('/shaders/conway.frag')
+            (fetch('/shaders/conway.frag')
                 .then(response => response.text())
                 .then(data => {
                     gl.shaderSource(fragment_shader, data);
@@ -93,10 +93,6 @@ export const webgl_context = (parent) => {
                     // Get the location of the uniform time variable
                     let uTimeLocation = gl.getUniformLocation(program, 'u_time')
                 
-                    // Set the value of the uniform time variable
-                    let time = performance.now() / 1000 // time in seconds
-                    gl.uniform1f(uTimeLocation, 1.0)
-
                     // Create a buffer for the rectangle's vertices
                     const buffer = gl.createBuffer();
                     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -105,7 +101,7 @@ export const webgl_context = (parent) => {
                         new Float32Array([
                             -0.75, -0.75, 
                              0.75, -0.75, 
-                            -0.75,  0.75, 
+                             -0.75,  0.75, 
                              0.75,  0.75
                         ]), 
                         gl.STATIC_DRAW
@@ -116,7 +112,7 @@ export const webgl_context = (parent) => {
 
                     // Enable the attribute
                     gl.enableVertexAttribArray(aPositionLocation);
-
+                    
                     // Tell the attribute how to get data out of the buffer
                     gl.vertexAttribPointer(
                         aPositionLocation,
@@ -128,9 +124,21 @@ export const webgl_context = (parent) => {
                     );
 
                     // Draw the rectangle
-                    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                    function draw() {
+                        // Set the value of the uniform time variable
+                        gl.uniform1f(uTimeLocation, performance.now() / 1000.0)
+                
+                        // Draw the scene
+                        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+
+                        // Schedule the next redraw
+                        requestAnimationFrame(draw);
+                    }
+                    // Start the animation loop
+                    draw();
                 })
-                .catch(error => console.error(error));
+                .catch(error => console.error(error))
+            ) // end fetch fragment_shader    
         })
         .catch(error => console.error(error));
 

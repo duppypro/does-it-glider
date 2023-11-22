@@ -18,10 +18,10 @@ void main() {
     vec2 uv = gl_FragCoord.xy / 600.0; // u_resolution;
     vec3 col = vec3(0.0);
 
-    float _time = PI/2.9;
-    col.r = sin(uv.x * PI * sin(_time*2.0));
-    col.g = sin(uv.y * PI * sin(_time*2.0));
-    col.b = sin((uv.x + uv.y) * PI * sin(_time*2.0));
+    float _time = u_time;
+    col.r = sin(uv.x * PI * sin(_time * 2.0*PI));
+    col.g = sin(uv.y * PI * sin(_time * 2.0*PI));
+    col.b = sin((uv.x + uv.y) * PI * sin(_time * 2.0*PI));
 
     gl_FragColor = vec4(col, 1.0);
 }
