@@ -85,14 +85,14 @@ export const webgl_context = (parent) => {
                     gl.useProgram(program);
                     // Get the location of the uniform variable
                     let uResolutionLocation = gl.getUniformLocation(program, 'u_resolution')
-                
+
                     // Set the value of the uniform variable
-                    let resolution = [canvas.width, canvas.height]
+                    let resolution = [canvas.node().clientWidth, canvas.node().clientHeight]
                     gl.uniform2fv(uResolutionLocation, resolution)
-                
+
                     // Get the location of the uniform time variable
                     let uTimeLocation = gl.getUniformLocation(program, 'u_time')
-                
+
                     // Create a buffer for the rectangle's vertices
                     const buffer = gl.createBuffer();
                     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);

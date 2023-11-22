@@ -15,7 +15,7 @@ uniform vec2 u_resolution;
 uniform float u_time;
 
 void main() {
-    vec2 uv = gl_FragCoord.xy / 600.0; // u_resolution;
+    vec2 uv = gl_FragCoord.xy / u_resolution;
     vec3 col = vec3(0.0);
 
     float _time = u_time;
