@@ -20,7 +20,7 @@ export const grid = (app) => {
         // .style('pointer-events', 'all')
         .attr('width', '400%')
         .attr('height', '400%')
-        .style('position', 'absolute')
+        .style('position', 'relative')
         .style('left', '-150%')
         .style('top', '-150%')
 

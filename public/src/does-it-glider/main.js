@@ -168,28 +168,19 @@ d3.selection.prototype.emmet = function(selector, where) {
     return currentSelection;
 };
 
-
-// Get the URL of the current module
-const scriptUrl = import.meta.url
-
-console.log(`scriptUrl: ${scriptUrl.split('/').pop()}`)
-// Extract the root file name from the URL
-const APP_NAME = scriptUrl.split('/').pop().split('.')[0]
-
-import {grid} from '/src/conway/grid.js'
-import {apply_rules, set_state} from '/src/conway/play.js'
-import {draw} from '/src/does-it-glider/draw.js'
+import { grid } from '/src/conway/grid.js'
+import { apply_rules, set_state } from '/src/conway/play.js'
+import { draw } from '/src/does-it-glider/draw.js'
+import { webgl_context } from '/src/mywebgl/render.js    '
 
 // Configuration
 let beat = (60 * 1000) / 180 // 180bpm for animations, units are in msec
 
 // initialize
-let app = d3.select(`.${APP_NAME}`)
+let app = d3.select(`.does-it-glider-app`)
 if (app.empty()) {
-    app = d3.select('body').mynew(`div.testing.${APP_NAME}.still-testing`, ':first-child')
+    app = d3.select('body').mynew(`div.does-it-glider-app`, ':first-child')
 }
-app.classed('does-it-glider-app', true)
-
 //TODO add overflow: hidden to app ??? if it works when not on body
 // Create the title
 let touch_target = app.append('span')
@@ -207,8 +198,20 @@ touch_target.append('div')
     .attr('class', 'title sub-title')
     .html(_sub_title)
 
+// make 2 divs, one for left half, one for right half of the app
+// left half
+const left_div = app.append('div')
+    .classed('left', true)
+    .style('float', 'left')
+    .style('overflow', 'hidden')
+// right half
+const right_div = app.append('div')
+    .classed('right', true)
+    .style('float', 'right')
+    .style('overflow', 'hidden')
+    
 // make a gol field in the app DOM element
-const field = grid(app)
+const field = grid(right_div)
 
 // make a new 2D array the size of the 5x6 start pattern
 let start = []
@@ -302,7 +305,7 @@ let life_seed = []
 //     e.preventDefault()
 // })
 
-const get_clipboard = (pasted_clipboard) => {
+const parse_clipboard = (pasted_clipboard) => {
     console.log('click event heard')
 
     let pasted_lines = []
@@ -409,13 +412,19 @@ const get_clipboard = (pasted_clipboard) => {
     // draw_wordle_guesses()
     // load_new_state(life_seed || start)
     // draw_life_seed()
-} // end get_clipboard()
+} // end parse_clipboard()
 
-d3.select('.touch-target').on('click', event => {
-    event.preventDefault()
-    navigator.clipboard.readText()
-        .then(get_clipboard)
-        .catch(error => {
-            console.error('An error occurred:', error)
-        })
-})
+const get_clipboard_text = async (event) => {
+    // get clipboard text
+    const pasted_clipboard = await navigator.clipboard.readText()
+    // console.log(`pasted_clipboard:\r\n${pasted_clipboard}`)
+    parse_clipboard(pasted_clipboard)
+}
+
+// paste from clickboard on click(touch) to deal with mobile browsers
+d3.select('.touch-target').on('click', get_clipboard_text)
+// also listen for paste event anywhere on the page
+d3.select('body').on('paste', get_clipboard_text)
+
+// make a webgl canvas in the left_div
+const gl = webgl_context(left_div)
