@@ -13,6 +13,7 @@ body
     /* this makes it hard to turn this into a widget. maybe I am creating the <svg> and <g> wrong? */
     /* ??? maybe they need to be 100% of parent, not of viewport? */
     overflow: hidden;
+    margin: 0;
 }
 
 .does-it-glider-app
@@ -35,12 +36,17 @@ body
     font-size: 18px;
     /* https://stackoverflow.com/questions/46167604/ios-html-disable-double-tap-to-zoom */
     touch-action: manipulation;
+    display: flex;
 }
 
-.touch-target
-{
-    position: relative;
+.touch-target {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    /* height: 100%; */
     text-align: center;
+    /* z-index: 1; */
 }
 
 .paste-line,
@@ -75,7 +81,6 @@ body
 {
     0% {fill: red;}
     14% {fill: orange;}
-    
     28% {fill: yellow;}
     42% {fill: lime;}
     57% {fill: blue;}
@@ -125,14 +130,14 @@ body
 }
 
 .cell.red-team {
-    fill: purple;
-    stroke: yellow;
+    fill: red;
+    stroke: pink;
     stroke-width: 1.5;
 }
 
 .cell.blue-team {
     fill: blue;
-    stroke: red;
+    stroke: rgb(74, 74, 74);
     stroke-width: 1.5;
     width: 15;
 }

@@ -13,14 +13,13 @@ export const webgl_context = (parent) => {
     // https://observablehq.com/@mourner/webgl-2-boilerplate
     const zoom_target = parent
         .append('div')
-        .attr('width', '100%')
-        .attr('height', '100%')
+        .style('height', '100%')
         .style('position', 'realtive')
     
     const canvas = zoom_target
         .append('canvas')
-        .attr('width', 800)
-        .attr('height', 600)
+        .attr('width', zoom_target.node().clientWidth)
+        .attr('height', zoom_target.node().clientHeight)
     
     const webgl_version = 'webgl2'
     const gl = canvas.node().getContext(webgl_version)
@@ -99,10 +98,10 @@ export const webgl_context = (parent) => {
                     gl.bufferData(
                         gl.ARRAY_BUFFER, 
                         new Float32Array([
-                            -0.75, -0.75, 
-                             0.75, -0.75, 
-                             -0.75,  0.75, 
-                             0.75,  0.75
+                            -1.0, -1.0, 
+                             1.0, -1.0, 
+                             -1.0,  1.0, 
+                             1.0,  1.0
                         ]), 
                         gl.STATIC_DRAW
                     );
@@ -119,7 +118,7 @@ export const webgl_context = (parent) => {
                         2,
                         gl.FLOAT,
                         false,
-                        2 * Float32Array.BYTES_PER_ELEMENT, // stride fixed, Copilot had stride as 0?
+                        0, //2 * Float32Array.BYTES_PER_ELEMENT, // stride fixed, Copilot had stride as 0?
                         0,
                     );
 

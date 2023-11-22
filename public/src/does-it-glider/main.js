@@ -181,7 +181,19 @@ let app = d3.select(`.does-it-glider-app`)
 if (app.empty()) {
     app = d3.select('body').mynew(`div.does-it-glider-app`, ':first-child')
 }
-//TODO add overflow: hidden to app ??? if it works when not on body
+
+// make 2 divs, one for left half, one for right half of the app
+// left half
+const left_div = app.mynew('div.left')
+    .style('flex', '1')
+    .style('overflow', 'hidden')
+    .style('height', '100vh')
+// right half
+const right_div = app.mynew('div.right')
+    .style('flex', '1')
+    .style('overflow', 'hidden')
+    .style('height', '100vh')
+
 // Create the title
 let touch_target = app.append('span')
     .classed('touch-target', true)
@@ -198,17 +210,6 @@ touch_target.append('div')
     .attr('class', 'title sub-title')
     .html(_sub_title)
 
-// make 2 divs, one for left half, one for right half of the app
-// left half
-const left_div = app.append('div')
-    .classed('left', true)
-    .style('float', 'left')
-    .style('overflow', 'hidden')
-// right half
-const right_div = app.append('div')
-    .classed('right', true)
-    .style('float', 'right')
-    .style('overflow', 'hidden')
     
 // make a gol field in the app DOM element
 const field = grid(right_div)
@@ -284,7 +285,7 @@ const event_loop = () => {
     requestAnimationFrame(() => draw(field, state))
 }
 
-setInterval(event_loop, beat);
+setInterval(event_loop, beat/4);
 
 let life_seed = []
 
