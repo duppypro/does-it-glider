@@ -171,7 +171,7 @@ d3.selection.prototype.emmet = function(selector, where) {
 import { grid } from '/src/conway/grid.js'
 import { apply_rules, set_state } from '/src/conway/play.js'
 import { draw } from '/src/does-it-glider/draw.js'
-import { webgl_context } from '/src/mywebgl/render.js    '
+import { webgl_context } from '/src/mywebgl/render.js'
 
 // Configuration
 let beat = (60 * 1000) / 180 // 180bpm for animations, units are in msec
@@ -288,23 +288,6 @@ const event_loop = () => {
 setInterval(event_loop, beat/4);
 
 let life_seed = []
-
-// // d3.select('body').on('paste', event => {
-// d3.selectAll('.touch-target').on('drag', e => {
-//     console.log('drag event blocked')
-//     e.stopPropagation()
-//     e.preventDefault()
-// })
-// d3.selectAll('.touch-target').on('zoom', e => {
-//     console.log('zoom event blocked')
-//     e.stopPropagation()
-//     e.preventDefault()
-// })
-// d3.selectAll('.touch-target').on('scroll', e => {
-//     console.log('scroll event blocked')
-//     e.stopPropagation()
-//     e.preventDefault()
-// })
 
 const parse_clipboard = (pasted_clipboard) => {
     console.log('click event heard')

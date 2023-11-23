@@ -5,7 +5,7 @@
 //      vertex shader
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef GL_ES
+#ifdef GL_ES // TODO I just copied this #ifdef from the tutorial, I don't know if it's stricthly necessary
 precision mediump float;
 #endif
 

@@ -31,7 +31,6 @@ export const set_state = (start, dest) => {
 // apply_rules
 // INPUT a 2D array of the old state
 //     run Conway's Game of Life rules on it
-//     makes it zoom+pan in response to mouse and touch events
 // RETURN a 2D array of the new state    
 export const apply_rules = (state) => {
     // Conway's Game of Life rules are:
