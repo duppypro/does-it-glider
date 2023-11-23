@@ -40,7 +40,7 @@ export const draw = (g, state) => {
 
     const endTime = performance.now()
     const elapsedTime = endTime - startTime
-    if (elapsedTime > 16) {
+    if (elapsedTime > 20) {
         console.warn(`draw(${draw_count}) took ${elapsedTime}ms`)
     }
 }

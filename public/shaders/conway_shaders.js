@@ -18,9 +18,9 @@ export const vertex_shader_src = glsl`
     attribute vec2 a_translation;
 
     void main() {
-        vec2 position = a_position;
-        position += a_translation;
+        vec2 position = a_position + vec2(1, -1); // 1, -1 is the center of the screen
         position *= a_scale;
+        position += a_translation;
         gl_Position = vec4(position, 0.0, 1.0);
     }
 ` // end vertex_shader
@@ -76,12 +76,12 @@ export const default_frag_shader_src = glsl`
     void main() {
         vec2 uv = gl_FragCoord.xy / u_resolution;
 
-        vec3 ambient = vec3(0.4);
+        vec3 ambient = vec3(0.1);
         vec3 direction = vec3(0.0, 1.0, 1.0);
-        vec3 lightColor = vec3(length(gl_FragColor));
+        vec3 lightColor = vec3(length(uv)) / 1.5; // the 1.5 is arbitrary
         vec3 light = vec3(clamp(ambient + lightColor, 0.0, 1.0));
 
-        vec3 color = vec3(1.0 * checker(uv, 7.0));
+        vec3 color = vec3(1.0 * checker(uv, 32.0));
         gl_FragColor = vec4(color * light, 1.0);
     }
 

@@ -12,18 +12,27 @@ import { vertex_shader_src, default_frag_shader_src as fragment_shader_src } fro
 //  INPUT parent element
 //  RETURN_canvas element that has a webgl context
 export const webgl_context = (parent) => {
-    //  use D3js to create an_canvas with webgl context in the parent element
+    //  use D3js to create a canvas with webgl context in the parent element
     // https://observablehq.com/@mourner/webgl-2-boilerplate
     const zoom_target = parent
         .append('div')
         .style('height', '100%')
-        .style('position', 'realtive')
-    
+        .style('position', 'relative')
+        .style('overflow', 'hidden') // Crop the visibility of the canvas
+
+    const view_width = zoom_target.node().clientWidth
+    const view_height = zoom_target.node().clientHeight //! // BUG: render does not respond to resize events
+    const grid_width = 256 // 4096
+    const grid_height = 256 // 4096 // TODO: make this a config/env setting
+
     const canvas = zoom_target
         .append('canvas')
-        .attr('width', zoom_target.node().clientWidth)
-        .attr('height', zoom_target.node().clientHeight)
-    
+        .attr('width', grid_width)
+        .attr('height', grid_height)
+        .style('position', 'absolute') // Position the canvas absolutely
+        .style('left', `calc(50% - ${grid_width / 2}px)`) // Center the canvas horizontally
+        .style('top', `calc(50% - ${grid_height / 2}px)`) // Center the canvas vertically
+
     const webgl_version = 'webgl2'
     const gl = canvas.node().getContext(webgl_version)
     if (!gl) {
@@ -125,40 +134,52 @@ export const webgl_context = (parent) => {
         0,
     )
 
-    // Hook the Zoom drag and scale event handlers to the canvas
-    function apply_zoom({ transform }) {
-        // use parent zoom and drag units to transform the canvas element
-        canvas.attr('transform', transform)
-        // set attributes on the webgl context for the transform scale and translation
-        //  scale
-        const scale = transform.k
-        //  translation
-        const translation = [transform.x, -transform.y] // - on the y axis because the canvas is upside down from the DOM
-        // set the scale global
-        g_scale = scale
-        // set the translation global
-        g_translation[0] = translation[0] / g_width
-        g_translation[1] = translation[1] / g_height
-    }
-    
     // get location of a_scale attribute
     let a_scale_location       = gl.getAttribLocation(program, 'a_scale')
     // get location of a_translation attribute
     let a_translation_location = gl.getAttribLocation(program, 'a_translation')
     
-    // set the initial scale and translation
-    let g_scale = 1.0
-    let g_translation = [0.0, 0.0]
-
     // read the viewport size
     const viewport = gl.getParameter(gl.VIEWPORT)
-    const g_width = viewport[2]
-    const g_height = viewport[3]
+    const gl_width = viewport[2]
+    const gl_height = viewport[3]
+    // use d3 range domain and scale to map the DOM coord of "0,0 upper left to gl_width, gl_height lower right
+    // to the webgl coord of "-1,-1 lower left to 1,1 upper right
+    //  scale
+    const map_DOM_to_gl_x = d3.scaleLinear().domain([0, gl_width]).range([-1, 1])
+    const map_DOM_to_gl_y = d3.scaleLinear().domain([0, gl_height]).range([1, -1])
+    
+    // set the initial scale and translation
+    let gl_scale = 1.0
+    let gl_translation = [0.0, 0.0]
+    // map thansform's DOM coords to webgl coords
+    gl_translation[0] = map_DOM_to_gl_x(gl_translation[0]) // + 1 // testing the plus one
+    gl_translation[1] = map_DOM_to_gl_y(gl_translation[1]) // - 1 // testing the minus one because WebGL upside down from DOM space
+    
     console.log(`viewport get: ${viewport}`)
-
+    
     // hook the drag and zoom events to the parent
+    // Before we start the animation loop, we need to hook up the zoom and drag events
+    // Hook the Zoom drag and scale event handlers to the canvas
+    function apply_zoom({ transform }) {
+        // use parent zoom and drag units to transform the canvas element
+        canvas.attr('transform', transform) // ? only for debugging, canvas doesn't transform
+        console.log(`zoom transform: ${transform}`)
+        // set the scale global
+        gl_scale = transform.k
+        // set the translation global
+        // change in place to not add any more garbage to the heap
+        gl_translation[0] = transform.x;
+        gl_translation[1] = transform.y;
+        // map thansform's DOM coords to webgl coords
+        gl_translation[0] = map_DOM_to_gl_x(gl_translation[0]) //+ 1 // todo: move the +1 into the map function ???
+        gl_translation[1] = map_DOM_to_gl_y(gl_translation[1]) //- 1
+        console.log(`gl_scale: ${gl_scale}`)
+        console.log(`gl_translation: ${gl_translation}`)
+    }
+
     zoom_target.call(d3.zoom()
-        .scaleExtent([.25, 4])
+        .scaleExtent([.125, 4])
         .on('zoom', apply_zoom)
     )
 
@@ -168,9 +189,9 @@ export const webgl_context = (parent) => {
         // Set the value of the uniform time variable
         gl.uniform1f(uTimeLocation, performance.now() / 1000.0)
         // set the scale attribute
-        gl.vertexAttrib1f(a_scale_location, g_scale)
+        gl.vertexAttrib1f(a_scale_location, gl_scale)
         // set the translation attribute
-        gl.vertexAttrib2fv(a_translation_location, g_translation)
+        gl.vertexAttrib2fv(a_translation_location, gl_translation)
 
         // Draw the scene
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
