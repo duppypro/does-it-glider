@@ -189,7 +189,7 @@ const left_div = app.mynew('div.left')
     .style('overflow', 'hidden') // ? // TODO: figure out how many of the elements need overflow: hidden
     .style('position', 'relative')
     .style('height', '100vh')
-    .style('background', 'violet')
+    .style('background', '#040')
 // right half
 const right_div = app.mynew('div.right')
     .style('flex', '1')
@@ -302,19 +302,15 @@ setInterval(event_loop, beat/4);
 let life_seed = []
 
 const parse_clipboard = (pasted_clipboard) => {
-    console.log('click event heard')
-
     let pasted_lines = []
-    console.log(`pasted_clipboard:\r\n${pasted_clipboard}`)
     pasted_lines = pasted_clipboard.split(/\r\n|\r|\n/ug)
-    console.log(`split lines: ${pasted_lines}`)
 
     // filter pasted_lines for only lines that are length 5
     // and contain only '⬜', '🟨', '🟩', or '⬛'
     let wordle_guesses = []
     wordle_guesses = pasted_lines
         .filter(line => line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B|X|\.)+$/ug))
-    // this is only lines with exactly 5 wordle squares
+    // this is only the lines with exactly 5 wordle squares
     console.log(`filtered wordle_guesses: ${wordle_guesses}`)
 
     // convert all '🟨'|'🟩' in wordle_guesses to '⬜' and '⬜'|'⬛' to '⬛'
@@ -333,7 +329,7 @@ const parse_clipboard = (pasted_clipboard) => {
                 .replace(/\./g, 'o')
         )
     )
-    console.log(`life_seed: ${life_seed}`)
+    console.log(`life_seed:\n ${life_seed}`)
 
     let beat_pasted = beat
     let beat_wordle_guesses = beat
@@ -417,7 +413,7 @@ const parse_clipboard = (pasted_clipboard) => {
 const get_clipboard_text = async (event) => {
     // get clipboard text
     const pasted_clipboard = await navigator.clipboard.readText()
-    // console.log(`pasted_clipboard:\r\n${pasted_clipboard}`)
+    console.log(`pasted_clipboard:\r\n${pasted_clipboard}`)
     parse_clipboard(pasted_clipboard)
 }
 

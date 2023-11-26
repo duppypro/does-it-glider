@@ -8,24 +8,24 @@
 // import { vertex_shader_src, fragment_shader_src as fragment_shader_src } from '/shaders/conway_shaders.js'
 import { vertex_shader_src, default_frag_shader_src as fragment_shader_src } from '/shaders/conway_shaders.js'
 
-const grid_width = 256 // 4096
-const grid_height = 256 // 4096 // TODO: make this a config/env setting
-
 // webgl_context
 //  INPUT parent element
 //  RETURN_canvas element that has a webgl context
 export const webgl_context = (parent) => {
     //  use D3js to create a canvas with webgl context in the parent element
     // https://observablehq.com/@mourner/webgl-2-boilerplate
+    const grid_width = 2048
+    const grid_height = 2048 // TODO: make this a config/env setting
+    
     const zoom_target = parent
         .mynew('div.zoom-target')
-        .style('width', `${0 + grid_width}px`)
-        .style('height', `${0 + grid_height}px`)
+        .style('width', `${grid_width}px`)
+        .style('height', `${grid_height}px`)
         .style('position', 'absolute') // Position the canvas absolutely
-        .style('left', `calc(50% - ${0 + grid_width / 2}px)`) // Center the canvas horizontally
-        .style('top', `calc(50% - ${0 + grid_height / 2}px)`) // Center the canvas vertically
+        .style('left', `calc(50% - ${grid_width/2}px)`) // Center the canvas horizontally
+        .style('top', `calc(50% - ${grid_height/2}px)`) // Center the canvas vertically
         .style('overflow', 'hidden') // Crop the visibility of the canvas
-        .style('background', 'green')
+        .style('background', '#925')
 
     const zoom_target_width = zoom_target.node().clientWidth
     const zoom_target_height = zoom_target.node().clientHeight //! // BUG: render does not respond to resize events
@@ -35,9 +35,8 @@ export const webgl_context = (parent) => {
         .attr('width', grid_width)
         .attr('height', grid_height)
         .style('position', 'absolute') // Position the canvas absolutely
-        .style('left', `calc(50% - ${0 + grid_width / 2}px)`) // Center the canvas horizontally
-        .style('top', `calc(50% - ${0 + grid_height / 2}px)`) // Center the canvas vertically
-        // .style('border', '16px solid violet') //
+        .style('left', `calc(50% - ${grid_width/2}px)`) // Center the canvas horizontally
+        .style('top', `calc(50% - ${grid_height/2}px)`) // Center the canvas vertically
 
     const webgl_version = 'webgl2' // ? Will I ever need webgl1 or other versions?
     const gl = canvas.node().getContext(webgl_version)
@@ -92,8 +91,8 @@ export const webgl_context = (parent) => {
     // ? // TODO: will I ever need to clear the depth buffer? I am using 1 2D TRIANGLE_STRIP surface for now
 
     //  set the viewport to the canvas size
-    gl.viewport(0, 0, canvas.node().clientWidth, canvas.node().clientHeight)
-    console.log(`viewport: ${canvas.node().clientWidth} x ${canvas.node().clientHeight}`)
+    gl.viewport(0, 0, grid_width, grid_height)
+    console.log(`grid size: ${grid_width} x ${grid_height}`)
 
     // Use the program
     gl.useProgram(program)
@@ -101,7 +100,7 @@ export const webgl_context = (parent) => {
     let uResolutionLocation = gl.getUniformLocation(program, 'u_resolution')
 
     // Set the value of the uniform variable
-    let resolution = [canvas.node().clientWidth, canvas.node().clientHeight]
+    let resolution = [grid_width, grid_height]
     gl.uniform2fv(uResolutionLocation, resolution)
 
     // Get the location of the uniform time variable
@@ -111,12 +110,13 @@ export const webgl_context = (parent) => {
     const buffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
     gl.bufferData(
-        gl.ARRAY_BUFFER, 
+        gl.ARRAY_BUFFER,
+        // make a rectangle from 2 triangles
         new Float32Array([
-            -1.0, -1.0, 
-                1.0, -1.0, 
-                -1.0,  1.0, 
-                1.0,  1.0
+            -1.0, -1.0,
+            +1.0, -1.0, 
+            -1.0, +1.0, 
+            +1.0, +1.0,
         ]), 
         gl.STATIC_DRAW
     )
@@ -141,31 +141,20 @@ export const webgl_context = (parent) => {
     let uScaleLocation = gl.getUniformLocation(program, 'u_scale')
     let uTranslationLocation = gl.getUniformLocation(program, 'u_translation')
 
-    // read the viewport size
-    const viewport = gl.getParameter(gl.VIEWPORT) // more reliable than getClientWidth/Height
-    const gl_width = viewport[2]
-    const gl_height = viewport[3]
     // create functions to map DOM coords to gl coords
-    // REMEMBER this only works for unscaled coords. Scale the coords before mapping to gl coords
-
-    const map_DOM_to_gl_x = d3.scaleLinear().domain([0, gl_width]).range([-1, 1])
-    const map_DOM_to_gl_y = d3.scaleLinear().domain([0, gl_height]).range([1, -1])
+    const map_DOM_to_gl_x = d3.scaleLinear().domain([0, grid_width]).range([-1, 1])
+    const map_DOM_to_gl_y = d3.scaleLinear().domain([0, grid_height]).range([1, -1])
 
     // set the initial scale and translation
     let gl_scale = 1.0
     let gl_translation = [0.0, 0.0]
 
-    console.log(`viewport get: ${viewport}`)
-    // log transform
-    console.log(`gl_translation: ${gl_translation}`)
-    console.log(`gl_scale: ${gl_scale}`)
-
-    // hook the drag and zoom events to the parent
-    // Before we start the animation loop, we need to hook up the zoom and drag events
-    // Hook the Zoom drag and scale event handlers to the canvas
+    // hook the pan and zoom events to the parent
+    // and apply pan and to the canvas
     function apply_zoom({ transform }) {
         // use parent zoom and drag units to transform the canvas element
-        canvas.attr('transform', transform) // ? only for debugging, canvas doesn't transform
+        // ? only for debugging, canvas doesn't transform. use vertex shader 
+        canvas.attr('transform', transform)
         // set the scale global
         gl_scale = transform.k // scale is same for all coords and centers of zoom and drag
 
@@ -181,14 +170,10 @@ export const webgl_context = (parent) => {
             map_DOM_to_gl_x(DOM_translation[0]),
             map_DOM_to_gl_y(DOM_translation[1]),
         ]
-        console.log(`gl_translation: ${gl_translation}`)
 
         // move gl coords relative to WebGL viewport center scaled by gl_scale
         gl_translation[0] += gl_scale
         gl_translation[1] -= gl_scale
-
-        // log transform
-        console.log(`gl_translation: ${gl_translation}, gl_scale: ${gl_scale}`)
     }    
 
     zoom_target.call(d3.zoom()

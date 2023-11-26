@@ -19,12 +19,20 @@ export const vertex_shader_src = glsl`
     uniform float u_scale;
     uniform vec2 u_translation;
 
+    // send a pan and zoom scale and translation to the fragment shader
+    varying float v_scale;
+    varying vec2 v_translation;
+
     void main() {
-        vec2 position = a_position;
+        vec2 zoomed = u_scale*a_position + u_translation;
 
-        position = u_scale*a_position + u_translation;
+        gl_Position = vec4(zoomed, 0.0, 1.0);
 
-        gl_Position = vec4(position, 0.0, 1.0);
+        // pass in clip space [-1,-1  1, 1] to fragment shader
+        // send inverse scale and translation to fragment shader
+        // ? // TODO why don't we just send the scale and translation as uniforms to the fragment shader?
+        v_translation = -u_translation;
+        v_scale = 1.0 / u_scale;
     }
 ` // end vertex_shader
 
@@ -69,6 +77,10 @@ export const default_frag_shader_src = glsl`
     uniform vec2 u_resolution;
     uniform float u_time;
 
+    // receive the zoom info from the vertex shader
+    varying float v_scale;
+    varying vec2 v_translation;
+
     float checker(vec2 uv, float repeats) {
         float cx = floor(repeats * uv.x);
         float cy = floor(repeats * uv.y);
@@ -77,15 +89,22 @@ export const default_frag_shader_src = glsl`
     }
 
     void main() {
-        vec2 uv = gl_FragCoord.xy / u_resolution;
+        vec2 frag_coord = gl_FragCoord.xy / u_resolution;
+        // shift origin to center of screen
+        frag_coord = 2.0*frag_coord - 1.0;
+        // scale and translate
+        vec2 uv = v_scale * (frag_coord + v_translation);
+        // shift back to lower left
+        uv = (uv + 1.0) / 2.0;
 
-        vec3 ambient = vec3(0.1);
+        vec3 ambient = vec3(0.04);
         vec3 direction = vec3(0.0, 1.0, 1.0);
-        vec3 lightColor = vec3(length(uv)) / 1.5; // the 1.5 is arbitrary
+        vec3 lightColor = vec3(length(uv)) / 1.25; // the 1.5 is arbitrary
         vec3 light = vec3(clamp(ambient + lightColor, 0.0, 1.0));
 
-        vec3 color = vec3(1.0 * checker(uv, 4.0));
+        vec3 color = vec3(1.0 * checker(uv, 32.0));
         gl_FragColor = vec4(color * light, 1.0);
+        // gl_FragColor = vec4(sign(uv.x-0.5), 0.0, sign(uv.y-0.5), 1.0);
     }
 
 ` // end default_frag_shader

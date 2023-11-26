@@ -120,9 +120,6 @@ export const apply_rules = (state) => {
             // blue_team_neighbors = live_neighbors - red_team_neighbors // treats white as blue
             // actually don't need to track blue_team_neighbors because we look up from red_team_neighbors
             // new_state[y][x] = RULES_LOOKUP[state[y][x]][live_neighbors]
-            // if (state[y][x] != 'o') {
-            //     console.log(`\r\nold:'${state[y][x]}' x,y:${x},${y}\r\n\tlive:${live_neighbors} red:${red_team_neighbors} blue:${blue_team_neighbors}\r\n\tnew:'${new_state[y][x]}'`)
-            // }
             new_state[y][x] = RED_TEAM_BLUE_TEAM_LOOKUP[state[y][x]][live_neighbors][red_team_neighbors] || 'o'
         }
     }
