@@ -5,22 +5,25 @@
 //      contains vertex and fragment shaders as javascript string literals
 ////////////////////////////////////////////////////////////////////////////////
 
+// define a null op glsl so that the glsl-literal vscode extension will highlight the syntax
 const glsl = (x) => x // Wow. That's a cool trick! Backticks are more powerful than I knew!
 
 export const vertex_shader_src = glsl`
-    #ifdef GL_ES
-    // TODO I just copied this #ifdef from the tutorial, I don't know if it's stricthly necessary
+    #ifdef GL_ES // GL_ES is defined if we're using WebGL
+    // WebGL requires the mediump qualifier for precision in floats
+    // Other versions of GLSL don't allow this qualifier
     precision mediump float;
     #endif
 
     attribute vec2 a_position;
-    attribute float a_scale;
-    attribute vec2 a_translation;
+    uniform float u_scale;
+    uniform vec2 u_translation;
 
     void main() {
-        vec2 position = a_position + vec2(1, -1); // 1, -1 is the center of the screen
-        position *= a_scale;
-        position += a_translation;
+        vec2 position = a_position;
+
+        position = u_scale*a_position + u_translation;
+
         gl_Position = vec4(position, 0.0, 1.0);
     }
 ` // end vertex_shader
@@ -81,7 +84,7 @@ export const default_frag_shader_src = glsl`
         vec3 lightColor = vec3(length(uv)) / 1.5; // the 1.5 is arbitrary
         vec3 light = vec3(clamp(ambient + lightColor, 0.0, 1.0));
 
-        vec3 color = vec3(1.0 * checker(uv, 32.0));
+        vec3 color = vec3(1.0 * checker(uv, 4.0));
         gl_FragColor = vec4(color * light, 1.0);
     }
 

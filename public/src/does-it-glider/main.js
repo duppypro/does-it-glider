@@ -186,12 +186,15 @@ if (app.empty()) {
 // left half
 const left_div = app.mynew('div.left')
     .style('flex', '1')
-    .style('overflow', 'hidden')
+    .style('overflow', 'hidden') // ? // TODO: figure out how many of the elements need overflow: hidden
+    .style('position', 'relative')
     .style('height', '100vh')
+    .style('background', 'violet')
 // right half
 const right_div = app.mynew('div.right')
     .style('flex', '1')
     .style('overflow', 'hidden')
+    .style('position', 'relative')
     .style('height', '100vh')
 
 // Create the title
@@ -210,7 +213,6 @@ touch_target.append('div')
     .attr('class', 'title sub-title')
     .html(_sub_title)
 
-    
 // make a gol field in the app DOM element
 const field = grid(right_div)
 
@@ -250,6 +252,14 @@ blue_team[3] = 'ooooo'
 blue_team[4] = 'ooooo'
 blue_team[5] = 'ooooo'
 
+let partial_mosquito = []
+partial_mosquito[0] = 'ooooo'
+partial_mosquito[1] = 'ooooo'
+partial_mosquito[2] = 'oooBo'
+partial_mosquito[3] = 'ooooB'
+partial_mosquito[4] = 'BoooB'
+partial_mosquito[5] = 'oBBBB'
+
 let fight_paces = 5
 // join red team and blue team into start with red team on left and fight_paces dead cells in between
 start = red_team.map((row, i) => row + 'o'.repeat(fight_paces) + blue_team[i])
@@ -260,7 +270,9 @@ start.forEach((row, i) => {
         .replace(/🟦/g,'B')
         .replace(/🟥/g,'R')
         .replace(/⬜/g,'b')
-        .replace(/⬛/g,'o')
+        .replace(/⬛/g, 'o')
+        .replace(/X/g, 'B')
+        .replace(/\./g, 'o')
 })
 
 // get the width and height of the gol_field
@@ -301,7 +313,7 @@ const parse_clipboard = (pasted_clipboard) => {
     // and contain only '⬜', '🟨', '🟩', or '⬛'
     let wordle_guesses = []
     wordle_guesses = pasted_lines
-        .filter(line => line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B)+$/ug))
+        .filter(line => line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B|X|\.)+$/ug))
     // this is only lines with exactly 5 wordle squares
     console.log(`filtered wordle_guesses: ${wordle_guesses}`)
 
@@ -314,7 +326,11 @@ const parse_clipboard = (pasted_clipboard) => {
                 // try red team 🟥 blue team 🟦 fight idea
                 .replace(/🟨|🟧/g,'R') // hits in wrong location are red team
                 .replace(/🟩|🟦/g,'B') // hits in correct location are blue team
-                .replace(/⬜|⬛/g,'o')
+                .replace(/⬜|⬛/g, 'o')
+                .replace(/🟦/g, 'B')
+                .replace(/🟥/g, 'R')
+                .replace(/X/g, 'B')
+                .replace(/\./g, 'o')
         )
     )
     console.log(`life_seed: ${life_seed}`)
@@ -361,13 +377,13 @@ const parse_clipboard = (pasted_clipboard) => {
             .html(d => d)
             .transition().duration(beat_wordle_guesses)
             .remove()
-            
+
         await transiton.end()
 
         load_new_state(life_seed || start)
         draw_life_seed()
     }
-        
+
     const draw_life_seed = async () => {
         const transition = app
             .selectAll('.paste-line')
@@ -378,7 +394,7 @@ const parse_clipboard = (pasted_clipboard) => {
 
         await transition.end()   
     }
-    
+
     const load_new_state = async (life_seed) => {
         console.time('load_new_state')
 
@@ -386,7 +402,7 @@ const parse_clipboard = (pasted_clipboard) => {
         state = Array.from({length: field_h}, () => Array.from({length: field_w}, () => 'o'))
         // copy the life_seed into the center of the state
         set_state(life_seed, state)
-            
+
         await draw(field, state)
 
         console.timeEnd('load_new_state')

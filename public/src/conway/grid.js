@@ -14,16 +14,19 @@ export const grid = (app) => {
     const GRID_SIZE = 300
     const CELL_SIZE = 20
 
+    // define the scale factor for the svg relative to the parent element
+    const SVG_SCALE = 2; // Change the scale factor here
+    const SVG_WIDTH = SVG_SCALE
+    const SVG_HEIGHT = SVG_SCALE
+    const SVG_PAD_LEFT = (SVG_WIDTH - 1) / 2
+    const SVG_PAD_TOP = (SVG_HEIGHT - 1) / 2
     // Create the SVG
     const svg = app.insert('svg', 'span.touch-target') // insert before the touch target so it renders underneath
-    // BUG: this depends on app already having a span.touch-target
-        // .style('pointer-events', 'all')
-        .attr('width', '400%')
-        .attr('height', '400%')
+        .attr('width', `${SVG_WIDTH*100}%`)
+        .attr('height', `${SVG_HEIGHT*100}%`)
         .style('position', 'relative')
-        .style('left', '-150%')
-        .style('top', '-150%')
-
+        .style('left', `-${SVG_PAD_LEFT*100}%`)
+        .style('top', `-${SVG_PAD_TOP*100}%`)
     // create a g element inside the svg    
     // need this g element so we can transform it
     // and leave the svg container static
@@ -38,6 +41,7 @@ export const grid = (app) => {
         .attr('height', '20px')
         .attr('patternUnits', 'userSpaceOnUse') // this makes the pattern scale with the svg zoom (according to Copilot)
 
+    //ignore next comments
     // pattern.append('path')
     //     .attr('class', 'cell-highlight')
     //     .attr('d', 'M 15,0 A 5,5 0 0,1 5,0 L 0,5 A 5,5 0 0,1 0,15') // draw left and top edges of each cell with arcs
@@ -47,8 +51,11 @@ export const grid = (app) => {
         .attr('width', '100%')
         .attr('height', '100%')
 
+    //ignore next 2 comments
+    // pattern.append('path').attr('class', 'cell-shadow')
+    //     .attr('d', 'M 15,0 A 5,5 0 0,1 20,5 L 20,15 A 5,5 0 0,1 15,20 L 5,20 A 5,5 0 0,1 0,15'); // draw right and bottom edges of each cell with arcs
     pattern.append('path').attr('class', 'cell-shadow')
-        .attr('d', 'M 15,0 A 5,5 0 0,1 20,5 L 20,15 A 5,5 0 0,1 15,20 L 5,20 A 5,5 0 0,1 0,15'); // draw right and bottom edges of each cell with arcs
+        .attr('d', 'M 20,0 L 20,20 0,20'); // draw right and bottom edges of each cell
 
     g.append('rect').classed('grid-background', true)
         .attr('width', '100%')
