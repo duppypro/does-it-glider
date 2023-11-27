@@ -92,15 +92,25 @@ export const apply_rules = (state) => {
             // count the number of neighbors that are alive
             let live_neighbors = 0
             let red_team_neighbors = 0
-            let blue_team_neighbors = 0
+            // let blue_team_neighbors = 0 // don't need blue count because it can be computed from live_neighbors - red_team_neighbors
+            let wrapped_nx
+            let wrapped_ny
             // loop over the 3x3 grid around the cell
             for(let ny = y-1; ny <= y+1; ny++) {
                 for(let nx = x-1; nx <= x+1; nx++) {
                     // ignore the cell itself
                     if (nx == x && ny == y) continue
-                    // wrap around the edges of the state
-                    let wrapped_nx = (nx + width) % width
-                    let wrapped_ny = (ny + height) % height
+                    if (true) {
+                        // TODO: make this an env/config to wrap around the edges or not
+                        if (nx < 0 || ny < 0) continue // ignore negative indices
+                        if (nx >= width || ny >= height) continue // ignore indices past the end
+                        wrapped_nx = nx
+                        wrapped_ny = ny
+                    } else {
+                        // wrap around the edges of the state
+                        wrapped_nx = (nx + width) % width
+                        wrapped_ny = (ny + height) % height
+                    }
                     // count the alive neighbors
                     if (state[wrapped_ny][wrapped_nx] == 'b') {
                         live_neighbors += 1

@@ -5,12 +5,15 @@
 //      webgl_context
 //////////////////////////////////////////////////////////////////////
 
-// import { vertex_shader_src, fragment_shader_src as fragment_shader_src } from '/shaders/conway_shaders.js'
-import { vertex_shader_src, default_frag_shader_src as fragment_shader_src } from '/shaders/conway_shaders.js'
+import {
+    vertex_shader_src,
+    checker_frag_shader_src,
+    rainbow_fragment_shader_src as fragment_shader_src,
+} from './shaders/conway_shaders.js'
 
 // webgl_context
 //  INPUT parent element
-//  RETURN_canvas element that has a webgl context
+//  RETURN a webgl context
 export const webgl_context = (parent) => {
     //  use D3js to create a canvas with webgl context in the parent element
     // https://observablehq.com/@mourner/webgl-2-boilerplate
@@ -25,10 +28,9 @@ export const webgl_context = (parent) => {
         .style('left', `calc(50% - ${grid_width/2}px)`) // Center the canvas horizontally
         .style('top', `calc(50% - ${grid_height/2}px)`) // Center the canvas vertically
         .style('overflow', 'hidden') // Crop the visibility of the canvas
-        .style('background', '#925')
+        .style('background', '#925') // dark rose color for debugging (should be covered by canvas frag shader)
 
-    const zoom_target_width = zoom_target.node().clientWidth
-    const zoom_target_height = zoom_target.node().clientHeight //! // BUG: render does not respond to resize events
+    //! // BUG: render does not respond to resize events
 
     const canvas = zoom_target
         .append('canvas')
@@ -46,53 +48,36 @@ export const webgl_context = (parent) => {
         return d3.select()
     }
 
-    // ...
-
-    // Load a vertex shader from string literal vertex_shader_src
+    // Compile a vertex shader from string literal vertex_shader_src
     const vertex_shader = gl.createShader(gl.VERTEX_SHADER)
-
-    // Load a fragment shader from file /shaders/conway.frag
-    const fragment_shader = gl.createShader(gl.FRAGMENT_SHADER)
-
-    const program = gl.createProgram()
-
     gl.shaderSource(vertex_shader, vertex_shader_src)
     gl.compileShader(vertex_shader)
     if (!gl.getShaderParameter(vertex_shader, gl.COMPILE_STATUS)) {
         console.error(`WebGL vertex compile err: ${gl.getShaderInfoLog(vertex_shader)}`)
         return
     }
-
+    // Compile a fragment shader from string literal fragment_shader_src
+    const fragment_shader = gl.createShader(gl.FRAGMENT_SHADER)
     gl.shaderSource(fragment_shader, fragment_shader_src)
     gl.compileShader(fragment_shader)
     if (!gl.getShaderParameter(fragment_shader, gl.COMPILE_STATUS)) {
         console.error(`WebGL frag compile err: ${gl.getShaderInfoLog(fragment_shader)}`)
         return
     }
-
+    
     // Create a program and attach the shaders
+    const program = gl.createProgram()
     gl.attachShader(program, vertex_shader)
     gl.attachShader(program, fragment_shader)
     gl.linkProgram(program)
-
     // Check if the program was linked successfully
-    console.log(`gl InfoLog:\n${gl.getProgramInfoLog(program)}`)
-    console.log(`LINK_STATUS:\n${gl.getProgramParameter(program, gl.LINK_STATUS)}`)
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
         console.error(gl.getProgramInfoLog(program))
         return
     }
 
-    // set the clear color
-    // This will make the background obvious if it peeks through.
-    gl.clearColor(0.9, 0.4, 0.9, 1.0) // pinky violet rose sort of color.
-    gl.clear(gl.COLOR_BUFFER_BIT)
-
-    // ? // TODO: will I ever need to clear the depth buffer? I am using 1 2D TRIANGLE_STRIP surface for now
-
     //  set the viewport to the canvas size
     gl.viewport(0, 0, grid_width, grid_height)
-    console.log(`grid size: ${grid_width} x ${grid_height}`)
 
     // Use the program
     gl.useProgram(program)
@@ -103,8 +88,8 @@ export const webgl_context = (parent) => {
     let resolution = [grid_width, grid_height]
     gl.uniform2fv(uResolutionLocation, resolution)
 
-    // Get the location of the uniform time variable
-    let uTimeLocation = gl.getUniformLocation(program, 'u_time')
+    // Get the location of the uniform tick variable
+    let uTickLocation = gl.getUniformLocation(program, 'u_tick')
 
     // Create a buffer for the rectangle's vertices
     const buffer = gl.createBuffer()
@@ -155,20 +140,13 @@ export const webgl_context = (parent) => {
         // use parent zoom and drag units to transform the canvas element
         // ? only for debugging, canvas doesn't transform. use vertex shader 
         canvas.attr('transform', transform)
-        // set the scale global
+        // set the scale global that draw will pass
         gl_scale = transform.k // scale is same for all coords and centers of zoom and drag
 
-        // set the translation global
-        // assign transform's translation to DOM_translation
-        let DOM_translation = [
-            transform.x,
-            transform.y,
-        ]    
-
-        // map DOM_translation coord space to gl_translation coord space
+        // map transform's translation to gl_translation coord space
         gl_translation = [
-            map_DOM_to_gl_x(DOM_translation[0]),
-            map_DOM_to_gl_y(DOM_translation[1]),
+            map_DOM_to_gl_x(transform.x),
+            map_DOM_to_gl_y(transform.y),
         ]
 
         // move gl coords relative to WebGL viewport center scaled by gl_scale
@@ -184,20 +162,28 @@ export const webgl_context = (parent) => {
     // Draw the rectangle
     // THIS IS THE EVENT LOOP
     function draw() {
-        // Set the value of the uniform time variable
-        gl.uniform1f(uTimeLocation, performance.now() / 1000.0) // TODO: this should more precisely be the time that it will be when the next AnimationFrame is called and renders
+        tick++
+        // assume requestAnimationFrame is called 60 times per second
+        // 2^53 / 60 / 60 / 60 / 24 / 365 = 4,760,274 years
+        // exit if tick is not beat/6 msec
+        if (tick % 18) { // every 18 frames is 1/3 of a second, so 3 fps
+            return
+        }
+
+        // Set the value of the uniform tick variable
+        gl.uniform1f(uTickLocation, performance.now() / 1000.0)
+        // TODO: this should more precisely be the time that it will be when the next AnimationFrame is called and renders
         // set the scale and translation for the vertex shader
         gl.uniform1f(uScaleLocation, gl_scale)
         gl.uniform2fv(uTranslationLocation, gl_translation)
-
         // Draw the scene. In this case TRIANGLE_STRIP is just 2 triangles that make a rectangle.
         // This is the minimum way to draw a rectangle in WebGL.
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 
         // Schedule the next redraw
         requestAnimationFrame(draw)
-    }    
-    // Start the animation loop
+    }
+    let tick = 0
     draw()
 
     //  return the context

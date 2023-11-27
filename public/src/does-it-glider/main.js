@@ -168,10 +168,10 @@ d3.selection.prototype.emmet = function(selector, where) {
     return currentSelection;
 };
 
-import { grid } from '/src/conway/grid.js'
-import { apply_rules, set_state } from '/src/conway/play.js'
-import { draw } from '/src/does-it-glider/draw.js'
-import { webgl_context } from '/src/mywebgl/render.js'
+import { grid } from './src/conway/grid.js'
+import { apply_rules, set_state } from './src/conway/play.js'
+import { draw } from './src/does-it-glider/draw.js'
+import { webgl_context } from './src/mywebgl/render.js'
 
 // Configuration
 let beat = (60 * 1000) / 180 // 180bpm for animations, units are in msec
@@ -297,7 +297,7 @@ const event_loop = () => {
     requestAnimationFrame(() => draw(field, state))
 }
 
-setInterval(event_loop, beat/4);
+setInterval(event_loop, beat/6); // ! // TODO last deployed version was beat/4
 
 let life_seed = []
 

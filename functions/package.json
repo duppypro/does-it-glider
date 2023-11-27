@@ -15,7 +15,9 @@
   "dependencies": {
     "discord.js": "^14.13.0",
     "firebase-admin": "^11.8.0",
-    "firebase-functions": "^4.5.0"
+    "firebase-functions": "^4.5.0",
+    "gl-mat3": "^2.0.0",
+    "gl-matrix": "^3.4.3"
   },
   "devDependencies": {
     "firebase-functions-test": "^3.1.0"

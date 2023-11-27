@@ -6,13 +6,17 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // define a null op glsl so that the glsl-literal vscode extension will highlight the syntax
-const glsl = (x) => x // Wow. That's a cool trick! Backticks are more powerful than I knew!
+const glsl = (x) => x
 
 export const vertex_shader_src = glsl`
     #ifdef GL_ES // GL_ES is defined if we're using WebGL
-    // WebGL requires the mediump qualifier for precision in floats
-    // Other versions of GLSL don't allow this qualifier
+    // WebGL requires defining precision in floats
+    // Other versions of GLSL will syntax error
+    #ifdef GL_FRAGMENT_PRECISION_HIGH
+    precision highp float; // fix for mobile devices
+    #else
     precision mediump float;
+    #endif
     #endif
 
     attribute vec2 a_position;
@@ -36,9 +40,13 @@ export const vertex_shader_src = glsl`
     }
 ` // end vertex_shader
 
-export const fragment_shader_src = glsl`
+export const rainbow_fragment_shader_src = glsl`
     #ifdef GL_ES
+    #ifdef GL_FRAGMENT_PRECISION_HIGH
+    precision highp float;
+    #else
     precision mediump float;
+    #endif
     #endif
 
     #define PI 3.1415926535897932384626433832795
@@ -69,9 +77,15 @@ export const fragment_shader_src = glsl`
     }    
 ` // end fragment_shader
 
-export const default_frag_shader_src = glsl`
-    #ifdef GL_ES
+export const checker_frag_shader_src = glsl`
+    #ifdef GL_ES // GL_ES is defined if we're using WebGL
+    // WebGL requires defining precision in floats
+    // Other versions of GLSL will syntax error
+    #ifdef GL_FRAGMENT_PRECISION_HIGH
+    precision highp float; // fix for mobile devices
+    #else
     precision mediump float;
+    #endif
     #endif
 
     uniform vec2 u_resolution;
@@ -102,9 +116,9 @@ export const default_frag_shader_src = glsl`
         vec3 lightColor = vec3(length(uv)) / 1.25; // the 1.5 is arbitrary
         vec3 light = vec3(clamp(ambient + lightColor, 0.0, 1.0));
 
-        vec3 color = vec3(1.0 * checker(uv, 32.0));
+        vec3 color = vec3(1.0 * checker(uv, 128.0));
         gl_FragColor = vec4(color * light, 1.0);
         // gl_FragColor = vec4(sign(uv.x-0.5), 0.0, sign(uv.y-0.5), 1.0);
     }
 
-` // end default_frag_shader
+` // end checker_frag_shader_src
