@@ -120,10 +120,10 @@ export const webgl_context = (parent, beat) => {
         gl.ARRAY_BUFFER,
         // make a rectangle from 2 triangles
         new Float32Array([
-            -1.0, -1.0,    0.0, 2048.0, // lower left in clip space is 0, 1 in grid space
-            +1.0, -1.0, 2048.0, 2048.0, // lower right in clip space is 1, 1 in grid space
-            -1.0, +1.0,    0.0,    0.0, // upper left in clip space is 0, 0 in grid space
-            +1.0, +1.0, 2048.0,    0.0, // upper right in clip space is 1, 0 in grid space
+            -1.0, -1.0,        0.0, grid_height, // lower left in clip space is 0, 1 in grid space
+            +1.0, -1.0, grid_width, grid_height, // lower right in clip space is 1, 1 in grid space
+            -1.0, +1.0,        0.0,         0.0, // upper left in clip space is 0, 0 in grid space
+            +1.0, +1.0, grid_width,         0.0, // upper right in clip space is 1, 0 in grid space
         ]), 
         gl.STATIC_DRAW
     )
