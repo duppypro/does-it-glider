@@ -5,6 +5,7 @@
 //      top-level code for does-it-glider
 //////////////////////////////////////////////////////////////////////
 
+import * as glMat from '/lib/gl-matrix.js'
 import { grid } from '/src/conway/grid.js'
 import { apply_rules, set_state } from '/src/conway/play.js'
 import { draw } from '/src/does-it-glider/draw.js'
