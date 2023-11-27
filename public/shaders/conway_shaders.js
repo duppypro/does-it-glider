@@ -9,15 +9,7 @@
 const glsl = (x) => x
 
 export const vertex_shader_src = glsl`
-    #ifdef GL_ES // GL_ES is defined if we're using WebGL
-    // WebGL requires defining precision in floats
-    // Other versions of GLSL will syntax error
-    #ifdef GL_FRAGMENT_PRECISION_HIGH
-    precision highp float; // fix for mobile devices
-    #else
     precision mediump float;
-    #endif
-    #endif
 
     attribute vec2 a_position;
     attribute vec2 a_gridCoord;
@@ -44,13 +36,7 @@ export const vertex_shader_src = glsl`
 ` // end vertex_shader
 
 export const rainbow_fragment_shader_src = glsl`
-    #ifdef GL_ES
-    #ifdef GL_FRAGMENT_PRECISION_HIGH
-    precision highp float;
-    #else
     precision mediump float;
-    #endif
-    #endif
 
     #define PI 3.1415926535897932384626433832795
     #define TAU (2.0*PI)
@@ -91,15 +77,7 @@ export const rainbow_fragment_shader_src = glsl`
 ` // end fragment_shader
 
 export const checker_frag_shader_src = glsl`
-    #ifdef GL_ES // GL_ES is defined if we're using WebGL
-    // WebGL requires defining precision in floats
-    // Other versions of GLSL will syntax error
-    #ifdef GL_FRAGMENT_PRECISION_HIGH
-    precision highp float; // fix for mobile devices
-    #else
     precision mediump float;
-    #endif
-    #endif
 
     uniform vec2 u_resolution;
     uniform float u_tick;
@@ -139,15 +117,7 @@ export const checker_frag_shader_src = glsl`
 ` // end checker_frag_shader_src
 
 export const grid_frag_shader_src = glsl`
-    #ifdef GL_ES // GL_ES is defined if we're using WebGL
-    // WebGL requires defining precision in floats
-    // Other versions of GLSL will syntax error
-    #ifdef GL_FRAGMENT_PRECISION_HIGH
-    precision highp float; // fix for mobile devices
-    #else
     precision mediump float;
-    #endif
-    #endif
 
     uniform vec2 u_resolution;
     uniform float u_tick;
