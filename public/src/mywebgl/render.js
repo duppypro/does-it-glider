@@ -120,19 +120,21 @@ export const webgl_context = (parent, beat) => {
         gl.ARRAY_BUFFER,
         // make a rectangle from 2 triangles
         new Float32Array([
-            -1.0, -1.0,
-            +1.0, -1.0, 
-            -1.0, +1.0, 
-            +1.0, +1.0,
+            -1.0, -1.0,    0.0, 2048.0, // lower left in clip space is 0, 1 in grid space
+            +1.0, -1.0, 2048.0, 2048.0, // lower right in clip space is 1, 1 in grid space
+            -1.0, +1.0,    0.0,    0.0, // upper left in clip space is 0, 0 in grid space
+            +1.0, +1.0, 2048.0,    0.0, // upper right in clip space is 1, 0 in grid space
         ]), 
         gl.STATIC_DRAW
     )
 
     // Get the location of the a_position attribute
     const aPositionLocation = gl.getAttribLocation(program, 'a_position')
+    const aGridCoordLoc = gl.getAttribLocation(program, 'a_gridCoord')
 
     // Enable the attribute
     gl.enableVertexAttribArray(aPositionLocation)
+    gl.enableVertexAttribArray(aGridCoordLoc)
 
     // Tell the attribute how to get data out of the buffer
     gl.vertexAttribPointer(
@@ -140,8 +142,16 @@ export const webgl_context = (parent, beat) => {
         2,
         gl.FLOAT,
         false,
-        0, //2 * Float32Array.BYTES_PER_ELEMENT, // TODO stride fixed, Copilot had stride as 0?
+        4 * Float32Array.BYTES_PER_ELEMENT,
         0,
+    )
+    gl.vertexAttribPointer(
+        aGridCoordLoc,
+        2,
+        gl.FLOAT,
+        false,
+        4 * Float32Array.BYTES_PER_ELEMENT,
+        2 * Float32Array.BYTES_PER_ELEMENT,
     )
 
     // Get the location of the uniform variable
