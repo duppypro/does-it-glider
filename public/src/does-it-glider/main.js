@@ -5,7 +5,6 @@
 //      top-level code for does-it-glider
 //////////////////////////////////////////////////////////////////////
 
-import * as glMat from '/lib/gl-matrix.js'
 import { grid } from '/src/conway/grid.js'
 import { apply_rules, set_state } from '/src/conway/play.js'
 import { draw } from '/src/does-it-glider/draw.js'
@@ -19,7 +18,7 @@ add_mynew()
 let beat = (60 * 1000) / 120 // 180bpm for animations, units are in msec
 
 // initialize
-let app = d3.select(`.does-it-glider-app`)
+let app = d3.select('.does-it-glider-app')
 if (app.empty()) {
     app = d3.select('body').mynew(`div.does-it-glider-app`, ':first-child')
 }

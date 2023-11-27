@@ -5,11 +5,33 @@
 //      webgl_context
 //////////////////////////////////////////////////////////////////////
 
+import { mat2d, vec2 } from '/node_modules/gl-matrix/esm/index.js'
 import {
     vertex_shader_src,
     checker_frag_shader_src,
-    rainbow_fragment_shader_src as fragment_shader_src,
+    rainbow_fragment_shader_src,
+    grid_frag_shader_src as fragment_shader_src,
 } from '/shaders/conway_shaders.js'
+
+// using the gl-matrix library create a mat2d with scale and translation
+const scale = vec2.fromValues(0.2, 0.2)
+const translation = vec2.fromValues(0.5, 1.5)
+const transform = mat2d.create()
+mat2d.scale(transform, transform, scale)
+console.log(`transform: ${mat2d.str(transform)}`)
+mat2d.translate(transform, transform, translation)
+console.log(`transform: ${mat2d.str(transform)}`)
+// test the transform by applying it to a mat2d -1,-1 and -1,1
+const test = vec2.create()
+const p1 = vec2.fromValues(-1, -1)
+const p2 = vec2.fromValues(-1, 1)
+const p3 = vec2.fromValues(0, 0)
+vec2.transformMat2d(test, p1, transform)
+console.log(`test ${vec2.str(p1)}: ${vec2.str(test)}`)
+vec2.transformMat2d(test, p2, transform)
+console.log(`test ${vec2.str(p2)}: ${vec2.str(test)}`)
+vec2.transformMat2d(test, p3, transform)
+console.log(`test ${vec2.str(p3)}: ${vec2.str(test)}`)
 
 // webgl_context
 //  INPUT parent element
@@ -165,7 +187,11 @@ export const webgl_context = (parent, beat) => {
         // assume requestAnimationFrame is called 60 times per second
         // 2^53 / 60 / 60 / 60 / 24 / 365 = 4,760,274 years
         // only draw every beat/6 msec
-        if ((tick % Math.floor((beat/6*60/1000)) || 0) == 0) { // every 18 frames is 1/3 of a second, so 3 fps
+        if (tick % 2 == 0) { // every 18 frames is 1/3 of a second, so 3 fps
+            if (tick == 0) {
+                // do some init on the first frame if needed
+                console.log('first frame')
+            }
             // Set the value of the uniform tick variable
             gl.uniform1f(uTickLocation, tick)
             // TODO: this should more precisely be the time that it will be when the next AnimationFrame is called and renders
@@ -174,15 +200,8 @@ export const webgl_context = (parent, beat) => {
             gl.uniform2fv(uTranslationLocation, gl_translation)
             // Draw the scene. In this case TRIANGLE_STRIP is just 2 triangles that make a rectangle.
             // This is the minimum way to draw a rectangle in WebGL.
-
-            // time the draw call
-            const startTime = performance.now()
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
-            if (tick < 30) {
-                console.debug(`draw(${tick}) took ${(performance.now() - startTime).toFixed(3)}ms`)
-            }
         }
-        
         tick++
         requestAnimationFrame(draw)
     }

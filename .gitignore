@@ -47,7 +47,6 @@ build/Release
 # Dependency directories
 node_modules/
 # unless node_modules is in this directory
-!/public
 !/public/node_modules/
 jspm_packages/
 
