@@ -17,8 +17,6 @@ export const vertex_shader_src = glsl`
     uniform vec2 u_translation;
 
     // send a pan and zoom scale and translation to the fragment shader
-    varying float v_scale;
-    varying vec2 v_translation;
     varying vec2 v_gridCoord;
 
     void main() {
@@ -29,8 +27,6 @@ export const vertex_shader_src = glsl`
         // pass in clip space [-1,-1  1, 1] to fragment shader
         // send inverse scale and translation to fragment shader
         // TODO why don't we just send the scale and translation as uniforms to the fragment shader?
-        v_translation = -u_translation;
-        v_scale = 1.0 / u_scale;
         v_gridCoord = a_gridCoord;
     }
 ` // end vertex_shader
@@ -123,14 +119,12 @@ export const grid_frag_shader_src = glsl`
     uniform float u_tick;
 
     // receive the zoom info from the vertex shader
-    varying float v_scale;
-    varying vec2 v_translation;
     varying vec2 v_gridCoord; // take advantage of interpolation instead of undoing the scale+translation
 
     float is_border(vec2 uv) {
         float cx = mod(floor(uv.x), 20.0); // TODO move this to a uniform variable
         float cy = mod(floor(uv.y), 20.0);
-        float result = sign(cx-1.001) * sign(cy-1.001); // BUG this is false at the intersection of the grid lines
+        float result = sign(cx-1.001) * sign(cy-1.001); // BUG #6 this is false at the intersection of the grid lines
         return (1.0 - sign(result)) / 2.0;
     }
 

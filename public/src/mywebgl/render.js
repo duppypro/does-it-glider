@@ -8,30 +8,11 @@
 import { mat2d, vec2 } from '/node_modules/gl-matrix/esm/index.js'
 import {
     vertex_shader_src,
-    checker_frag_shader_src,
-    rainbow_fragment_shader_src,
-    grid_frag_shader_src as fragment_shader_src,
+    checker_frag_shader_src, // may enable as fragment_shader_src for testing
+    rainbow_fragment_shader_src, // may enable as fragment_shader_src for testing
+    grid_frag_shader_src as fragment_shader_src, // may enable as fragment_shader_src for testing
+    // conway_frag_shader_src as fragment_shader_src, // the real shader for Conway's Game of Life
 } from '/shaders/conway_shaders.js'
-
-// using the gl-matrix library create a mat2d with scale and translation
-const scale = vec2.fromValues(0.2, 0.2)
-const translation = vec2.fromValues(0.5, 1.5)
-const transform = mat2d.create()
-mat2d.scale(transform, transform, scale)
-console.log(`transform: ${mat2d.str(transform)}`)
-mat2d.translate(transform, transform, translation)
-console.log(`transform: ${mat2d.str(transform)}`)
-// test the transform by applying it to a mat2d -1,-1 and -1,1
-const test = vec2.create()
-const p1 = vec2.fromValues(-1, -1)
-const p2 = vec2.fromValues(-1, 1)
-const p3 = vec2.fromValues(0, 0)
-vec2.transformMat2d(test, p1, transform)
-console.log(`test ${vec2.str(p1)}: ${vec2.str(test)}`)
-vec2.transformMat2d(test, p2, transform)
-console.log(`test ${vec2.str(p2)}: ${vec2.str(test)}`)
-vec2.transformMat2d(test, p3, transform)
-console.log(`test ${vec2.str(p3)}: ${vec2.str(test)}`)
 
 // webgl_context
 //  INPUT parent element
@@ -40,7 +21,7 @@ export const webgl_context = (parent, beat) => {
     //  use D3js to create a canvas with webgl context in the parent element
     // https://observablehq.com/@mourner/webgl-2-boilerplate
     const grid_width = 2048
-    const grid_height = 2048 // TODO: make this a config/env setting
+    const grid_height = 2048 // TODO make this a config/env setting
     
     const zoom_target = parent
         .mynew('div.zoom-target')
@@ -52,7 +33,7 @@ export const webgl_context = (parent, beat) => {
         .style('overflow', 'hidden') // Crop the visibility of the canvas
         .style('background', '#925') // dark rose color for debugging (should be covered by canvas frag shader)
 
-    //! // BUG: render does not respond to resize events
+    //BUGBUG #4 render does not respond to resize events
 
     const canvas = zoom_target
         .append('canvas')
@@ -62,7 +43,7 @@ export const webgl_context = (parent, beat) => {
         .style('left', `calc(50% - ${grid_width/2}px)`) // Center the canvas horizontally
         .style('top', `calc(50% - ${grid_height/2}px)`) // Center the canvas vertically
 
-    const webgl_version = 'webgl2' // ? Will I ever need webgl1 or other versions?
+    const webgl_version = 'webgl2' // ??? Will I ever need webgl1 or other versions?
     const gl = canvas.node().getContext(webgl_version)
     if (!gl) {
         console.error(`Your browser does not support ${webgl_version}.`)
@@ -194,7 +175,7 @@ export const webgl_context = (parent, beat) => {
     // Draw the rectangle
     // THIS IS THE EVENT LOOP
     function draw() {
-        // assume requestAnimationFrame is called 60 times per second
+        //? assume requestAnimationFrame is called 60 times per second
         // 2^53 / 60 / 60 / 60 / 24 / 365 = 4,760,274 years
         // only draw every beat/6 msec
         if (tick % 2 == 0) { // every 18 frames is 1/3 of a second, so 3 fps
@@ -204,7 +185,7 @@ export const webgl_context = (parent, beat) => {
             }
             // Set the value of the uniform tick variable
             gl.uniform1f(uTickLocation, tick)
-            // TODO: this should more precisely be the time that it will be when the next AnimationFrame is called and renders
+            // TODO this should more precisely be the time that it will be when the next AnimationFrame is called and renders
             // set the scale and translation for the vertex shader
             gl.uniform1f(uScaleLocation, gl_scale)
             gl.uniform2fv(uTranslationLocation, gl_translation)

@@ -27,7 +27,7 @@ if (app.empty()) {
 // left half
 const left_div = app.mynew('div.left')
     .style('flex', '1')
-    .style('overflow', 'hidden') // ? // TODO: figure out how many of the elements need overflow: hidden
+    .style('overflow', 'hidden') // TODO figure out how many of the elements need overflow: hidden
     .style('position', 'relative')
     .style('height', '100vh')
     .style('background', '#040')
@@ -135,11 +135,12 @@ const event_loop = () => {
     // apply the rules to the state
     state = apply_rules(state)
     // draw the state smoothly before next animation frame
-    requestAnimationFrame(() => draw(field, state))
+    requestAnimationFrame(() => draw(field, state)) // BUG this might fix issue #5
 }
 
-setInterval(event_loop, beat / 6); // ! // TODO last deployed version was beat/4
-
+setInterval(event_loop, beat / 6); // TODO last deployed version was beat/4
+// WHY
+// REMOVE THIS
 let life_seed = []
 
 const parse_clipboard = (pasted_clipboard) => {
@@ -254,6 +255,7 @@ const parse_clipboard = (pasted_clipboard) => {
 const get_clipboard_text = async (event) => {
     // get clipboard text
     const pasted_clipboard = await navigator.clipboard.readText()
+    // BUG #2: pasted_clipboard not working on mobile browsers
     console.log(`pasted_clipboard:\r\n${pasted_clipboard}`)
     parse_clipboard(pasted_clipboard)
 }

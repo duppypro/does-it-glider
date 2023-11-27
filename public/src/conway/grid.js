@@ -74,7 +74,7 @@ export const grid = (app) => {
     // hook the drag and zoom events to the svg
     // it's important that the transform is relative to the svg
     // then applied to the g element
-    // TODO: figure out how to use .extent() or .translateExtent() properly
+    // TODO figure out how to use .extent() or .translateExtent() properly
     svg.call(d3.zoom()
         .scaleExtent([.25, 4]) // 1/4 zoom limit because default size is 400%
         .on('zoom', zoomed)

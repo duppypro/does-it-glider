@@ -101,7 +101,7 @@ export const apply_rules = (state) => {
                     // ignore the cell itself
                     if (nx == x && ny == y) continue
                     if (true) {
-                        // TODO: make this an env/config to wrap around the edges or not
+                        // TODO make this an env/config to wrap around the edges or not
                         if (nx < 0 || ny < 0) continue // ignore negative indices
                         if (nx >= width || ny >= height) continue // ignore indices past the end
                         wrapped_nx = nx
