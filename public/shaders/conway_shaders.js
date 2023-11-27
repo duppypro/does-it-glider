@@ -34,7 +34,7 @@ export const vertex_shader_src = glsl`
 
         // pass in clip space [-1,-1  1, 1] to fragment shader
         // send inverse scale and translation to fragment shader
-        // ? // TODO why don't we just send the scale and translation as uniforms to the fragment shader?
+        // TODO why don't we just send the scale and translation as uniforms to the fragment shader?
         v_translation = -u_translation;
         v_scale = 1.0 / u_scale;
     }
@@ -53,13 +53,23 @@ export const rainbow_fragment_shader_src = glsl`
     #define TAU (2.0*PI)
 
     uniform vec2 u_resolution;
-    uniform float u_time;
+    uniform float u_tick;
+
+    // receive the zoom info from the vertex shader
+    varying float v_scale;
+    varying vec2 v_translation;
 
     void main() {
-        vec2 uv = gl_FragCoord.xy / u_resolution;
+        vec2 frag_coord = gl_FragCoord.xy / u_resolution;
+        // shift origin to center of screen
+        frag_coord = 2.0*frag_coord - 1.0;
+        // scale and translate
+        vec2 uv = v_scale * (frag_coord + v_translation);
+        // shift back to lower left
+        uv = (uv + 1.0) / 2.0;
         vec3 col = vec3(0.0);
 
-        float _time = u_time/12.0;
+        float _time = ((1.0/60.0) * u_tick) / 24.0; // convert 60fps frame count to seconds
         float rotation = 2.17 * _time;
         rotation = rotation + TAU*sin(_time*1.0*TAU);
 
@@ -89,7 +99,7 @@ export const checker_frag_shader_src = glsl`
     #endif
 
     uniform vec2 u_resolution;
-    uniform float u_time;
+    uniform float u_tick;
 
     // receive the zoom info from the vertex shader
     varying float v_scale;

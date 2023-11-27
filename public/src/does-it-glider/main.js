@@ -1,180 +1,21 @@
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
 //  (c) 2023, David 'Duppy' Proctor, Interface Arts
 //
-//  does it glider
-//      main
-////////////////////////////////////////////////////////////////////////////////
+//  main
+//      top-level code for does-it-glider
+//////////////////////////////////////////////////////////////////////
 
-// I asked Copilot:
-// "add a method to d3 selection that parses a selector string such as 'foo#name.c1.c2' and calls .append('foo').attr('class', 'c1 c2')"
-// it generated the following code and added the id correctly even though I skipped it from the description.
-// I modified it to use insert instead of add
-d3.selection.prototype.mynew = function(selector, where) {
-    var match = selector.match(/^(\w+)(?:#([\w-]+))?(?:\.([\w-.]+))?$/)
-    if (!match) {
-        this.insert(selector, where)
-        // throw new Error('Invalid selector')
-    }
+import { grid } from '/src/conway/grid.js'
+import { apply_rules, set_state } from '/src/conway/play.js'
+import { draw } from '/src/does-it-glider/draw.js'
+import { webgl_context } from '/src/mywebgl/render.js'
 
-    var tag = match[1]
-    var id = match[2]
-    var classes = match[3]
-
-    var selection = this.insert(tag, where)
-
-    if (id && id.trim()) {
-        selection.attr('id', id)
-    }
-
-    if (classes && classes.trim()) {
-        selection.attr('class', classes.replace(/\./g, ' '))
-    }
-
-    return selection
-}
-
-// add a function called emmet to d3 selection that parses an emmet abbreviation string and calls d3.selection.append() or insert() as appropriate
-// Here is the syntax for emmet abbreviations:
-/*
-Abbreviations Syntax
-Emmet uses syntax similar to CSS selectors for describing elements’ positions inside generated tree and elements’ attributes.
-...
-*/
-
-d3.selection.prototype.emmet = function(selector, where) {
-    // Split the selector into individual parts
-    const parts = selector.split(/(?=[>+^])/);
-
-    // Initialize the current selection as the current d3 selection
-    let currentSelection = this;
-
-    // Loop through each part of the selector
-    for (let i = 0; i < parts.length; i++) {
-        const part = parts[i].trim();
-
-        // Check if the part is a child operator
-        if (part === '>') {
-            // Move to the next child level
-            currentSelection = currentSelection.append('div');
-        }
-        // Check if the part is a sibling operator
-        else if (part === '+') {
-            // Move to the next sibling level
-            currentSelection = currentSelection.insert('div', where);
-        }
-        // Check if the part is a climb-up operator
-        else if (part === '^') {
-            // Move to the parent level
-            currentSelection = currentSelection.node().parentNode;
-        }
-        // Check if the part is a multiplication operator
-        else if (part.includes('*')) {
-            // Split the part into element and count
-            const [element, count] = part.split('*');
-
-            // Get the number of repetitions
-            const repetitions = parseInt(count, 10);
-
-            // Repeat the element
-            for (let j = 0; j < repetitions; j++) {
-                currentSelection = currentSelection.append(element);
-            }
-        }
-        // Check if the part is a group
-        else if (part.includes('(') && part.includes(')')) {
-            // Extract the group content
-            const groupContent = part.substring(part.indexOf('(') + 1, part.lastIndexOf(')'));
-
-            // Parse the group content recursively
-            const groupSelection = d3.select(document.createElement('div')).emmet(groupContent);
-
-            // Append the group selection to the current selection
-            currentSelection = currentSelection.append(() => groupSelection.node().childNodes);
-        }
-        // Check if the part is an element with attributes
-        else if (part.includes('#') || part.includes('.')) {
-            // Split the part into element and attributes
-            const [element, attributes] = part.split(/(?=[.#])/);
-
-            // Extract the element name
-            const elementName = element.trim();
-
-            // Create the element with the specified attributes
-            const elementSelection = currentSelection.append(elementName);
-
-            // Parse and apply the attributes
-            attributes.split('.').forEach((attr) => {
-                if (attr.startsWith('#')) {
-                    // Set the id attribute
-                    const id = attr.substring(1);
-                    elementSelection.attr('id', id);
-                } else {
-                    // Set the class attribute
-                    const className = attr.trim();
-                    elementSelection.classed(className, true);
-                }
-            });
-
-            // Update the current selection
-            currentSelection = elementSelection;
-        }
-        // Check if the part is a text element
-        else if (part.startsWith('{') && part.endsWith('}')) {
-            // Extract the text content
-            const textContent = part.substring(1, part.length - 1);
-
-            // Append the text content to the current selection
-            currentSelection.append('text').text(textContent);
-        }
-        // Check if the part is a numbered element
-        else if (part.includes('$')) {
-            // Split the part into element and number
-            const [element, number] = part.split('$');
-
-            // Get the current number
-            const currentNumber = i + 1;
-
-            // Replace the number placeholder with the current number
-            const elementName = element.replace('$', currentNumber);
-
-            // Create the numbered element
-            const elementSelection = currentSelection.append(elementName);
-
-            // Update the current selection
-            currentSelection = elementSelection;
-        }
-        // Check if the part is a custom attribute
-        else if (part.includes('[') && part.includes(']')) {
-            // Extract the attribute content
-            const attributeContent = part.substring(part.indexOf('[') + 1, part.lastIndexOf(']'));
-
-            // Split the attribute content into individual attributes
-            const attributes = attributeContent.split(',');
-
-            // Loop through each attribute
-            attributes.forEach((attribute) => {
-                // Split the attribute into name and value
-                const [name, value] = attribute.split('=');
-
-                // Remove any surrounding quotes from the value
-                const trimmedValue = value ? value.replace(/['"]/g, '') : '';
-
-                // Set the attribute on the current selection
-                currentSelection.attr(name.trim(), trimmedValue);
-            });
-        }
-    }
-
-    return currentSelection;
-};
-
-import { grid } from './src/conway/grid.js'
-import { apply_rules, set_state } from './src/conway/play.js'
-import { draw } from './src/does-it-glider/draw.js'
-import { webgl_context } from './src/mywebgl/render.js'
+// Init
+import { add_mynew } from '/lib/d3-helper.js'
+add_mynew()
 
 // Configuration
-let beat = (60 * 1000) / 180 // 180bpm for animations, units are in msec
+let beat = (60 * 1000) / 120 // 180bpm for animations, units are in msec
 
 // initialize
 let app = d3.select(`.does-it-glider-app`)
@@ -201,8 +42,8 @@ const right_div = app.mynew('div.right')
 let touch_target = app.append('span')
     .classed('touch-target', true)
 
-const _title =                 'Does it Glider?'
-const _sub_title =      'Tap here to paste Wordle score.'
+const _title = 'Does it Glider?'
+const _sub_title = 'Tap here to paste Wordle score.'
 // max width reference: '##################################'
 // abbove is max width on smallest mobile (iPhone SE)
 
@@ -267,9 +108,9 @@ start = red_team.map((row, i) => row + 'o'.repeat(fight_paces) + blue_team[i])
 
 start.forEach((row, i) => {
     start[i] = row
-        .replace(/🟦/g,'B')
-        .replace(/🟥/g,'R')
-        .replace(/⬜/g,'b')
+        .replace(/🟦/g, 'B')
+        .replace(/🟥/g, 'R')
+        .replace(/⬜/g, 'b')
         .replace(/⬛/g, 'o')
         .replace(/X/g, 'B')
         .replace(/\./g, 'o')
@@ -282,7 +123,7 @@ let field_w = field.node().getBoundingClientRect().width
 field_h = Math.round(field_h / 20)
 field_w = Math.round(field_w / 20)
 // make a new 2D array the size of the g element divide by 20px
-let state = Array.from({length: field_h}, () => Array.from({length: field_w}, () => 'o'))
+let state = Array.from({ length: field_h }, () => Array.from({ length: field_w }, () => 'o'))
 
 // copy the start into the center of the state
 set_state(start, state)
@@ -297,7 +138,7 @@ const event_loop = () => {
     requestAnimationFrame(() => draw(field, state))
 }
 
-setInterval(event_loop, beat/6); // ! // TODO last deployed version was beat/4
+setInterval(event_loop, beat / 6); // ! // TODO last deployed version was beat/4
 
 let life_seed = []
 
@@ -320,8 +161,8 @@ const parse_clipboard = (pasted_clipboard) => {
             guess
                 // need an intermediate character to avoid double replacement
                 // try red team 🟥 blue team 🟦 fight idea
-                .replace(/🟨|🟧/g,'R') // hits in wrong location are red team
-                .replace(/🟩|🟦/g,'B') // hits in correct location are blue team
+                .replace(/🟨|🟧/g, 'R') // hits in wrong location are red team
+                .replace(/🟩|🟦/g, 'B') // hits in correct location are blue team
                 .replace(/⬜|⬛/g, 'o')
                 .replace(/🟦/g, 'B')
                 .replace(/🟥/g, 'R')
@@ -388,14 +229,14 @@ const parse_clipboard = (pasted_clipboard) => {
             .transition().duration(beat_life_seed)
             .remove()
 
-        await transition.end()   
+        await transition.end()
     }
 
     const load_new_state = async (life_seed) => {
         console.time('load_new_state')
 
         // clear the state
-        state = Array.from({length: field_h}, () => Array.from({length: field_w}, () => 'o'))
+        state = Array.from({ length: field_h }, () => Array.from({ length: field_w }, () => 'o'))
         // copy the life_seed into the center of the state
         set_state(life_seed, state)
 
@@ -423,4 +264,4 @@ d3.select('.touch-target').on('click', get_clipboard_text)
 d3.select('body').on('paste', get_clipboard_text)
 
 // make a webgl canvas in the left_div
-const gl = webgl_context(left_div)
+const gl = webgl_context(left_div, beat)

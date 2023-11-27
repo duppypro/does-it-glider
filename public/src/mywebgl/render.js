@@ -9,12 +9,12 @@ import {
     vertex_shader_src,
     checker_frag_shader_src,
     rainbow_fragment_shader_src as fragment_shader_src,
-} from './shaders/conway_shaders.js'
+} from '/shaders/conway_shaders.js'
 
 // webgl_context
 //  INPUT parent element
 //  RETURN a webgl context
-export const webgl_context = (parent) => {
+export const webgl_context = (parent, beat) => {
     //  use D3js to create a canvas with webgl context in the parent element
     // https://observablehq.com/@mourner/webgl-2-boilerplate
     const grid_width = 2048
@@ -162,25 +162,28 @@ export const webgl_context = (parent) => {
     // Draw the rectangle
     // THIS IS THE EVENT LOOP
     function draw() {
-        tick++
         // assume requestAnimationFrame is called 60 times per second
         // 2^53 / 60 / 60 / 60 / 24 / 365 = 4,760,274 years
-        // exit if tick is not beat/6 msec
-        if (tick % 18) { // every 18 frames is 1/3 of a second, so 3 fps
-            return
+        // only draw every beat/6 msec
+        if ((tick % Math.floor((beat/6*60/1000)) || 0) == 0) { // every 18 frames is 1/3 of a second, so 3 fps
+            // Set the value of the uniform tick variable
+            gl.uniform1f(uTickLocation, tick)
+            // TODO: this should more precisely be the time that it will be when the next AnimationFrame is called and renders
+            // set the scale and translation for the vertex shader
+            gl.uniform1f(uScaleLocation, gl_scale)
+            gl.uniform2fv(uTranslationLocation, gl_translation)
+            // Draw the scene. In this case TRIANGLE_STRIP is just 2 triangles that make a rectangle.
+            // This is the minimum way to draw a rectangle in WebGL.
+
+            // time the draw call
+            const startTime = performance.now()
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+            if (tick < 30) {
+                console.debug(`draw(${tick}) took ${(performance.now() - startTime).toFixed(3)}ms`)
+            }
         }
-
-        // Set the value of the uniform tick variable
-        gl.uniform1f(uTickLocation, performance.now() / 1000.0)
-        // TODO: this should more precisely be the time that it will be when the next AnimationFrame is called and renders
-        // set the scale and translation for the vertex shader
-        gl.uniform1f(uScaleLocation, gl_scale)
-        gl.uniform2fv(uTranslationLocation, gl_translation)
-        // Draw the scene. In this case TRIANGLE_STRIP is just 2 triangles that make a rectangle.
-        // This is the minimum way to draw a rectangle in WebGL.
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
-
-        // Schedule the next redraw
+        
+        tick++
         requestAnimationFrame(draw)
     }
     let tick = 0
