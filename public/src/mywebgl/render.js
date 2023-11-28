@@ -43,10 +43,15 @@ export const webgl_context = (parent, beat) => {
         .style('left', `calc(50% - ${grid_width/2}px)`) // Center the canvas horizontally
         .style('top', `calc(50% - ${grid_height/2}px)`) // Center the canvas vertically
 
-    const webgl_version = 'webgl2' // ??? Will I ever need webgl1 or other versions?
+    const webgl_version = 'webgl2'
     const gl = canvas.node().getContext(webgl_version)
     if (!gl) {
         console.error(`Your browser does not support ${webgl_version}.`)
+        let parent = d3.select(canvas.node().parentNode.parentNode)
+        parent.html(`Your browser does not support ${webgl_version}.<br>Please try a different browser.`)
+        parent
+            .style('padding', '1em')
+            .style('font-size', '2em')
         //return an empty d3.selection
         return d3.select()
     }
