@@ -1,0 +1,14 @@
+////////////////////////////////////////////////////////////////////////////////
+// (c) 2023, David 'Duppy' Proctor, Interface Arts
+//
+// settings
+//      global constants
+//
+////////////////////////////////////////////////////////////////////////////////
+
+export const settings = {
+    BEAT: (60 * 1000) / 120, // 180bpm for animations, units are in msec
+    GRID_WIDTH: 1024,
+    GRID_HEIGHT: 1024,
+    WRAP_AROUND: false,
+}

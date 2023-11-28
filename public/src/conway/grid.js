@@ -15,7 +15,7 @@ export const grid = (app) => {
     const CELL_SIZE = 20
 
     // define the scale factor for the svg relative to the parent element
-    const SVG_SCALE = 2; // Change the scale factor here
+    const SVG_SCALE = 4; // Change the scale factor here
     const SVG_WIDTH = SVG_SCALE
     const SVG_HEIGHT = SVG_SCALE
     const SVG_PAD_LEFT = (SVG_WIDTH - 1) / 2

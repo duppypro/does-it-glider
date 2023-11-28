@@ -25,11 +25,35 @@ export const vertex_shader_src = glsl`
         gl_Position = vec4(zoomed, 0.0, 1.0);
 
         // pass in clip space [-1,-1  1, 1] to fragment shader
-        // send inverse scale and translation to fragment shader
-        // TODO why don't we just send the scale and translation as uniforms to the fragment shader?
         v_gridCoord = a_gridCoord;
     }
 ` // end vertex_shader
+
+export const grid_frag_shader_src = glsl`
+    precision mediump float;
+
+    uniform vec2 u_resolution;
+    uniform float u_tick;
+
+    // receive the zoom info from the vertex shader
+    varying vec2 v_gridCoord; // take advantage of interpolation instead of undoing the scale+translation
+
+    float is_border(vec2 uv) {
+        float cx = mod(floor(uv.x), 20.0); // TODO move this to a uniform variable
+        float cy = mod(floor(uv.y), 20.0);
+        float result = sign(cx-1.001) * sign(cy-1.001); // BUG #6 this is false at the intersection of the grid lines
+        return (1.0 - sign(result)) / 2.0;
+    }
+
+    void main() {
+        // don't need traditional gl_FragCoord.xy / u_resolution;
+        // because we are using the v_gridCoord from the vertex shader
+        // shift origin to center of screen
+
+        vec3 color = vec3(1.0/16.0) + is_border(v_gridCoord)*(5.0/16.0);
+        gl_FragColor = vec4(color, 1.0);
+    }
+` // end grid_frag_shader_src
 
 export const rainbow_fragment_shader_src = glsl`
     precision mediump float;
@@ -112,28 +136,3 @@ export const checker_frag_shader_src = glsl`
     }
 ` // end checker_frag_shader_src
 
-export const grid_frag_shader_src = glsl`
-    precision mediump float;
-
-    uniform vec2 u_resolution;
-    uniform float u_tick;
-
-    // receive the zoom info from the vertex shader
-    varying vec2 v_gridCoord; // take advantage of interpolation instead of undoing the scale+translation
-
-    float is_border(vec2 uv) {
-        float cx = mod(floor(uv.x), 20.0); // TODO move this to a uniform variable
-        float cy = mod(floor(uv.y), 20.0);
-        float result = sign(cx-1.001) * sign(cy-1.001); // BUG #6 this is false at the intersection of the grid lines
-        return (1.0 - sign(result)) / 2.0;
-    }
-
-    void main() {
-        // don't need traditional gl_FragCoord.xy / u_resolution;
-        // because we are using the v_gridCoord from the vertex shader
-        // shift origin to center of screen
-
-        vec3 color = vec3(1.0/16.0) + is_border(v_gridCoord)*(5.0/16.0);
-        gl_FragColor = vec4(color, 1.0);
-    }
-` // end grid_frag_shader_src

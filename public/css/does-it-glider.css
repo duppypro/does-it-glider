@@ -18,6 +18,8 @@ body
 
 .does-it-glider-app
 { /* this is the topmost parent element for the web app */
+    height: 100vh;
+    /* height: 100mvh; */
     --green: #6aaa64;
     --darkendGreen: #40a030;
     --yellow: #c9b458;
@@ -37,6 +39,7 @@ body
     /* https://stackoverflow.com/questions/46167604/ios-html-disable-double-tap-to-zoom */
     touch-action: manipulation;
     display: flex;
+    flex-direction: row;
 }
 
 .touch-target {

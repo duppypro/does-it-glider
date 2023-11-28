@@ -5,6 +5,8 @@
 //      play
 ////////////////////////////////////////////////////////////////////////////////
 
+import { settings } from '/lib/settings.js'
+
 // play Conway's Game of Life
 
 // set_state
@@ -44,7 +46,7 @@ export const apply_rules = (state) => {
         'o': ['o', 'o', 'o', 'b', 'o', 'o', 'o', 'o', 'o'],
     }
     const RED_TEAM_BLUE_TEAM_LOOKUP = {
-        'R': [ // if new live cell then there were either 2 or 3 neighbors
+        'R': [
             [], // with 0 neighbors always return undefined which is interpreted as dead or '⬛'
             [], // with 1 neighbors always return undefiinterpreted as dead or '⬛'
             ['B', 'R', 'R',], // with 2 neighbors, stay red if 1 or 2 red, only goes blue if 2 blue (implies 0 red)
@@ -55,7 +57,7 @@ export const apply_rules = (state) => {
             [], // with 7 neighbors always return undefined which is interpreted as dead or '⬛'
             [], // with 8 neighbors always return undefined which is interpreted as dead or '⬛'
         ],
-        'B': [ // if old cell blue then make live if 2 or 3 neighbors, set color to majority, old cell wins ties
+        'B': [
             [], // 0 neighbors always return undefiinterpreted as dead or '⬛'
             [], // 1 neighbors always return undefiinterpreted as dead or '⬛'
             ['B', 'B', 'R',], // 2 neighbors, stay blue if 1 or 2 blue, only goes red if 2 red (implies 0 blue)
@@ -66,20 +68,29 @@ export const apply_rules = (state) => {
             [], // 7 neighbors always return undefined which is interpreted as dead or '⬛'
             [], // 8 neighbors always return undefined which is interpreted as dead or '⬛'
         ],
-        'o': [ // if old cell was dead then there were 3 neighbors. Arbitrarily decide to index by # of red neighbors
+        'o': [
             [], // 0 neighbors, never uses this, placeholders to make index of 3 work
             [], // 1 neighbors, never uses this, placeholders to make index of 3 work
             [], // 2 neighbors, never uses this, placeholders to make index of 3 work
-            ['B', 'B', 'R', 'R',], // with 3 neighbors, goes red if 2 or 3 red, only goes live if 2 or 3 blue (implies 0 or 1 red)
+            ['b', 'b', 'b', 'b',], // with 3 neighbors, goes live
             [], // 4 neighbors, never uses this, placeholders to make index of 3 work
             [], // 5 neighbors, never uses this, placeholders to make index of 3 work
             [], // 6 neighbors, never uses this, placeholders to make index of 3 work
             [], // 7 neighbors, never uses this, placeholders to make index of 3 work
             [], // 8 neighbors, never uses this, placeholders to make index of 3 work
         ],
+        'b': [
+            [], // 0 neighbors, never uses this, placeholders to make index of 3 work
+            [], // 1 neighbors, never uses this, placeholders to make index of 3 work
+            ['b', 'b', 'b',], // with 2 neighbors, stay live if 1 or 2 live
+            ['b', 'b', 'b', 'b',], // with 3 neighbors, goes red if 2 or 3 red, only goes live if 2 or 3 blue (implies 0 or 1 red)
+            [], // 4 neighbors, never uses this, placeholders to make index of 3 work
+            [], // 5 neighbors, never uses this, placeholders to make index of 3 work
+            [], // 6 neighbors, never uses this, placeholders to make index of 3 work
+            [], // 7 neighbors, never uses this, placeholders to make index of 3 work
+            [], // 8 neighbors, never uses this, placeholders to make index of 3 work
+        ]
     }
-    // if a white sneaks in do the same thing as if it is blue
-    RED_TEAM_BLUE_TEAM_LOOKUP['b'] = RED_TEAM_BLUE_TEAM_LOOKUP['B']
     // get the height and width of the state
     const height = state.length;
     const width = state[0].length;
@@ -100,8 +111,7 @@ export const apply_rules = (state) => {
                 for(let nx = x-1; nx <= x+1; nx++) {
                     // ignore the cell itself
                     if (nx == x && ny == y) continue
-                    if (true) {
-                        // TODO make this an env/config to wrap around the edges or not
+                    if (!settings.WRAP_GRID) {
                         if (nx < 0 || ny < 0) continue // ignore negative indices
                         if (nx >= width || ny >= height) continue // ignore indices past the end
                         wrapped_nx = nx
@@ -112,6 +122,9 @@ export const apply_rules = (state) => {
                         wrapped_ny = (ny + height) % height
                     }
                     // count the alive neighbors
+                    if (state[wrapped_ny][wrapped_nx] == 'X') {
+                        live_neighbors += 1
+                    }
                     if (state[wrapped_ny][wrapped_nx] == 'b') {
                         live_neighbors += 1
                     }
@@ -130,7 +143,7 @@ export const apply_rules = (state) => {
             // blue_team_neighbors = live_neighbors - red_team_neighbors // treats white as blue
             // actually don't need to track blue_team_neighbors because we look up from red_team_neighbors
             // new_state[y][x] = RULES_LOOKUP[state[y][x]][live_neighbors]
-            new_state[y][x] = RED_TEAM_BLUE_TEAM_LOOKUP[state[y][x]][live_neighbors][red_team_neighbors] || 'o'
+            new_state[y][x] = RED_TEAM_BLUE_TEAM_LOOKUP[state[y][x]][live_neighbors][live_neighbors-red_team_neighbors] || 'o'
         }
     }
     return new_state

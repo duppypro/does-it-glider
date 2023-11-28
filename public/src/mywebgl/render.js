@@ -175,17 +175,19 @@ export const webgl_context = (parent, beat) => {
     // Draw the rectangle
     // THIS IS THE EVENT LOOP
     function draw() {
-        //? assume requestAnimationFrame is called 60 times per second
+        // assume requestAnimationFrame is called 60 times per second
         // 2^53 / 60 / 60 / 60 / 24 / 365 = 4,760,274 years
         // only draw every beat/6 msec
         if (tick % 2 == 0) { // every 18 frames is 1/3 of a second, so 3 fps
+            // TODO add smart pause that does not redraw if no game state change and no window resize or zoom
             if (tick == 0) {
                 // do some init on the first frame if needed
                 console.log('first frame')
             }
             // Set the value of the uniform tick variable
             gl.uniform1f(uTickLocation, tick)
-            // TODO this should more precisely be the time that it will be when the next AnimationFrame is called and renders
+            // this should more precisely be the time that it will be when the next AnimationFrame is called and renders
+            // unless I just use tick for frame number.  Conway doesn't need precise timing. It's not a game.
             // set the scale and translation for the vertex shader
             gl.uniform1f(uScaleLocation, gl_scale)
             gl.uniform2fv(uTranslationLocation, gl_translation)

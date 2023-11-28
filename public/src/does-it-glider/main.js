@@ -5,17 +5,18 @@
 //      top-level code for does-it-glider
 //////////////////////////////////////////////////////////////////////
 
-import { grid } from '/src/conway/grid.js'
-import { apply_rules, set_state } from '/src/conway/play.js'
-import { draw } from '/src/does-it-glider/draw.js'
+// Configuration
+import { settings } from '/lib/settings.js'
+
 import { webgl_context } from '/src/mywebgl/render.js'
+
+import { draw } from '/src/does-it-glider/draw.js'
+import { apply_rules, set_state } from '/src/conway/play.js'
+import { grid } from '/src/conway/grid.js'
 
 // Init
 import { add_mynew } from '/lib/d3-helper.js'
 add_mynew()
-
-// Configuration
-let beat = (60 * 1000) / 120 // 180bpm for animations, units are in msec
 
 // initialize
 let app = d3.select('.does-it-glider-app')
@@ -23,26 +24,33 @@ if (app.empty()) {
     app = d3.select('body').mynew(`div.does-it-glider-app`, ':first-child')
 }
 
-// make 2 divs, one for left half, one for right half of the app
-// left half
-const left_div = app.mynew('div.left')
-    .style('flex', '1')
+// make 2 divs, one for top half, one for bottom half of the app
+// top half
+const svg_div = app.mynew('div.top')
     .style('overflow', 'hidden') // TODO figure out how many of the elements need overflow: hidden
-    .style('position', 'relative')
-    .style('height', '100vh')
     .style('background', '#040')
-// right half
-const right_div = app.mynew('div.right')
-    .style('flex', '1')
+
+// bottom half
+const webgl_div = app.mynew('div.bottom')
     .style('overflow', 'hidden')
     .style('position', 'relative')
-    .style('height', '100vh')
 
-// Create the title
+    // Position the divs using flex grid
+    app.style('display', 'flex')
+        .style('flex-direction', 'column')
+    
+    app.selectAll('div')
+        .style('flex', '1')
+        // .style('width', '100%')
+        .style('height', '100vh')
+        .style('box-sizing', 'border-box')
+        .style('padding', '10px')
+
+// Create the title    
 let touch_target = app.append('span')
     .classed('touch-target', true)
 
-const _title = 'Does it Glider?'
+const _title = 'Does it Glider?'    
 const _sub_title = 'Tap here to paste Wordle score.'
 // max width reference: '##################################'
 // abbove is max width on smallest mobile (iPhone SE)
@@ -50,21 +58,22 @@ const _sub_title = 'Tap here to paste Wordle score.'
 touch_target.append('div')
     .attr('class', 'title')
     .html(_title)
+    
 touch_target.append('div')
     .attr('class', 'title sub-title')
     .html(_sub_title)
 
 // make a gol field in the app DOM element
-const field = grid(right_div)
+const field = grid(svg_div)
 
 // make a new 2D array the size of the 5x6 start pattern
 let start = []
 // set the start pattern using life_seed format
 start[0] = '⬛⬛⬛⬛⬛'
 start[1] = '⬛⬛⬛⬛⬛'
-start[2] = '⬛⬛🟦⬛⬛'
-start[3] = '⬛⬛⬛🟦⬛'
-start[4] = '⬛B🟥🟥⬛'
+start[2] = '⬛⬛⬜⬛⬛'
+start[3] = '⬛⬛⬛⬜⬛'
+start[4] = '⬛⬜⬜⬜⬛'
 start[5] = '⬛⬛⬛⬛⬛'
 
 //test a wordle fight pattern
@@ -103,7 +112,7 @@ partial_mosquito[5] = 'oBBBB'
 
 let fight_paces = 5
 // join red team and blue team into start with red team on left and fight_paces dead cells in between
-start = red_team.map((row, i) => row + 'o'.repeat(fight_paces) + blue_team[i])
+// start = red_team.map((row, i) => row + 'o'.repeat(fight_paces) + blue_team[i])
 // start = blue_team.map((row, i) => row + 'ooooo' + red_team[i])
 
 start.forEach((row, i) => {
@@ -112,7 +121,7 @@ start.forEach((row, i) => {
         .replace(/🟥/g, 'R')
         .replace(/⬜/g, 'b')
         .replace(/⬛/g, 'o')
-        .replace(/X/g, 'B')
+        .replace(/X/g, 'b')
         .replace(/\./g, 'o')
 })
 
@@ -128,19 +137,24 @@ let state = Array.from({ length: field_h }, () => Array.from({ length: field_w }
 // copy the start into the center of the state
 set_state(start, state)
 
-// render start as a 2D array of rects in the svg
-draw(field, state)
-
+let tick = 0
+let num_ticks = Math.floor(settings.BEAT / (1000 / 60)) // BEAT is in msec / (1000/60) is msec/frame
+num_ticks = Math.floor(num_ticks / 4) // speed up
+let pause_for_new = 2 * 60
 const event_loop = () => {
-    // apply the rules to the state
-    state = apply_rules(state)
-    // draw the state smoothly before next animation frame
-    requestAnimationFrame(() => draw(field, state)) // BUG this might fix issue #5
+    if (pause_for_new == 0) {    // apply the rules to the state
+        if (tick % num_ticks == 0) { // only draw every num_ticks frames
+            state = apply_rules(state)
+        }
+    } else {
+        pause_for_new--
+    }
+    draw(field, state)
+    tick++
+    requestAnimationFrame(event_loop) // BUG this might fix issue #5. UPDATE #5 is not fixed
 }
+requestAnimationFrame(event_loop)
 
-setInterval(event_loop, beat / 6); // TODO last deployed version was beat/4
-// WHY
-// REMOVE THIS
 let life_seed = []
 
 const parse_clipboard = (pasted_clipboard) => {
@@ -173,11 +187,11 @@ const parse_clipboard = (pasted_clipboard) => {
     )
     console.log(`life_seed:\n ${life_seed}`)
 
-    let beat_pasted = beat
-    let beat_wordle_guesses = beat
-    let beat_life_seed = beat
+    let beat_pasted = settings.BEAT
+    let beat_wordle_guesses = settings.BEAT
+    let beat_life_seed = settings.BEAT
     // draw/render pasted_lines in the .paste-line divs
-    const draw_pasted_lines = async () => {
+    const draw_pasted_lines = () => {
         const transition = app
             .selectAll('.paste-line')
             .data(pasted_lines)
@@ -191,13 +205,10 @@ const parse_clipboard = (pasted_clipboard) => {
             .html(line => line || '&nbsp;')
             .transition().duration(beat_pasted)
             .remove()
-
-        await transition.end()
-
-        draw_wordle_guesses()
+            .on('end', draw_wordle_guesses())
     }
 
-    const draw_wordle_guesses = async () => {
+    const draw_wordle_guesses = () => {
         const transiton = app
             .selectAll('.paste-line')
             .data(wordle_guesses)
@@ -215,33 +226,31 @@ const parse_clipboard = (pasted_clipboard) => {
             .html(d => d)
             .transition().duration(beat_wordle_guesses)
             .remove()
-
-        await transiton.end()
-
-        load_new_state(life_seed || start)
-        draw_life_seed()
+            .on('end', () => {
+                draw_life_seed()
+            })
     }
 
-    const draw_life_seed = async () => {
+    const draw_life_seed = () => {
         const transition = app
             .selectAll('.paste-line')
             .data(life_seed)
             .html(d => d)
             .transition().duration(beat_life_seed)
             .remove()
-
-        await transition.end()
+            .on('end', () => {
+                load_new_state(life_seed || start)
+            })
     }
 
-    const load_new_state = async (life_seed) => {
+    const load_new_state = (life_seed) => {
         console.time('load_new_state')
 
         // clear the state
         state = Array.from({ length: field_h }, () => Array.from({ length: field_w }, () => 'o'))
         // copy the life_seed into the center of the state
         set_state(life_seed, state)
-
-        await draw(field, state)
+        pause_for_new = 2 * 60
 
         console.timeEnd('load_new_state')
     }
@@ -266,4 +275,4 @@ d3.select('.touch-target').on('click', get_clipboard_text)
 d3.select('body').on('paste', get_clipboard_text)
 
 // make a webgl canvas in the left_div
-const gl = webgl_context(left_div, beat)
+const gl = webgl_context(webgl_div, settings.BEAT)
