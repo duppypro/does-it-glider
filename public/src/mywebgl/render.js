@@ -54,6 +54,7 @@ export const webgl_context = (parent) => {
         .style('left', `${-G_PAD_LEFT}px`)
         .style('top', `${-G_PAD_TOP}px`)
         .attr('transform', `translate(${-G_PAD_LEFT}, ${-G_PAD_TOP})`)
+        .style('background', '#123456') // rare color to help debug if shader is not rendering entire canvas
 
     const webgl_version = 'webgl2'
     const gl = canvas.node().getContext(webgl_version)
@@ -169,7 +170,6 @@ export const webgl_context = (parent) => {
     function apply_zoom({ transform }) {
         // use parent zoom and drag units to transform the canvas element
         // only for debugging, canvas doesn't transform. use vertex shader 
-        transform = transform.translate(-G_PAD_LEFT, -G_PAD_TOP) // adjust for starting offset
         canvas.attr('transform', transform)
         // set the scale global that draw will pass
         gl_scale = transform.k // scale is same for all coords and centers of zoom and drag
@@ -185,7 +185,7 @@ export const webgl_context = (parent) => {
         gl_translation[1] -= gl_scale
     }
 
-    zoom_target.call(d3.zoom()
+    canvas.call(d3.zoom()
         .scaleExtent([.25, 4])
         .on('zoom', apply_zoom)
     )
@@ -201,6 +201,9 @@ export const webgl_context = (parent) => {
             if (tick == 0) {
                 // do some init on the first frame if needed
                 console.log('first frame')
+                // clear the gl background
+                gl.clearColor(5, 0, 3, 1)
+                gl.clear(gl.COLOR_BUFFER_BIT)
             }
             // Set the value of the uniform tick variable
             gl.uniform1f(uTickLocation, tick)
