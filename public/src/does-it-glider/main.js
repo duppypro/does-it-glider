@@ -6,17 +6,20 @@
 //////////////////////////////////////////////////////////////////////
 
 // Configuration
-import { settings } from '/lib/settings.js'
+import { settings } from '/src/does-it-glider/settings.js'
+import { d3_plus as d3 } from '/lib/d3-helper.js'
 
+// WebGL modules
 import { webgl_context } from '/src/mywebgl/render.js'
 
+// Conway's Game of Life modules
+import { apply_rules, add_seed } from '/src/conway/play.js'
+import { new_grid } from '/src/conway/grid.js'
+
+// does-it-glider modules
 import { draw } from '/src/does-it-glider/draw.js'
-import { apply_rules, set_state } from '/src/conway/play.js'
-import { grid } from '/src/conway/grid.js'
 
 // Init
-import { add_mynew } from '/lib/d3-helper.js'
-add_mynew()
 
 // initialize
 let app = d3.select('.does-it-glider-app')
@@ -27,7 +30,7 @@ if (app.empty()) {
 // make 2 divs, one for top half, one for bottom half of the app
 // top half
 const svg_div = app.mynew('div.top')
-    .style('overflow', 'hidden') // TODO figure out how many of the elements need overflow: hidden
+    .style('overflow', 'hidden') // ??? figure out how many of the elements need overflow: hidden
     .style('background', '#040')
 
 // bottom half
@@ -39,12 +42,12 @@ const webgl_div = app.mynew('div.bottom')
     app.style('display', 'flex')
         .style('flex-direction', 'column')
     
-    app.selectAll('div')
-        .style('flex', '1')
+    app.selectAll('div') // styles in common for both divs
+        .style('flex', '1 0 33.3%')
         // .style('width', '100%')
         .style('height', '100vh')
         .style('box-sizing', 'border-box')
-        .style('padding', '10px')
+        .style('padding', '0px')
 
 // Create the title    
 let touch_target = app.append('span')
@@ -64,17 +67,17 @@ touch_target.append('div')
     .html(_sub_title)
 
 // make a gol field in the app DOM element
-const field = grid(svg_div)
+const field = new_grid(svg_div, settings.CELL_PX, settings.GRID_WIDTH, settings.GRID_HEIGHT)
 
 // make a new 2D array the size of the 5x6 start pattern
-let start = []
+let seed = []
 // set the start pattern using life_seed format
-start[0] = '⬛⬛⬛⬛⬛'
-start[1] = '⬛⬛⬛⬛⬛'
-start[2] = '⬛⬛⬜⬛⬛'
-start[3] = '⬛⬛⬛⬜⬛'
-start[4] = '⬛⬜⬜⬜⬛'
-start[5] = '⬛⬛⬛⬛⬛'
+seed[0] = '⬛⬛⬛⬛⬛'
+seed[1] = '⬛⬛⬛⬛⬛'
+seed[2] = '⬛⬛⬜⬛⬛'
+seed[3] = '⬛⬛⬛⬜⬛'
+seed[4] = '⬛⬜⬜⬜⬛'
+seed[5] = '⬛⬛⬛⬛⬛'
 
 //test a wordle fight pattern
 /*
@@ -112,11 +115,10 @@ partial_mosquito[5] = 'oBBBB'
 
 let fight_paces = 5
 // join red team and blue team into start with red team on left and fight_paces dead cells in between
-// start = red_team.map((row, i) => row + 'o'.repeat(fight_paces) + blue_team[i])
-// start = blue_team.map((row, i) => row + 'ooooo' + red_team[i])
+seed = red_team.map((row, i) => row + 'o'.repeat(fight_paces) + blue_team[i])
 
-start.forEach((row, i) => {
-    start[i] = row
+seed.forEach((row, i) => {
+    seed[i] = row
         .replace(/🟦/g, 'B')
         .replace(/🟥/g, 'R')
         .replace(/⬜/g, 'b')
@@ -132,26 +134,26 @@ let field_w = field.node().getBoundingClientRect().width
 field_h = Math.round(field_h / 20)
 field_w = Math.round(field_w / 20)
 // make a new 2D array the size of the g element divide by 20px
-let state = Array.from({ length: field_h }, () => Array.from({ length: field_w }, () => 'o'))
+let grid = Array.from({ length: field_h }, () => Array.from({ length: field_w }, () => 'o'))
 
 // copy the start into the center of the state
-set_state(start, state)
+add_seed(seed, grid)
 
 let tick = 0
 let num_ticks = Math.floor(settings.BEAT / (1000 / 60)) // BEAT is in msec / (1000/60) is msec/frame
-num_ticks = Math.floor(num_ticks / 4) // speed up
-let pause_for_new = 2 * 60
+num_ticks = Math.floor(num_ticks / 6) // speed up // REMOVE switch back to 4
+let pause_for_new = Math.floor(1.333 * 60)
 const event_loop = () => {
     if (pause_for_new == 0) {    // apply the rules to the state
         if (tick % num_ticks == 0) { // only draw every num_ticks frames
-            state = apply_rules(state)
+            grid = apply_rules(grid)
         }
     } else {
-        pause_for_new--
+        pause_for_new-- // HACK, there must be a better way to pause for new and also draw only n frames
     }
-    draw(field, state)
+    draw(field, grid)
     tick++
-    requestAnimationFrame(event_loop) // BUG this might fix issue #5. UPDATE #5 is not fixed
+    requestAnimationFrame(event_loop) // BUG this might fix issue #5. trying again
 }
 requestAnimationFrame(event_loop)
 
@@ -176,12 +178,10 @@ const parse_clipboard = (pasted_clipboard) => {
             guess
                 // need an intermediate character to avoid double replacement
                 // try red team 🟥 blue team 🟦 fight idea
-                .replace(/🟨|🟧/g, 'R') // hits in wrong location are red team
-                .replace(/🟩|🟦/g, 'B') // hits in correct location are blue team
+                .replace(/🟨|🟧/g, 'b') // hits in wrong location are red team
+                .replace(/🟩|🟦/g, 'b') // hits in correct location are blue team
                 .replace(/⬜|⬛/g, 'o')
-                .replace(/🟦/g, 'B')
-                .replace(/🟥/g, 'R')
-                .replace(/X/g, 'B')
+                .replace(/X/g, 'b')
                 .replace(/\./g, 'o')
         )
     )
@@ -192,6 +192,7 @@ const parse_clipboard = (pasted_clipboard) => {
     let beat_life_seed = settings.BEAT
     // draw/render pasted_lines in the .paste-line divs
     const draw_pasted_lines = () => {
+        console.log(`draw_pasted_lines()`)
         const transition = app
             .selectAll('.paste-line')
             .data(pasted_lines)
@@ -222,24 +223,26 @@ const parse_clipboard = (pasted_clipboard) => {
                 exit => exit
                     .remove()
             ) //join returns enter and update merged
-            // .selection()
             .html(d => d)
             .transition().duration(beat_wordle_guesses)
             .remove()
             .on('end', () => {
+                console.log(`draw_wordle_guesses() end event`)
                 draw_life_seed()
             })
     }
 
     const draw_life_seed = () => {
+        console.log(`draw_life_seed()`)
         const transition = app
             .selectAll('.paste-line')
             .data(life_seed)
             .html(d => d)
             .transition().duration(beat_life_seed)
             .remove()
-            .on('end', () => {
-                load_new_state(life_seed || start)
+            .on('end', (a, b, c) => {
+                console.log(`count these end events:\n${a}\n${b}\n${c}`)
+                load_new_state(life_seed || seed)
             })
     }
 
@@ -247,18 +250,20 @@ const parse_clipboard = (pasted_clipboard) => {
         console.time('load_new_state')
 
         // clear the state
-        state = Array.from({ length: field_h }, () => Array.from({ length: field_w }, () => 'o'))
+        grid = Array.from({ length: field_h }, () => Array.from({ length: field_w }, () => 'o'))
         // copy the life_seed into the center of the state
-        set_state(life_seed, state)
+        add_seed(life_seed, grid)
         pause_for_new = 2 * 60
 
         console.timeEnd('load_new_state')
     }
 
-    draw_pasted_lines()
+    draw_pasted_lines() // this function will chain to the next functions
+    // ??? is there a better method that hooks into the end of the CSS animation instead of D3?
+    // ??? if so, then am I using d3 for anything other than zoom transform or a fancier jquery?
     // draw_wordle_guesses()
-    // load_new_state(life_seed || start)
     // draw_life_seed()
+    // load_new_state(life_seed || start)
 } // end parse_clipboard()
 
 const get_clipboard_text = async (event) => {
@@ -275,4 +280,4 @@ d3.select('.touch-target').on('click', get_clipboard_text)
 d3.select('body').on('paste', get_clipboard_text)
 
 // make a webgl canvas in the left_div
-const gl = webgl_context(webgl_div, settings.BEAT)
+const gl = webgl_context(webgl_div)

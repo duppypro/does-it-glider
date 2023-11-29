@@ -5,43 +5,50 @@
 //      play
 ////////////////////////////////////////////////////////////////////////////////
 
-import { settings } from '/lib/settings.js'
+import { settings } from '/src/does-it-glider/settings.js'
 
 // play Conway's Game of Life
 
-// set_state
-// INPUT a 2D array for start and 2D array for destination
-//    copy start array to the center of the destination array
+// add_seed
+// INPUT a seed and a destination grid
+// TODO accept an optional x,y offset for the seed, default to center
+//    copy (overwriting) seed to the center of the destination grid
 // RETURN nothing, modifies destination array
-export const set_state = (start, dest) => {
-    // set width and height to the size of the dest array
-    const height = dest.length
-    const width = dest[0].length
-    // copy the state into the center of the new_state
-    // NOTE: wraps around in case the state is smaller than the new_state
-    // loop over 2D array state wrapping around if needed
-    // and copy it into the center of new_state
-    for(let y = 0; y < start.length; y++) {
-        for(let x = 0; x < start[0].length; x++) {
-            let wrap_y = (y + Math.round((height - start.length) / 2) + height) % height
-            let wrap_x = (x + Math.round((width - start[0].length) / 2) + width) % width
-            dest[wrap_y][wrap_x] = start[y][x]
-        }
+export const add_seed = (seed, grid) => {
+    const gh = grid.length, gw = grid[0].length
+    const sh = seed.length, sw = seed[0].length
+    // coordinates of corner of seed when seed is centered in grid
+    const cx = Math.round((gw - sw) / 2), cy = Math.round((gh - sh) / 2)
+    // loop over seed wrapping around if needed
+    // and copy each cell into the center of grid
+    for(let y = cy; y < cy+sh; y++) {
+        for(let x = cx; x < cx+sw; x++) {
+            // copy the seed into the grid, cropping if needed
+            if (settings.WRAP_GRID) {
+                // wrap around the edges of the grid
+                grid[(y + gh) % gh][(x + gw) % gw] = seed[(y - cy + sh) % sh][(x - cx + sw) % sw]
+            } else {
+                // clip instead of wrap
+                if (x >=0 && y >= 0 && x < gw && y < gh) {
+                    grid[y][x] = seed[y - cy][x - cx]
+                }
+            }
+        }   
     }
-} // end set_state()
+} // end add_seed()
 
 // apply_rules
-// INPUT a 2D array of the old state
+// INPUT a 2D array of the old grid state
 //     run Conway's Game of Life rules on it
-// RETURN a 2D array of the new state    
-export const apply_rules = (state) => {
+// RETURN a 2D array of the new grid with the rules applied    
+export const apply_rules = (grid) => {
     // Conway's Game of Life rules are:
     // 1. Any live cell with two or three live neighbours survives.
     // 2. Any dead cell with three live neighbours becomes a live cell.
     // 3. All other live cells die in the next generation. Similarly, all other dead cells stay dead.
     // RULES_LOOKUP is a lookup table for the rules
     // try red team 🟥 blue team 🟦 fight idea
-    const RULES_LOOKUP = {
+    const CONWAY_RULES_LOOKUP = { // Original Conway's Game of Life rules
         'b': ['o', 'o', 'b', 'b', 'o', 'o', 'o', 'o', 'o'],
         'o': ['o', 'o', 'o', 'b', 'o', 'o', 'o', 'o', 'o'],
     }
@@ -92,47 +99,47 @@ export const apply_rules = (state) => {
         ]
     }
     // get the height and width of the state
-    const height = state.length;
-    const width = state[0].length;
-    // make a new_state the size as state and fill it with dead cells
-    const new_state = Array.from({length: height}, () => Array.from({length: width}, () => 'o'))
+    const h = grid.length;
+    const w = grid[0].length;
+    // make a grid the size as state and fill it with dead cells
+    const new_grid = Array.from({length: h}, () => Array.from({length: w}, () => 'o'))
     // loop over 2D array state
     // and apply the rules to each cell
-    for(let y = 0; y < height; y++) {
-        for(let x = 0; x < width; x++) {
+    for(let y = 0; y < h; y++) {
+        for(let x = 0; x < w; x++) {
             // count the number of neighbors that are alive
             let live_neighbors = 0
             let red_team_neighbors = 0
             // let blue_team_neighbors = 0 // don't need blue count because it can be computed from live_neighbors - red_team_neighbors
-            let wrapped_nx
-            let wrapped_ny
             // loop over the 3x3 grid around the cell
+            let peek = 'o'
             for(let ny = y-1; ny <= y+1; ny++) {
                 for(let nx = x-1; nx <= x+1; nx++) {
                     // ignore the cell itself
                     if (nx == x && ny == y) continue
-                    if (!settings.WRAP_GRID) {
-                        if (nx < 0 || ny < 0) continue // ignore negative indices
-                        if (nx >= width || ny >= height) continue // ignore indices past the end
-                        wrapped_nx = nx
-                        wrapped_ny = ny
+                    if (settings.WRAP_GRID) {
+                        // wrap around the edges of the grid
+                        peek = grid[(ny + h) % h][(nx + w) % w]
                     } else {
-                        // wrap around the edges of the state
-                        wrapped_nx = (nx + width) % width
-                        wrapped_ny = (ny + height) % height
+                        // don't wrap
+                        if (nx < 0 || ny < 0 || nx >= w || ny >= h) {
+                            continue // this is same as peek = 'o', but slightly quicker
+                        } else {
+                            peek = grid[ny][nx]
+                        }
                     }
                     // count the alive neighbors
-                    if (state[wrapped_ny][wrapped_nx] == 'X') {
+                    if (peek == 'X') {
                         live_neighbors += 1
                     }
-                    if (state[wrapped_ny][wrapped_nx] == 'b') {
+                    if (peek == 'b') {
                         live_neighbors += 1
                     }
-                    if (state[wrapped_ny][wrapped_nx] == 'R') {
+                    if (peek == 'R') {
                         live_neighbors += 1
                         red_team_neighbors += 1
                     }
-                    if (state[wrapped_ny][wrapped_nx] == 'B') {
+                    if (peek == 'B') {
                         live_neighbors += 1
                         // blue_team_neighbors += 1
                         // Don't count blue neighbors here because it can be computed from live_neighbors - red_team_neighbors
@@ -142,9 +149,9 @@ export const apply_rules = (state) => {
             }
             // blue_team_neighbors = live_neighbors - red_team_neighbors // treats white as blue
             // actually don't need to track blue_team_neighbors because we look up from red_team_neighbors
-            // new_state[y][x] = RULES_LOOKUP[state[y][x]][live_neighbors]
-            new_state[y][x] = RED_TEAM_BLUE_TEAM_LOOKUP[state[y][x]][live_neighbors][live_neighbors-red_team_neighbors] || 'o'
+            // grid[y][x] = RULES_LOOKUP[state[y][x]][live_neighbors]
+            new_grid[y][x] = RED_TEAM_BLUE_TEAM_LOOKUP[grid[y][x]][live_neighbors][red_team_neighbors] || 'o'
         }
     }
-    return new_state
+    return new_grid
 } // end apply_rules()

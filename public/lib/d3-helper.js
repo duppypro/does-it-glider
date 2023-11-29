@@ -7,7 +7,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-export const add_mynew = () => {
+export const d3_plus = (() => {
     d3.selection.prototype.mynew = function (selector, where) {
         var match = selector.match(/^(\w+)(?:#([\w-]+))?(?:\.([\w-.]+))?$/);
         if (!match) {
@@ -172,4 +172,6 @@ export const add_mynew = () => {
 
         return currentSelection;
     };
-} // end of add helpers to d3
+
+    return d3
+})() // end of add helpers to d3

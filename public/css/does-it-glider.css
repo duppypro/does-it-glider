@@ -14,6 +14,7 @@ body
     /* ??? maybe they need to be 100% of parent, not of viewport? */
     overflow: hidden;
     margin: 0;
+    padding: 0;
 }
 
 .does-it-glider-app
@@ -95,7 +96,6 @@ body
     fill: transparent;
 }
 
-.cell-background,
 .cell.dead
 {
     fill: transparent;
@@ -108,18 +108,18 @@ body
     stroke: #fff;
 }
 
-.cell-shadow
+.pattern-line
 {
     stroke: #666;
     stroke-width: 1;
 }
 
-.grid-background
+.pattern-background
 {
     fill: #111;
 }
 
-.grid-lines
+.grid-fill
 {
     fill: url(#grid-pattern); 
 }

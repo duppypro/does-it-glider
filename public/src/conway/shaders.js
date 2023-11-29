@@ -5,55 +5,69 @@
 //      contains vertex and fragment shaders as javascript string literals
 ////////////////////////////////////////////////////////////////////////////////
 
-// define a null op glsl so that the glsl-literal vscode extension will highlight the syntax
-const glsl = (x) => x
+import { settings } from '/src/does-it-glider/settings.js'
 
+// define a null op glsl so that the glsl-literal vscode extension will highlight the syntax
+const glsl = (x) => x+'' // force glsl to return a string
+
+const cell_w = `${settings.CELL_PX.toFixed(3)}`
+const cell_h = `${settings.CELL_PX.toFixed(3)}`
+const border = `${settings.BORDER_PX.toFixed(3)}`
+const epsilon = `${0.000001.toFixed(9)}`
+
+// ??? is it worth it to use constants for the names of variables so they always
+// ??? match the names in the shaders?
 export const vertex_shader_src = glsl`
     precision mediump float;
-
-    attribute vec2 a_position;
-    attribute vec2 a_gridCoord;
+    // in
+    attribute vec2 a_position, a_gridCoord;
     uniform float u_scale;
     uniform vec2 u_translation;
-
-    // send a pan and zoom scale and translation to the fragment shader
+    // out
     varying vec2 v_gridCoord;
 
     void main() {
-        vec2 zoomed = u_scale*a_position + u_translation;
-
+        // in u_scale and u_translation from app pan+zoom feature
+        vec2 zoomed = (u_scale * a_position) + u_translation;
+        // out
         gl_Position = vec4(zoomed, 0.0, 1.0);
-
-        // pass in clip space [-1,-1  1, 1] to fragment shader
         v_gridCoord = a_gridCoord;
     }
-` // end vertex_shader
+` // end vertex_shader_src
 
 export const grid_frag_shader_src = glsl`
     precision mediump float;
-
-    uniform vec2 u_resolution;
+    // in
     uniform float u_tick;
-
-    // receive the zoom info from the vertex shader
     varying vec2 v_gridCoord; // take advantage of interpolation instead of undoing the scale+translation
 
     float is_border(vec2 uv) {
-        float cx = mod(floor(uv.x), 20.0); // TODO move this to a uniform variable
-        float cy = mod(floor(uv.y), 20.0);
-        float result = sign(cx-1.001) * sign(cy-1.001); // BUG #6 this is false at the intersection of the grid lines
-        return (1.0 - sign(result)) / 2.0;
+        float cx = floor(mod(uv.x, __cell_w));
+        float cy = floor(mod(uv.y, __cell_h));
+        // BUG #6 this is incorrectly false at the intersection of the grid lines
+        float result = sign(cx - __border - __epsilon)
+                     * sign(cy - __border - __epsilon);
+        // result is -1.0 for the first border pixels and +1 for the background
+        // subtracting epsilon makes the sign() certain to be -1.0 not 0.0
+        // convert to 1.0 for border pixels and 0.0 for background
+        result = sign(1.0 - result);
+        return result;
     }
 
     void main() {
-        // don't need traditional gl_FragCoord.xy / u_resolution;
-        // because we are using the v_gridCoord from the vertex shader
-        // shift origin to center of screen
-
-        vec3 color = vec3(1.0/16.0) + is_border(v_gridCoord)*(5.0/16.0);
+        vec3 color;
+        float if_border = sign(is_border(v_gridCoord));
+        float if_background = sign(1.0 - if_border);
+        color = if_background * vec3(1.0/16.0); // color of background
+        color += if_border * vec3(6.0/16.0); // color of border
         gl_FragColor = vec4(color, 1.0);
     }
-` // end grid_frag_shader_src
+`
+.replace(/\b__cell_w\b/ug, cell_w)
+.replace(/\b__cell_h\b/ug, cell_h)
+.replace(/\b__border\b/ug, border)
+.replace(/\b__epsilon\b/ug, epsilon)
+// end grid_frag_shader_src
 
 export const rainbow_fragment_shader_src = glsl`
     precision mediump float;

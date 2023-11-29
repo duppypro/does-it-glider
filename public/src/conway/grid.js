@@ -9,65 +9,55 @@
 //     adds a graph paper pattern to it
 //     makes it zoom+pan in response to mouse and touch events
 // RETURN a d3 selection of the field that other gol functions can use    
-export const grid = (app) => {
-    // define configuration of the grid total size in cells and the individual cell size in pixels
-    const GRID_SIZE = 300
-    const CELL_SIZE = 20
-
-    // define the scale factor for the svg relative to the parent element
-    const SVG_SCALE = 4; // Change the scale factor here
-    const SVG_WIDTH = SVG_SCALE
-    const SVG_HEIGHT = SVG_SCALE
-    const SVG_PAD_LEFT = (SVG_WIDTH - 1) / 2
-    const SVG_PAD_TOP = (SVG_HEIGHT - 1) / 2
+export const new_grid = (app, cell_px = 20, w = 12, h = false, ) => {
+    if (!h) h = w
+    const G_WIDTH = cell_px * w
+    const G_HEIGHT = cell_px * h
+    const p_w = app.node().clientWidth
+    const p_h = app.node().clientHeight
+    const G_PAD_LEFT = (G_WIDTH - p_w) / 2
+    const G_PAD_TOP = (G_HEIGHT - p_h) / 2
     // Create the SVG
     const svg = app.insert('svg', 'span.touch-target') // insert before the touch target so it renders underneath
-        .attr('width', `${SVG_WIDTH*100}%`)
-        .attr('height', `${SVG_HEIGHT*100}%`)
-        .style('position', 'relative')
-        .style('left', `-${SVG_PAD_LEFT*100}%`)
-        .style('top', `-${SVG_PAD_TOP*100}%`)
+        .attr('width', `${p_w}px`)
+        .attr('height', `${p_h}px`)
     // create a g element inside the svg    
     // need this g element so we can transform it
     // and leave the svg container static
     const g = svg.append('g')
+        .attr('width', `100%`)
+        .attr('height', `100%`)
+        .attr('transform', `translate(${-G_PAD_LEFT}, ${-G_PAD_TOP})`)
 
     // Create the graph paper pattern
     const pattern = g.append('defs')
         .append('pattern')
         .attr('id', 'grid-pattern')
         .attr('class', 'cell dead')
-        .attr('width', '20px')
-        .attr('height', '20px')
-        .attr('patternUnits', 'userSpaceOnUse') // this makes the pattern scale with the svg zoom (according to Copilot)
-
-    //ignore next comments
-    // pattern.append('path')
-    //     .attr('class', 'cell-highlight')
-    //     .attr('d', 'M 15,0 A 5,5 0 0,1 5,0 L 0,5 A 5,5 0 0,1 0,15') // draw left and top edges of each cell with arcs
+        .attr('width', `${cell_px}px`)
+        .attr('height', `${cell_px}px`)
+        .attr('patternUnits', 'userSpaceOnUse')
 
     // color the background of the entire parttern
-    pattern.append('rect').attr('class', 'cell-background')
+    pattern.append('rect').attr('class', 'pattern-background')
         .attr('width', '100%')
         .attr('height', '100%')
-
-    //ignore next 2 comments
-    // pattern.append('path').attr('class', 'cell-shadow')
-    //     .attr('d', 'M 15,0 A 5,5 0 0,1 20,5 L 20,15 A 5,5 0 0,1 15,20 L 5,20 A 5,5 0 0,1 0,15'); // draw right and bottom edges of each cell with arcs
-    pattern.append('path').attr('class', 'cell-shadow')
-        .attr('d', 'M 20,0 L 20,20 0,20'); // draw right and bottom edges of each cell
+    // add the grid lines
+    pattern.append('path').attr('class', 'pattern-line')
+        .attr('d', `M ${cell_px},0 L ${cell_px},${cell_px} 0,${cell_px}`); // draw right and bottom edges of each cell
 
     g.append('rect').classed('grid-background', true)
-        .attr('width', '100%')
-        .attr('height', '100%')
+        .attr('width', `${G_WIDTH}px`)
+        .attr('height', `${G_HEIGHT}px`)
 
-    g.append('rect').classed('grid-lines', true)
-        .attr('width', '100%')
-        .attr('height', '100%')
+    g.append('rect').classed('grid-fill', true) // CSS will fill this with #grid-pattern
+        .attr('width', `${G_WIDTH}px`)
+        .attr('height', `${G_HEIGHT}px`)
 
     function zoomed({ transform }) {
         // use svg zoom and drag units to transform the g element
         // avoid the common bug of applying the transform to the svg
+        transform = transform.translate(-G_PAD_LEFT, -G_PAD_TOP) // adjust for starting offset
         g.attr('transform', transform)
     }
 
@@ -76,7 +66,7 @@ export const grid = (app) => {
     // then applied to the g element
     // TODO figure out how to use .extent() or .translateExtent() properly
     svg.call(d3.zoom()
-        .scaleExtent([.25, 4]) // 1/4 zoom limit because default size is 400%
+        .scaleExtent([2/cell_px, 4]) // 1/4 zoom limit because default size is 400%
         .on('zoom', zoomed)
     )
 
