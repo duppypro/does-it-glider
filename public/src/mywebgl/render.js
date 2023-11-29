@@ -23,30 +23,37 @@ import { settings } from '/src/does-it-glider/settings.js'
 export const webgl_context = (parent) => {
     //  use D3js to create a canvas with webgl context in the parent element
     // https://observablehq.com/@mourner/webgl-2-boilerplate
+    // get the width and height of the parent element
+    const p_w = parent.node().clientWidth
+    const p_h = parent.node().clientHeight
     const cell_px = settings.CELL_PX
-    const gw = settings.GRID_WIDTH * cell_px
+    const gw = settings.GRID_WIDTH * cell_px // num cells * px/cell -> num pixels
     const gh = settings.GRID_HEIGHT * cell_px
     const beat = settings.BEAT
     
     const zoom_target = parent
         .mynew('div.zoom-target')
-        .style('width', `${gw}px`)
-        .style('height', `${gh}px`)
-        .style('position', 'absolute')
-        .style('left', `calc(50% - ${gw/2}px)`)
-        .style('top', `calc(50% - ${gh/2}px)`)
+        .style('width', `100%`)
+        .style('height', `100%`)
+        // .style('position', 'absolute')
+        // .style('left', `0`)
+        // .style('top', `0`)
         // .style('overflow', 'hidden') // Crop the visibility of the canvas
-        .style('background', '#000') // rare color to help debug if shader is not rendering entire canvas
+        .style('background', '#402') // rare color to help debug if shader is not rendering entire canvas
 
     //BUGBUG #4 render does not respond to resize events
 
+    // calculate left and top offsets to center the canvas
+    const G_PAD_LEFT = (gw - p_w) / 2
+    const G_PAD_TOP = (gh - p_h) / 2
     const canvas = zoom_target
         .append('canvas')
         .attr('width', gw)
         .attr('height', gh)
         .style('position', 'absolute')
-        .style('left', `calc(50% - ${gw/2}px)`)
-        .style('top', `calc(50% - ${gh/2}px)`)
+        .style('left', `${-G_PAD_LEFT}px`)
+        .style('top', `${-G_PAD_TOP}px`)
+        .attr('transform', `translate(${-G_PAD_LEFT}, ${-G_PAD_TOP})`)
 
     const webgl_version = 'webgl2'
     const gl = canvas.node().getContext(webgl_version)
@@ -162,6 +169,7 @@ export const webgl_context = (parent) => {
     function apply_zoom({ transform }) {
         // use parent zoom and drag units to transform the canvas element
         // only for debugging, canvas doesn't transform. use vertex shader 
+        transform = transform.translate(-G_PAD_LEFT, -G_PAD_TOP) // adjust for starting offset
         canvas.attr('transform', transform)
         // set the scale global that draw will pass
         gl_scale = transform.k // scale is same for all coords and centers of zoom and drag

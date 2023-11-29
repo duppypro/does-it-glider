@@ -38,16 +38,18 @@ const webgl_div = app.mynew('div.bottom')
     .style('overflow', 'hidden')
     .style('position', 'relative')
 
-    // Position the divs using flex grid
-    app.style('display', 'flex')
-        .style('flex-direction', 'column')
-    
-    app.selectAll('div') // styles in common for both divs
-        .style('flex', '1 0 33.3%')
-        // .style('width', '100%')
-        .style('height', '100vh')
-        .style('box-sizing', 'border-box')
-        .style('padding', '0px')
+// Position the divs using flex grid
+// get the width and height of the app
+let app_rect = app.node().getBoundingClientRect()
+app.style('display', 'flex')
+    .style('flex-direction', (app_rect.width > app_rect.height) ? 'row' : 'column')
+
+app.selectAll('div') // styles in common for both divs
+    .style('flex', '1')
+    // .style('width', '100%')
+    .style('height', '100vh')
+    .style('box-sizing', 'border-box')
+    .style('padding', '0px')
 
 // Create the title    
 let touch_target = app.append('span')

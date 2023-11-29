@@ -8,8 +8,8 @@
 // XXX
 export const settings = {
     // game of life configuration
-    GRID_WIDTH: 12, // in cells
-    GRID_HEIGHT: 8, // in cells
+    GRID_WIDTH: 24, // in cells
+    GRID_HEIGHT: 32, // in cells
     WRAP_GRID: false,
 
     // shader source constants
