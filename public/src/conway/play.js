@@ -11,7 +11,7 @@ import { settings } from '/src/does-it-glider/settings.js'
 
 // add_seed
 // INPUT a seed and a destination grid
-// TODO accept an optional x,y offset for the seed, default to center
+// TODO LOW PRI accept an optional x,y offset for the seed, default to center
 //    copy (overwriting) seed to the center of the destination grid
 // RETURN nothing, modifies destination array
 export const add_seed = (seed, grid) => {

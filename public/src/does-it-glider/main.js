@@ -27,29 +27,24 @@ if (app.empty()) {
     app = d3.select('body').mynew(`div.does-it-glider-app`, ':first-child')
 }
 
-// make 2 divs, one for top half, one for bottom half of the app
-// top half
-const svg_div = app.mynew('div.top')
-    .style('overflow', 'hidden') // ??? figure out how many of the elements need overflow: hidden
-    .style('background', '#040')
-
-// bottom half
-const webgl_div = app.mynew('div.bottom')
-    .style('overflow', 'hidden')
-    .style('position', 'relative')
-
 // Position the divs using flex grid
 // get the width and height of the app
 let app_rect = app.node().getBoundingClientRect()
 app.style('display', 'flex')
     .style('flex-direction', (app_rect.width > app_rect.height) ? 'row' : 'column')
 
-app.selectAll('div') // styles in common for both divs
+// top half
+const svg_div = app.mynew('div.top')
+    .style('background', '#000000ff') // out of bounds color
+
+// bottom half    
+const webgl_div = app.mynew('div.bottom')
+    .style('background', '#e600ffff') // should never see this
+    
+app.selectAll('.top,.bottom') // styles in common for both divs
+    .style('overflow', 'hidden') // tested, this is needed to avoid scroll bars
+    .style('position', 'relative')
     .style('flex', '1')
-    // .style('width', '100%')
-    .style('height', '100vh')
-    .style('box-sizing', 'border-box')
-    .style('padding', '0px')
 
 // Create the title    
 let touch_target = app.append('span')

@@ -31,22 +31,14 @@ export const webgl_context = (parent) => {
     const gh = settings.GRID_HEIGHT * cell_px
     const beat = settings.BEAT
     
-    const zoom_target = parent
-        .mynew('div.zoom-target')
-        .style('width', `100%`)
-        .style('height', `100%`)
-        // .style('position', 'absolute')
-        // .style('left', `0`)
-        // .style('top', `0`)
-        // .style('overflow', 'hidden') // Crop the visibility of the canvas
-        .style('background', '#402') // rare color to help debug if shader is not rendering entire canvas
-
     //BUGBUG #4 render does not respond to resize events
 
+    // set parent to rare background color to help debug if canvas is not covering entire parent
+    parent.style('background', '#654321')
     // calculate left and top offsets to center the canvas
     const G_PAD_LEFT = (gw - p_w) / 2
     const G_PAD_TOP = (gh - p_h) / 2
-    const canvas = zoom_target
+    const canvas = parent
         .append('canvas')
         .attr('width', gw)
         .attr('height', gh)
@@ -186,7 +178,7 @@ export const webgl_context = (parent) => {
     }
 
     canvas.call(d3.zoom()
-        .scaleExtent([.25, 4])
+        .scaleExtent([1/cell_px, 4])
         .on('zoom', apply_zoom)
     )
 

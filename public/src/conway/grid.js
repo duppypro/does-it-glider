@@ -66,7 +66,7 @@ export const new_grid = (app, cell_px = 20, w = 12, h = false, ) => {
     // then applied to the g element
     // TODO figure out how to use .extent() or .translateExtent() properly
     svg.call(d3.zoom()
-        .scaleExtent([2/cell_px, 4]) // 1/4 zoom limit because default size is 400%
+        .scaleExtent([1/cell_px, 4]) // 1/4 zoom limit because default size is 400%
         .on('zoom', zoomed)
     )
 
