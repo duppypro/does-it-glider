@@ -20,7 +20,15 @@ import { new_grid } from '/src/conway/grid.js'
 import { draw } from '/src/does-it-glider/draw.js'
 
 // Init
-
+// get query params
+const urlParams = new URLSearchParams(window.location.search)
+const version = urlParams.get('version') || urlParams.get('v') || 'stable'
+const use_gl = version == 'beta' || version == 'both'
+const use_svg = version == 'stable' || version == 'both'
+// warn if using the beta version
+if (use_gl) {
+    console.warn(`Using Beta WebGL version.`)
+}
 // initialize
 let app = d3.select('.does-it-glider-app')
 if (app.empty()) {
@@ -34,12 +42,19 @@ app.style('display', 'flex')
     .style('flex-direction', (app_rect.width > app_rect.height) ? 'row' : 'column')
 
 // top half
-const svg_div = app.mynew('div.top')
-    .style('background', '#000000ff') // out of bounds color
+let svg_div = d3.select() // initialize to empty selection
+let webgl_div = d3.select() // initialize to empty selection
+
+if (use_svg) {
+    svg_div = app.mynew('div.top')
+        .style('background', '#000000ff') // out of bounds color
+}
 
 // bottom half    
-const webgl_div = app.mynew('div.bottom')
-    .style('background', '#e600ffff') // should never see this
+if (use_gl) {
+    webgl_div = app.mynew('div.bottom')
+        .style('background', '#e600ffff') // should never see this
+}
     
 app.selectAll('.top,.bottom') // styles in common for both divs
     .style('overflow', 'hidden') // tested, this is needed to avoid scroll bars
@@ -64,7 +79,10 @@ touch_target.append('div')
     .html(_sub_title)
 
 // make a gol field in the app DOM element
-const field = new_grid(svg_div, settings.CELL_PX, settings.GRID_WIDTH, settings.GRID_HEIGHT)
+let field = d3.select()
+if (use_svg) {
+    field = new_grid(svg_div, settings.CELL_PX, settings.GRID_WIDTH, settings.GRID_HEIGHT)
+}
 
 // make a new 2D array the size of the 5x6 start pattern
 let seed = []
@@ -125,30 +143,27 @@ seed.forEach((row, i) => {
 })
 
 // get the width and height of the gol_field
-let field_h = field.node().getBoundingClientRect().height
-let field_w = field.node().getBoundingClientRect().width
-// divide field_h and field_w by 20px and round to int
-field_h = Math.round(field_h / 20)
-field_w = Math.round(field_w / 20)
+let grid_h = settings.GRID_HEIGHT
+let grid_w = settings.GRID_WIDTH
 // make a new 2D array the size of the g element divide by 20px
-let grid = Array.from({ length: field_h }, () => Array.from({ length: field_w }, () => 'o'))
+let grid = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => 'o'))
 
 // copy the start into the center of the state
 add_seed(seed, grid)
 
 let tick = 0
-let num_ticks = Math.floor(settings.BEAT / (1000 / 60)) // BEAT is in msec / (1000/60) is msec/frame
-num_ticks = Math.floor(num_ticks / 6) // speed up // REMOVE switch back to 4
-let pause_for_new = Math.floor(1.333 * 60)
+let num_ticks = Math.round(settings.BEAT / (1000 / 60)) // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frame
+num_ticks = Math.round(num_ticks / 4) // speed up to several frames per BEAT
+let pause_for_new = Math.round(1.333 * 60)
 const event_loop = () => {
     if (pause_for_new == 0) {    // apply the rules to the state
-        if (tick % num_ticks == 0) { // only draw every num_ticks frames
+        if (tick % num_ticks == 0) { // only apply rules every num_ticks frames
             grid = apply_rules(grid)
         }
     } else {
         pause_for_new-- // HACK, there must be a better way to pause for new and also draw only n frames
     }
-    draw(field, grid)
+    draw(field, grid, settings.CELL_PX) // redraw every time for smooth pan and zoom
     tick++
     requestAnimationFrame(event_loop) // BUG this might fix issue #5. trying again
 }
@@ -215,7 +230,7 @@ const parse_clipboard = (pasted_clipboard) => {
             // and calls enter, update, or exit on each element of data array
             // as appropriate for diff of new data comapred to previous data
             .join(
-                enter => enter.append('div').classed('paste-line', true),
+                enter => enter.mynew('div').classed('paste-line', true),
                 update => update,
                 exit => exit
                     .remove()
@@ -237,17 +252,17 @@ const parse_clipboard = (pasted_clipboard) => {
             .html(d => d)
             .transition().duration(beat_life_seed)
             .remove()
-            .on('end', (a, b, c) => {
-                console.log(`count these end events:\n${a}\n${b}\n${c}`)
+            .on('end', (a, b, c, d) => {
+                console.log(`count these end events:\n${a}\n${b}\n${c}\n${d}`)
                 load_new_state(life_seed || seed)
-            })
+            }) // BUG #8 this transition ends for each line, I want to wait for the last
     }
 
     const load_new_state = (life_seed) => {
         console.time('load_new_state')
 
         // clear the state
-        grid = Array.from({ length: field_h }, () => Array.from({ length: field_w }, () => 'o'))
+        grid = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => 'o'))
         // copy the life_seed into the center of the state
         add_seed(life_seed, grid)
         pause_for_new = 2 * 60
@@ -277,4 +292,6 @@ d3.select('.touch-target').on('click', get_clipboard_text)
 d3.select('body').on('paste', get_clipboard_text)
 
 // make a webgl canvas in the left_div
-const gl = webgl_context(webgl_div)
+if (use_gl) {
+    const gl = webgl_context(webgl_div)
+}

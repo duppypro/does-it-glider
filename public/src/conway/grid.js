@@ -9,7 +9,10 @@
 //     adds a graph paper pattern to it
 //     makes it zoom+pan in response to mouse and touch events
 // RETURN a d3 selection of the field that other gol functions can use    
-export const new_grid = (app, cell_px = 20, w = 12, h = false, ) => {
+export const new_grid = (app, cell_px = 20, w = 12, h = false,) => {
+    if (!app || app.empty()) {
+        return d3.select(null)
+    }
     if (!h) h = w
     const G_WIDTH = cell_px * w
     const G_HEIGHT = cell_px * h
@@ -40,11 +43,11 @@ export const new_grid = (app, cell_px = 20, w = 12, h = false, ) => {
 
     // color the background of the entire parttern
     pattern.append('rect').attr('class', 'pattern-background')
-        .attr('width', '100%')
-        .attr('height', '100%')
+        .attr('width', `${cell_px}px`)
+        .attr('height', `${cell_px}px`)
     // add the grid lines
     pattern.append('path').attr('class', 'pattern-line')
-        .attr('d', `M ${cell_px},0 L ${cell_px},${cell_px} 0,${cell_px}`); // draw right and bottom edges of each cell
+        .attr('d', `M ${cell_px},0 L 0,0 0,${cell_px}`); // draw top and left edges of each cell
 
     g.append('rect').classed('grid-background', true)
         .attr('width', `${G_WIDTH}px`)

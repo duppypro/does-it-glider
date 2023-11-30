@@ -29,7 +29,6 @@ export const webgl_context = (parent) => {
     const cell_px = settings.CELL_PX
     const gw = settings.GRID_WIDTH * cell_px // num cells * px/cell -> num pixels
     const gh = settings.GRID_HEIGHT * cell_px
-    const beat = settings.BEAT
     
     //BUGBUG #4 render does not respond to resize events
 
@@ -187,8 +186,8 @@ export const webgl_context = (parent) => {
     function draw() {
         // assume requestAnimationFrame is called 60 times per second
         // 2^53 / 60 / 60 / 60 / 24 / 365 = 4,760,274 years
-        // only draw every beat/6 msec
-        if (tick % 2 == 0) { // every 18 frames is 1/3 of a second, so 3 fps
+        // 60fps is too fast. Only aplply the rules and draw some of the time.
+        if (tick % 2 == 0) { // every 20 frames is 1/3 of a second, so 3 fps
             // TODO #7 add smart pause that does not redraw if no game state change and no window resize or zoom
             if (tick == 0) {
                 // do some init on the first frame if needed

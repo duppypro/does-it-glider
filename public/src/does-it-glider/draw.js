@@ -8,7 +8,7 @@
 let draw_count = 0
 
 // modify the DOM from a 2D array of Conway's Game of Life (gol_state)
-export const draw = (g, state) => {
+export const draw = (g, state, cell_px) => {
     const startTime = performance.now()
     draw_count++
 
@@ -30,10 +30,10 @@ export const draw = (g, state) => {
                 g.insert('rect', '.grid-lines') // render this before/below grid-lines but after grid-background
                     .classed('cell', true)
                     .classed(COLOR_TO_CLASS[state[y][x]], true)
-                    .attr('x', `${x * 20}px`)
-                    .attr('y', `${y * 20}px`)
-                    .attr('width', `${20}px`)
-                    .attr('height', `${20}px`)
+                    .attr('x', `${x * cell_px}px`)
+                    .attr('y', `${y * cell_px}px`)
+                    .attr('width', `${cell_px}px`)
+                    .attr('height', `${cell_px}px`)
             }
         }
     }

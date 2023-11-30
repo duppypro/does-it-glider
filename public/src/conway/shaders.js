@@ -8,15 +8,13 @@
 import { settings } from '/src/does-it-glider/settings.js'
 
 // define a null op glsl so that the glsl-literal vscode extension will highlight the syntax
-const glsl = (x) => x+'' // force glsl to return a string
+const glsl = (x) => x+'' // HACK force glsl to return a string so we can use .replace()
 
 const cell_w = `${settings.CELL_PX.toFixed(3)}`
 const cell_h = `${settings.CELL_PX.toFixed(3)}`
 const border = `${settings.BORDER_PX.toFixed(3)}`
 const epsilon = `${0.000001.toFixed(9)}`
 
-// ??? is it worth it to use constants for the names of variables so they always
-// ??? match the names in the shaders?
 export const vertex_shader_src = glsl`
     precision mediump float;
     // in
@@ -42,8 +40,8 @@ export const grid_frag_shader_src = glsl`
     varying vec2 v_gridCoord; // take advantage of interpolation instead of undoing the scale+translation
 
     float is_border(vec2 uv) {
-        float cx = floor(mod(uv.x, __cell_w));
-        float cy = floor(mod(uv.y, __cell_h));
+        float cx = floor(0.5 + mod(uv.x, __cell_w));
+        float cy = floor(0.5 + mod(uv.y, __cell_h));
         // BUG #6 this is incorrectly false at the intersection of the grid lines
         float result = sign(cx - __border - __epsilon)
                      * sign(cy - __border - __epsilon);
@@ -63,6 +61,10 @@ export const grid_frag_shader_src = glsl`
         gl_FragColor = vec4(color, 1.0);
     }
 `
+// ??? I wasn't able to get literal expansion working
+// ??? because maybe cell_w is not in glsl context
+// ??? this isn't really a language issue, it's the glsl formatting extension
+// ??? it's looking for "glsl`" specifcally and not glsl('shader source code')
 .replace(/\b__cell_w\b/ug, cell_w)
 .replace(/\b__cell_h\b/ug, cell_h)
 .replace(/\b__border\b/ug, border)
@@ -122,8 +124,8 @@ export const checker_frag_shader_src = glsl`
     varying vec2 v_gridCoord; // take advantage of interpolation instead of undoing the scale+translation
 
     float checker(vec2 uv, float repeats) {
-        float cx = floor(repeats * uv.x);
-        float cy = floor(repeats * uv.y);
+        float cx = floor(0.5 + repeats * uv.x);
+        float cy = floor(0.5 + repeats * uv.y);
         float result = mod(cx + cy, 2.0);
         return sign(result);
     }

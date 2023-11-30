@@ -13,8 +13,8 @@ export const settings = {
     WRAP_GRID: false,
 
     // shader source constants
-    CELL_PX: 20,
-    BORDER_PX: 1.5, // defined as inwards from the edge of the cell at CELL_PX
+    CELL_PX: 16,
+    BORDER_PX: 1, // defined as inwards from the edge of the cell at CELL_PX
 
     // UI preferences
     BEAT: (60 * 1000) / 180.0,
