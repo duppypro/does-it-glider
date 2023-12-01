@@ -31,7 +31,8 @@
     touch-action: manipulation;
 }
 
-.touch-target {
+.touch-target
+{
     position: absolute;
     top: 0;
     left: 0;
@@ -80,21 +81,11 @@
     100% {fill: red;}
 }
 
-.cell
+.cell,
+.cell.dead,
+.cell.⬛
 {
     fill: transparent;
-}
-
-.cell.dead
-{
-    fill: transparent;
-    stroke: transparent;
-    stroke-width: 2;
-}
-
-.cell-highlight
-{
-    stroke: #fff;
 }
 
 .pattern-line
@@ -113,25 +104,28 @@
     fill: url(#grid-pattern); 
 }
 
-.cell.live
+.cell.live,
+.cell.⬜
 {
-    fill: #fff;
+    fill: var(--white);
 }
 
-.cell.red-team {
+.cell.red-team
+{
     fill: red;
     stroke: pink;
     stroke-width: 1.5;
 }
 
-.cell.blue-team {
+.cell.blue-team
+{
     fill: blue;
     stroke: rgb(74, 74, 74);
     stroke-width: 1.5;
     width: 15;
 }
 
-.glider
+.cell.glider
 {
     animation: rainbow 333ms linear infinite;
 }

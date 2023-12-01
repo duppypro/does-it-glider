@@ -152,9 +152,8 @@ let grid = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, (
 add_seed(seed, grid)
 
 let tick = 0
-let num_ticks = Math.round(settings.BEAT / (1000 / 60)) // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frame
-num_ticks = Math.round(num_ticks / 4) // speed up to several frames per BEAT
-let pause_for_new = Math.round(1.333 * 60)
+let num_ticks = Math.round((settings.BEAT/4) / (1000 / 60)) // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
+let pause_for_new = Math.round(1.333 * 60) // to pause for N seconds, set N sec * 60 frames/sec then round() so that mod (%) works
 const event_loop = () => {
     if (pause_for_new == 0) {    // apply the rules to the state
         if (tick % num_ticks == 0) { // only apply rules every num_ticks frames
@@ -163,7 +162,7 @@ const event_loop = () => {
     } else {
         pause_for_new-- // HACK, there must be a better way to pause for new and also draw only n frames
     }
-    draw(field, grid, settings.CELL_PX) // redraw every time for smooth pan and zoom
+    draw(field, grid, settings.CELL_PX) // redraw every frame for smooth pan and zoom
     tick++
     requestAnimationFrame(event_loop) // BUG this might fix issue #5. trying again
 }

@@ -63,6 +63,7 @@ export const grid_frag_shader_src = glsl`
 `
 // ??? I wasn't able to get literal expansion working
 // ??? because maybe cell_w is not in glsl context
+// ??? it is replacing __cell_w with '' instead of the expected '16.000'
 // ??? this isn't really a language issue, it's the glsl formatting extension
 // ??? it's looking for "glsl`" specifcally and not glsl('shader source code')
 .replace(/\b__cell_w\b/ug, cell_w)
@@ -74,7 +75,7 @@ export const grid_frag_shader_src = glsl`
 export const rainbow_fragment_shader_src = glsl`
     precision mediump float;
 
-    #define PI 3.1415926535897932384626433832795
+    #define PI (3.1415926535897932384626433832795)
     #define TAU (2.0*PI)
 
     uniform vec2 u_resolution;
@@ -94,7 +95,8 @@ export const rainbow_fragment_shader_src = glsl`
         uv = (uv + 1.0) / 2.0;
         vec3 col = vec3(0.0);
 
-        float _time = ((1.0/60.0) * u_tick) / 24.0; // convert 60fps frame count to seconds
+        float _time = ((1.0 /_fps) * u_tick); // convert frame count to seconds
+        // therefore sin(freq * TAU * _time) is a sin wave with frequency 'freq' in Hz
         float rotation = 2.17 * _time;
         rotation = rotation + TAU*sin(_time*1.0*TAU);
 

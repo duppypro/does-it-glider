@@ -35,7 +35,7 @@ export const new_grid = (app, cell_px = 20, w = 12, h = false,) => {
     // Create the graph paper pattern
     const pattern = g.append('defs')
         .append('pattern')
-        .attr('id', 'grid-pattern')
+        .attr('id', 'grid-pattern') // WARN this ID name must match the url(CSS selector) used in the grid-fill class
         .attr('class', 'cell dead')
         .attr('width', `${cell_px}px`)
         .attr('height', `${cell_px}px`)
@@ -56,6 +56,7 @@ export const new_grid = (app, cell_px = 20, w = 12, h = false,) => {
     g.append('rect').classed('grid-fill', true) // CSS will fill this with #grid-pattern
         .attr('width', `${G_WIDTH}px`)
         .attr('height', `${G_HEIGHT}px`)
+        .style('fill', 'url(#grid-pattern)')
 
     function zoomed({ transform }) {
         // use svg zoom and drag units to transform the g element

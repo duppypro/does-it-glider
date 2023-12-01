@@ -50,27 +50,27 @@ export const apply_rules = (grid) => {
     // '⬜' is a live cell, also 'b' or 'X'
     // '⬛' is a dead cell, also 'o' or '.'
     const CONWAY_RULES_LOOKUP = { // Original Conway's Game of Life rules
-        'b': [ // rule lookup for live cells
-            'o', // with 0 neighbors, dies
-            'o', // with 1 neighbors, dies
-            'b', // with 2 neighbors, stays alive
-            'b', // with 3 neighbors, stays alive
-            'o', // with 4 neighbors, dies
-            'o', // with 5 neighbors, dies
-            'o', // with 6 neighbors, dies
-            'o', // with 7 neighbors, dies
-            'o', // with 8 neighbors, dies
+        '⬜': [ // rule lookup for live cells
+            '⬛', // with 0 neighbors, dies
+            '⬛', // with 1 neighbors, dies
+            '⬜', // with 2 neighbors, stays alive
+            '⬜', // with 3 neighbors, stays alive
+            '⬛', // with 4 neighbors, dies
+            '⬛', // with 5 neighbors, dies
+            '⬛', // with 6 neighbors, dies
+            '⬛', // with 7 neighbors, dies
+            '⬛', // with 8 neighbors, dies
         ],
-        'o': [ // rule lookup for dead cells
-            'o', // with 0 neighbors, stays dead
-            'o', // with 1 neighbors, stays dead
-            'o', // with 2 neighbors, stays dead
-            'b', // with 3 neighbors, becomes alive
-            'o', // with 4 neighbors, stays dead
-            'o', // with 5 neighbors, stays dead
-            'o', // with 6 neighbors, stays dead
-            'o', // with 7 neighbors, stays dead
-            'o', // with 8 neighbors, stays dead
+        '⬛': [ // rule lookup for dead cells
+            '⬛', // with 0 neighbors, stays dead
+            '⬛', // with 1 neighbors, stays dead
+            '⬛', // with 2 neighbors, stays dead
+            '⬜', // with 3 neighbors, becomes alive
+            '⬛', // with 4 neighbors, stays dead
+            '⬛', // with 5 neighbors, stays dead
+            '⬛', // with 6 neighbors, stays dead
+            '⬛', // with 7 neighbors, stays dead
+            '⬛', // with 8 neighbors, stays dead
         ],
     }
     //
@@ -100,7 +100,8 @@ export const apply_rules = (grid) => {
         'R': [
             [], // with 0 neighbors always return undefined which is dead or '⬛'
             [], // with 1 neighbors always return undefined which is dead or '⬛'
-            ['B', 'R', 'R',], // with 2 neighbors, stay red if 1 or 2 red, only goes blue if 2 blue (implies 0 red)
+            ['B', 'R', 'R',], // with 2 neighbors, stay red if 1 or 2 red, only goes blue if 2 blue
+            // (which means 0 red, thus the 'B' at index 0)
             ['B', 'R', 'R', 'R',], // with 3 neighbors, stay red if 1,2 or 3 red, only goes blue if 3 blue (implies 0 red)
             [], // with 4 neighbors always return undefined which is dead or '⬛'
             [], // with 5 neighbors always return undefined which is dead or '⬛'
@@ -111,7 +112,10 @@ export const apply_rules = (grid) => {
         'B': [ // all designed to use the same count of red neighbors as the last index
             [], // 0 neighbors always return undefined which is dead or '⬛'
             [], // 1 neighbors always return undefined which is dead or '⬛'
+            // REMEMBER: we index by red neighbors, so this rule at index/row 2 is the rule for 2 live neighbors
+            // so first element is 2 - 0 -> 2 blue neighbors  
             ['B', 'B', 'R',], // 2 neighbors, stay blue if 1 or 2 blue, only goes red if 2 red (implies 0 blue)
+            // REMEMBER: we index by red neighbors, so the first element is 3-0 -> 3 blue neighbors
             ['B', 'B', 'B', 'R',], // 3 neighbors, stay blue if 1,2 or 3 blue, only goes red if 3 red (implies 0 blue)
             [], // 4 neighbors always return undefined which is dead or '⬛'
             [], // 5 neighbors always return undefined which is dead or '⬛'
@@ -148,6 +152,7 @@ export const apply_rules = (grid) => {
     // make a grid the size as state and fill it with dead cells
     const new_grid = Array.from({ length: h }, () => Array.from({ length: w }, () => 'o'))
     // BUG is new_grid causing the memory leak? is it better to modify grid in place?
+    // BUG deployed version is not leaking memory and it had the same new Array creation
     // loop over 2D array state
     // and apply the rules to each cell
     for(let y = 0; y < h; y++) {
