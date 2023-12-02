@@ -9,6 +9,9 @@ import { settings } from '/src/does-it-glider/settings.js'
 
 // play Conway's Game of Life
 
+// start in red blue mode, but if we ever see a '⬜', switch permanently to white mode
+let rule_set = '🟥🟦'
+
 // add_seed
 // INPUT a seed and a destination grid
 // TODO LOW PRI accept an optional x,y offset for the seed, default to center
@@ -97,62 +100,57 @@ export const apply_rules = (grid) => {
         // count of blue neighbors is always live_neighbors - red_neighbors, it's value is redundant
         // arbitrarily chose to index by count of red neighbors
         // Example: new_state = RED_TEAM_BLUE_TEAM_LOOKUP[old_state][live_neighbors][red_neighbors]
-        'R': [
-            [], // with 0 neighbors always return undefined which is dead or '⬛'
-            [], // with 1 neighbors always return undefined which is dead or '⬛'
-            ['B', 'R', 'R',], // with 2 neighbors, stay red if 1 or 2 red, only goes blue if 2 blue
-            // (which means 0 red, thus the 'B' at index 0)
-            ['B', 'R', 'R', 'R',], // with 3 neighbors, stay red if 1,2 or 3 red, only goes blue if 3 blue (implies 0 red)
-            [], // with 4 neighbors always return undefined which is dead or '⬛'
-            [], // with 5 neighbors always return undefined which is dead or '⬛'
-            [], // with 6 neighbors always return undefined which is dead or '⬛'
-            [], // with 7 neighbors always return undefined which is dead or '⬛'
-            [], // with 8 neighbors always return undefined which is dead or '⬛'
+        '🟥': [
+            /* 0 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 1 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 2 */['🟦','🟥','🟥','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 3 */['🟦','🟥','🟥','🟥','⬛','⬛','⬛','⬛','⬛'],
+            /* 4 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 5 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 6 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 7 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 8 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
         ],
-        'B': [ // all designed to use the same count of red neighbors as the last index
-            [], // 0 neighbors always return undefined which is dead or '⬛'
-            [], // 1 neighbors always return undefined which is dead or '⬛'
-            // REMEMBER: we index by red neighbors, so this rule at index/row 2 is the rule for 2 live neighbors
-            // so first element is 2 - 0 -> 2 blue neighbors  
-            ['B', 'B', 'R',], // 2 neighbors, stay blue if 1 or 2 blue, only goes red if 2 red (implies 0 blue)
-            // REMEMBER: we index by red neighbors, so the first element is 3-0 -> 3 blue neighbors
-            ['B', 'B', 'B', 'R',], // 3 neighbors, stay blue if 1,2 or 3 blue, only goes red if 3 red (implies 0 blue)
-            [], // 4 neighbors always return undefined which is dead or '⬛'
-            [], // 5 neighbors always return undefined which is dead or '⬛'
-            [], // 6 neighbors always return undefined which is dead or '⬛'
-            [], // 7 neighbors always return undefined which is dead or '⬛'
-            [], // 8 neighbors always return undefined which is dead or '⬛'
+        '🟦': [
+            // REMEMBER: we index by red neighbors, so the rule at index(row) 2 is the rule for 2 live neighbors
+            // 2nd row first element is 2 - 0 -> 2 blue neighbors, next element is 2 - 1 -> 1 blue neighbor, etc.  
+            /* 0 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 1 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 2 */['🟦','🟦','🟥','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 3 */['🟦','🟦','🟦','🟥','⬛','⬛','⬛','⬛','⬛'],
+            /* 4 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 5 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 6 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 7 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 8 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
         ],
-        'o': [
-            [], // 0 neighbors, never uses this, placeholders to make index of 3 work
-            [], // 1 neighbors, never uses this, placeholders to make index of 3 work
-            [], // 2 neighbors, never uses this, placeholders to make index of 3 work
-            ['b', 'b', 'b', 'b',], // with 3 neighbors, goes live
-            [], // 4 neighbors, never uses this, placeholders to make index of 3 work
-            [], // 5 neighbors, never uses this, placeholders to make index of 3 work
-            [], // 6 neighbors, never uses this, placeholders to make index of 3 work
-            [], // 7 neighbors, never uses this, placeholders to make index of 3 work
-            [], // 8 neighbors, never uses this, placeholders to make index of 3 work
+        '⬛': [
+            /* 0 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 1 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 2 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 3 */['🟦','🟦','🟥','🟥','⬛','⬛','⬛','⬛','⬛'],
+            /* 4 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 5 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 6 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 7 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 8 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
         ],
-        'b': [
-            [], // 0 neighbors, never uses this, placeholders to make index of 3 work
-            [], // 1 neighbors, never uses this, placeholders to make index of 3 work
-            ['b', 'b', 'b',], // with 2 neighbors, stay live if 1 or 2 live
-            ['b', 'b', 'b', 'b',], // with 3 neighbors, goes red if 2 or 3 red, only goes live if 2 or 3 blue (implies 0 or 1 red)
-            [], // 4 neighbors, never uses this, placeholders to make index of 3 work
-            [], // 5 neighbors, never uses this, placeholders to make index of 3 work
-            [], // 6 neighbors, never uses this, placeholders to make index of 3 work
-            [], // 7 neighbors, never uses this, placeholders to make index of 3 work
-            [], // 8 neighbors, never uses this, placeholders to make index of 3 work
-        ]
+        '⬜': [
+            /* 0 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 1 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 2 */['⬜','⬜','⬜','⬜','⬜','⬜','⬜','⬜','⬜'],
+            /* 3 */['⬜','⬜','⬜','⬜','⬜','⬜','⬜','⬜','⬜'],
+            /* 4 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 5 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 6 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 7 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+            /* 8 */['⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛','⬛'],
+        ],
     }
     // get the height and width of the state
     const h = grid.length;
     const w = grid[0].length;
-    // make a grid the size as state and fill it with dead cells
-    const new_grid = Array.from({ length: h }, () => Array.from({ length: w }, () => 'o'))
-    // BUG is new_grid causing the memory leak? is it better to modify grid in place?
-    // BUG deployed version is not leaking memory and it had the same new Array creation
+    
     // loop over 2D array state
     // and apply the rules to each cell
     for(let y = 0; y < h; y++) {
@@ -160,47 +158,45 @@ export const apply_rules = (grid) => {
             // count the number of neighbors that are alive
             let live_neighbors = 0
             let red_team_neighbors = 0
-            // let blue_team_neighbors = 0 // don't need blue count because it can be computed from live_neighbors - red_team_neighbors
+            // don't need blue count because it can be computed from live_neighbors - red_team_neighbors
             // loop over the 3x3 grid around the cell
-            let peek = 'o'
+            let peek = '⬛'
             for(let ny = y-1; ny <= y+1; ny++) {
                 for(let nx = x-1; nx <= x+1; nx++) {
-                    // ignore the cell itself
-                    if (nx == x && ny == y) continue
                     if (settings.WRAP_GRID) {
                         // wrap around the edges of the grid
                         peek = grid[(ny + h) % h][(nx + w) % w]
                     } else {
                         // don't wrap
                         if (nx < 0 || ny < 0 || nx >= w || ny >= h) {
-                            continue // this is same as peek = 'o', but slightly quicker
+                            peek = '⬛' // HACK a continue might be faster, bug I'm opting for clarity
                         } else {
                             peek = grid[ny][nx]
                         }
                     }
+                    // don't count the cell itself, it is not a neighbor
+                    if (nx == x && ny == y) continue
                     // count the alive neighbors
-                    if (peek == 'X') {
-                        live_neighbors += 1
+                    if (peek == 'o' || peek == '.' || peek == '⬛') {
+                        continue
                     }
-                    if (peek == 'b') {
-                        live_neighbors += 1
-                    }
-                    if (peek == 'R') {
-                        live_neighbors += 1
+                    live_neighbors += 1
+                    if (peek == '🟥') {
                         red_team_neighbors += 1
                     }
-                    if (peek == 'B') {
-                        live_neighbors += 1
                         // blue_team_neighbors += 1
                         // Don't count blue neighbors here because it can be computed from live_neighbors - red_team_neighbors
                         // and that method includes white as blue
-                    }
                 }
             }
             // blue_team_neighbors = live_neighbors - red_team_neighbors // treats white as blue
             // actually don't need to track blue_team_neighbors because we look up from red_team_neighbors
-            // grid[y][x] = RULES_LOOKUP[state[y][x]][live_neighbors]
-            new_grid[y][x] = RED_TEAM_BLUE_TEAM_LOOKUP[grid[y][x]][live_neighbors][red_team_neighbors] || 'o'
+            new_grid[y][x] =
+                RED_TEAM_BLUE_TEAM_LOOKUP
+                    [grid[y][x]] // index by old cell state
+                    [live_neighbors] // index by count of live neighbors
+                    [red_team_neighbors] // index by count of red neighbors
+                    // [blue_team_neighbors] index bt blue not needed. It is implicitly live_neighbors - red_team_neighbors.
         }
     }
     return new_grid

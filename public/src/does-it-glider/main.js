@@ -9,20 +9,20 @@
 import { settings } from '/src/does-it-glider/settings.js'
 import { d3_plus as d3 } from '/lib/d3-helper.js'
 
-// WebGL modules
-import { webgl_context } from '/src/mywebgl/render.js'
-
 // Conway's Game of Life modules
 import { apply_rules, add_seed } from '/src/conway/play.js'
 import { new_grid } from '/src/conway/grid.js'
 
-// does-it-glider modules
+// does-it-glider svg modules
 import { draw } from '/src/does-it-glider/draw.js'
+
+// WebGL modules
+import { webgl_context } from '/src/mywebgl/render.js'
 
 // Init
 // get query params
 const urlParams = new URLSearchParams(window.location.search)
-const version = urlParams.get('version') || urlParams.get('v') || 'stable'
+const version = urlParams.get('v') || 'stable'
 const use_gl = version == 'beta' || version == 'both'
 const use_svg = version == 'stable' || version == 'both'
 // warn if using the beta version
