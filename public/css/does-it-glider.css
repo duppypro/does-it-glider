@@ -84,7 +84,7 @@
 .cell,
 .cell.dead,
 .cell.⬛
-{
+{ /* this is first in css so all cell common styles go here */
     fill: transparent;
 }
 
@@ -110,19 +110,20 @@
     fill: var(--white);
 }
 
-.cell.red-team
+.cell.red-team,
+.cell.🟥
 {
     fill: red;
-    stroke: pink;
+    stroke: #333;
     stroke-width: 1.5;
 }
 
-.cell.blue-team
+.cell.blue-team,
+.cell.🟦
 {
     fill: blue;
-    stroke: rgb(74, 74, 74);
+    stroke: #333;
     stroke-width: 1.5;
-    width: 15;
 }
 
 .cell.glider

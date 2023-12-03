@@ -9,7 +9,7 @@
 //     adds a graph paper pattern to it
 //     makes it zoom+pan in response to mouse and touch events
 // RETURN a d3 selection of the field that other gol functions can use    
-export const new_grid = (app, cell_px = 20, w = 12, h = false,) => {
+export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     if (!app || app.empty()) {
         return d3.select(null)
     }

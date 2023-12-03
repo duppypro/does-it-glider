@@ -11,7 +11,7 @@ import { d3_plus as d3 } from '/lib/d3-helper.js'
 
 // Conway's Game of Life modules
 import { apply_rules, add_seed } from '/src/conway/play.js'
-import { new_grid } from '/src/conway/grid.js'
+import { append_grid } from '/src/conway/grid.js'
 
 // does-it-glider svg modules
 import { draw } from '/src/does-it-glider/draw.js'
@@ -65,8 +65,8 @@ app.selectAll('.top,.bottom') // styles in common for both divs
 let touch_target = app.append('span')
     .classed('touch-target', true)
 
-const _title = 'Does it Glider?'    
-const _sub_title = 'Tap here to paste Wordle score.'
+const _title =                   'Does it Glider?'    
+const _sub_title =        'Tap here to paste Wordle score.'
 // max width reference: '##################################'
 // abbove is max width on smallest mobile (iPhone SE)
 
@@ -78,10 +78,10 @@ touch_target.append('div')
     .attr('class', 'title sub-title')
     .html(_sub_title)
 
-// make a gol field in the app DOM element
-let field = d3.select()
+// make a grid in the app DOM element
+let grid_sel = d3.select()
 if (use_svg) {
-    field = new_grid(svg_div, settings.CELL_PX, settings.GRID_WIDTH, settings.GRID_HEIGHT)
+    grid_sel = append_grid(svg_div, settings.CELL_PX, settings.GRID_WIDTH, settings.GRID_HEIGHT)
 }
 
 // make a new 2D array the size of the 5x6 start pattern
@@ -130,39 +130,52 @@ partial_mosquito[5] = 'oBBBB'
 
 let fight_paces = 5
 // join red team and blue team into start with red team on left and fight_paces dead cells in between
-seed = red_team.map((row, i) => row + 'o'.repeat(fight_paces) + blue_team[i])
+seed = red_team.map((row, i) => row + '⬛'.repeat(fight_paces) + blue_team[i])
 
 seed.forEach((row, i) => {
     seed[i] = row
         .replace(/🟦/g, 'B')
         .replace(/🟥/g, 'R')
         .replace(/⬜/g, 'b')
-        .replace(/⬛/g, 'o')
         .replace(/X/g, 'b')
+        .replace(/⬛/g, 'o')
         .replace(/\./g, 'o')
 })
 
-// get the width and height of the gol_field
+// get the width and height of the grid
 let grid_h = settings.GRID_HEIGHT
 let grid_w = settings.GRID_WIDTH
 // make a new 2D array the size of the g element divide by 20px
-let grid = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => 'o'))
+let grid_ping = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
+let grid_pong = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
 
 // copy the start into the center of the state
-add_seed(seed, grid)
+add_seed(seed, grid_pong)
+add_seed(seed, grid_ping) // grid_ping is grid_pong 1 tick earlier
+// we will ping pong between them
 
 let tick = 0
 let num_ticks = Math.round((settings.BEAT/4) / (1000 / 60)) // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
 let pause_for_new = Math.round(1.333 * 60) // to pause for N seconds, set N sec * 60 frames/sec then round() so that mod (%) works
+let ping_pong = true
 const event_loop = () => {
     if (pause_for_new == 0) {    // apply the rules to the state
         if (tick % num_ticks == 0) { // only apply rules every num_ticks frames
-            grid = apply_rules(grid)
+            if (ping_pong) { // TODO why wasn't [grid_ping, grid_pong] = [grid_pong, grid_ping] working?
+                apply_rules(grid_ping, grid_pong)
+            } else {
+                apply_rules(grid_pong, grid_ping)
+            }
+            ping_pong = !ping_pong
         }
     } else {
         pause_for_new-- // HACK, there must be a better way to pause for new and also draw only n frames
     }
-    draw(field, grid, settings.CELL_PX) // redraw every frame for smooth pan and zoom
+    if (ping_pong) {
+        draw(grid_sel, grid_ping, settings.CELL_PX) // redraw every frame for smooth pan and zoom
+    } else {
+        draw(grid_sel, grid_pong, settings.CELL_PX) // redraw every frame for smooth pan and zoom
+    }
     tick++
     requestAnimationFrame(event_loop) // BUG this might fix issue #5. trying again
 }
@@ -191,9 +204,9 @@ const parse_clipboard = (pasted_clipboard) => {
                 // try red team 🟥 blue team 🟦 fight idea
                 .replace(/🟨|🟧/g, 'b') // hits in wrong location are red team
                 .replace(/🟩|🟦/g, 'b') // hits in correct location are blue team
-                .replace(/⬜|⬛/g, 'o')
+                .replace(/⬜|⬛/g, '⬛')
                 .replace(/X/g, 'b')
-                .replace(/\./g, 'o')
+                .replace(/\./g, '⬛')
         )
     )
     console.log(`life_seed:\n ${life_seed}`)
@@ -261,9 +274,9 @@ const parse_clipboard = (pasted_clipboard) => {
         console.time('load_new_state')
 
         // clear the state
-        grid = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => 'o'))
+        grid_ping = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
         // copy the life_seed into the center of the state
-        add_seed(life_seed, grid)
+        add_seed(life_seed, grid_ping)
         pause_for_new = 2 * 60
 
         console.timeEnd('load_new_state')

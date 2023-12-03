@@ -8,26 +8,31 @@
 let draw_count = 0, sum_total = 0, sum_remove = 0
 let min = Infinity, max = 0
 let total = 0, time = 0
-const draw_times = Array(100).fill(0)
+const draw_times = Array(200).fill(0)
 const len = draw_times.length
 
+const COLOR_TO_CLASS = {
+    '⬛': false,
+    'o': false,
+    '.': false,
+    '⬜': '⬜',
+    'b': '⬜',
+    'X': '⬜',
+    '🟥': '🟥',
+    'R': '🟥',
+    '🟦': '🟦',
+    'B': '🟦',
+}
 // modify the DOM from a 2D array of Conway's Game of Life (gol_state)
-export const draw = (g, state, cell_px) => {
-    const startTime = performance.now()
+export const draw = (g, state, cell_px) => { // HACK - do better than passing cell_px down, add some class 
+    let startTime = performance.now()
     
     // render/draw each live cell in state as a white rect in the svg
     // clear all of the old rects first
     let all = g.selectAll('rect.cell')
     all.remove()
-    const removeTime = performance.now() - startTime
+    let removeTime = performance.now() - startTime
     // loop over 2D array state
-    const COLOR_TO_CLASS = {
-        'o': false,
-        '⬜': '⬜',
-        'b': '⬜',
-        'R': 'red-team',
-        'B': 'blue-team',
-    }
     for(let y = 0; y < state.length; y++) {
         for(let x = 0; x < state[0].length; x++) {
             if (COLOR_TO_CLASS[state[y][x]]) {
