@@ -55,7 +55,7 @@ if (use_gl) {
     webgl_div = app.mynew('div.bottom')
         .style('background', '#e600ffff') // should never see this
 }
-    
+
 app.selectAll('.top,.bottom') // styles in common for both divs
     .style('overflow', 'hidden') // tested, this is needed to avoid scroll bars
     .style('position', 'relative')
@@ -65,15 +65,15 @@ app.selectAll('.top,.bottom') // styles in common for both divs
 let touch_target = app.append('span')
     .classed('touch-target', true)
 
-const _title =                   'Does it Glider?'    
-const _sub_title =        'Tap here to paste Wordle score.'
+const _title = 'Does it Glider?'
+const _sub_title = 'Tap here to paste Wordle score.'
 // max width reference: '##################################'
 // abbove is max width on smallest mobile (iPhone SE)
 
 touch_target.append('div')
     .attr('class', 'title')
     .html(_title)
-    
+
 touch_target.append('div')
     .attr('class', 'title sub-title')
     .html(_sub_title)
@@ -155,24 +155,25 @@ add_seed(seed, grid_ping) // grid_ping is grid_pong 1 tick earlier
 // we will ping pong between them
 
 let tick = 0
-let num_ticks = Math.round((settings.BEAT/4) / (1000 / 60)) // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
+let num_ticks = Math.round((settings.BEAT / 1) / (1000 / 60)) // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
 let pause_for_new = Math.round(1.333 * 60) // to pause for N seconds, set N sec * 60 frames/sec then round() so that mod (%) works
 let ping_pong = true
 const event_loop = () => {
     if (pause_for_new == 0) {    // apply the rules to the state
         if (tick % num_ticks == 0) { // only apply rules every num_ticks frames
-            if (ping_pong) { // TODO why wasn't [grid_ping, grid_pong] = [grid_pong, grid_ping] working?
-                apply_rules(grid_ping, grid_pong)
-            } else {
-                apply_rules(grid_pong, grid_ping)
-            }
             ping_pong = !ping_pong
+            if (ping_pong) { // TODO why wasn't [grid_ping, grid_pong] = [grid_pong, grid_ping] working?
+                apply_rules(grid_pong, grid_ping) // ping_pong is true, grid_ping gets the new state
+            } else {
+                apply_rules(grid_ping, grid_pong)
+            }
         }
     } else {
         pause_for_new-- // HACK, there must be a better way to pause for new and also draw only n frames
     }
     if (ping_pong) {
         draw(grid_sel, grid_ping, settings.CELL_PX) // redraw every frame for smooth pan and zoom
+        // BUG #9 recreating rects every frame is doesn't allow animations to run *AND* it uses too much CPU 
     } else {
         draw(grid_sel, grid_pong, settings.CELL_PX) // redraw every frame for smooth pan and zoom
     }
@@ -185,15 +186,17 @@ let life_seed = []
 
 const parse_clipboard = (pasted_clipboard) => {
     let pasted_lines = []
-    pasted_lines = pasted_clipboard.split(/\r\n|\r|\n/ug)
+    // for importing RLE patterns
+    pasted_lines = pasted_clipboard.replace(/\$|!/ug, '\n') // '$' used as end of line and '!' used as end of seed in RLE format
+    pasted_lines = pasted_lines.split(/\r\n|\r|\n/ug)
 
     // filter pasted_lines for only lines that are length 5
-    // and contain only '⬜', '🟨', '🟩', or '⬛'
+    // and contain only '⬜', '🟨', '🟩', or '⬛' (or their aliases)
     let wordle_guesses = []
     wordle_guesses = pasted_lines
-        .filter(line => line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B|X|\.)+$/ug))
+        .filter(line => line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B|X|\.){5,5}$/ug))
     // this is only the lines with exactly 5 wordle squares
-    console.log(`filtered wordle_guesses: ${wordle_guesses}`)
+    console.log(`filtered wordle_guesses:\n${wordle_guesses.join('\n')}`)
 
     // convert all '🟨'|'🟩' in wordle_guesses to '⬜' and '⬜'|'⬛' to '⬛'
     life_seed = []
@@ -202,22 +205,24 @@ const parse_clipboard = (pasted_clipboard) => {
             guess
                 // need an intermediate character to avoid double replacement
                 // try red team 🟥 blue team 🟦 fight idea
-                .replace(/🟨|🟧/g, 'b') // hits in wrong location are red team
-                .replace(/🟩|🟦/g, 'b') // hits in correct location are blue team
-                .replace(/⬜|⬛/g, '⬛')
-                .replace(/X/g, 'b')
-                .replace(/\./g, '⬛')
+                .replace(/⬜|⬛/ug, '⬛')
+                .replace(/\./ug, '⬛')
+                .replace(/o/ug, '⬛')
+                .replace(/🟨|🟧/ug, '⬜') // hits in wrong location are red team
+                .replace(/🟩|🟦/ug, '⬜') // hits in correct location are blue team
+                .replace(/X/ug, '⬜')
+                .replace(/b/ug, '⬜')
         )
     )
-    console.log(`life_seed:\n ${life_seed}`)
+    console.log(`life_seed:\n${life_seed.join('\n')}`)
 
     let beat_pasted = settings.BEAT
     let beat_wordle_guesses = settings.BEAT
     let beat_life_seed = settings.BEAT
     // draw/render pasted_lines in the .paste-line divs
     const draw_pasted_lines = () => {
-        console.log(`draw_pasted_lines()`)
-        const transition = app
+        const last_line = pasted_lines.length - 1
+        app
             .selectAll('.paste-line')
             .data(pasted_lines)
             .join(
@@ -230,11 +235,14 @@ const parse_clipboard = (pasted_clipboard) => {
             .html(line => line || '&nbsp;')
             .transition().duration(beat_pasted)
             .remove()
-            .on('end', draw_wordle_guesses())
+            .on('end',
+                (_d, i) => { if (i == last_line) draw_wordle_guesses() }
+            )
     }
 
     const draw_wordle_guesses = () => {
-        const transiton = app
+        const last_line = wordle_guesses.length - 1
+        app
             .selectAll('.paste-line')
             .data(wordle_guesses)
             // d3.data() stores the array life_seed on the parent DOM element
@@ -242,7 +250,7 @@ const parse_clipboard = (pasted_clipboard) => {
             // and calls enter, update, or exit on each element of data array
             // as appropriate for diff of new data comapred to previous data
             .join(
-                enter => enter.mynew('div').classed('paste-line', true),
+                enter => enter.append('div').classed('paste-line', true),
                 update => update,
                 exit => exit
                     .remove()
@@ -250,34 +258,56 @@ const parse_clipboard = (pasted_clipboard) => {
             .html(d => d)
             .transition().duration(beat_wordle_guesses)
             .remove()
-            .on('end', () => {
-                console.log(`draw_wordle_guesses() end event`)
-                draw_life_seed()
-            })
+            .on('end',
+                (_d, i) => {
+                    if (i == last_line) draw_life_seed()
+                }
+            )
     }
 
     const draw_life_seed = () => {
-        console.log(`draw_life_seed()`)
-        const transition = app
+        const last_line = life_seed.length - 1
+        console.log(`draw_life_seed: last_line = ${last_line}`)
+        app
             .selectAll('.paste-line')
             .data(life_seed)
+            .join(
+                enter => enter.append('div').classed('paste-line', true),
+                update => update,
+                exit => exit
+                    .remove()
+            ) //join returns enter and update merged
             .html(d => d)
             .transition().duration(beat_life_seed)
             .remove()
-            .on('end', (a, b, c, d) => {
-                console.log(`count these end events:\n${a}\n${b}\n${c}\n${d}`)
-                load_new_state(life_seed || seed)
-            }) // BUG #8 this transition ends for each line, I want to wait for the last
+            .on('end',
+                (_d, i) => {
+                    console.log(`.data(life_seed): [${i}] = ${_d}\n`)
+                    if (i == last_line)
+                        load_new_state(life_seed || seed)
+                }
+            ) // BUG #8 this transition ends for each line, I want to wait for the last
     }
 
     const load_new_state = (life_seed) => {
         console.time('load_new_state')
 
+        let grid
         // clear the state
-        grid_ping = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
+        if (ping_pong) {
+            grid = grid_ping // if ping_pong is true, then we just finished applying rule to grid_ping, replace it
+        } else {
+            grid = grid_pong
+        }
+        // clear the grid in place
+        for (let row of grid) {
+            for (let i = 0; i < row.length; i++) {
+                row[i] = '⬛'
+            }
+        }
         // copy the life_seed into the center of the state
-        add_seed(life_seed, grid_ping)
-        pause_for_new = 2 * 60
+        add_seed(life_seed, grid)
+        pause_for_new = Math.round(1.333 * 60) // secs * frames/sec => units of frames
 
         console.timeEnd('load_new_state')
     }

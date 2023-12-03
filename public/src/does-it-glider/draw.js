@@ -8,30 +8,28 @@
 let draw_count = 0, sum_total = 0, sum_remove = 0
 let min = Infinity, max = 0
 let total = 0, time = 0
-const draw_times = Array(200).fill(0)
-const len = draw_times.length
 
 const COLOR_TO_CLASS = {
     '⬛': false,
     'o': false,
     '.': false,
-    '⬜': '⬜',
+    '⬜':'⬜',
     'b': '⬜',
     'X': '⬜',
-    '🟥': '🟥',
+    '🟥':'🟥',
     'R': '🟥',
-    '🟦': '🟦',
+    '🟦':'🟦',
     'B': '🟦',
 }
 // modify the DOM from a 2D array of Conway's Game of Life (gol_state)
 export const draw = (g, state, cell_px) => { // HACK - do better than passing cell_px down, add some class 
-    let startTime = performance.now()
+    const startTime = performance.now()
     
     // render/draw each live cell in state as a white rect in the svg
     // clear all of the old rects first
-    let all = g.selectAll('rect.cell')
+    const all = g.selectAll('rect.cell')
     all.remove()
-    let removeTime = performance.now() - startTime
+    const removeTime = performance.now() - startTime
     // loop over 2D array state
     for(let y = 0; y < state.length; y++) {
         for(let x = 0; x < state[0].length; x++) {
@@ -48,21 +46,9 @@ export const draw = (g, state, cell_px) => { // HACK - do better than passing ce
         }
     }
     
-    draw_times[draw_count] = {
-        total: performance.now() - startTime,
-        remove: removeTime,
-    }
-    total += time = draw_times[draw_count].total
-    sum_total += time
-    sum_remove += draw_times[draw_count].remove
-    if (time < min) min = time
-    if (time > max) max = time
-    draw_count++
-    if (draw_count >= len) {
-        console.log(`total: ${(sum_total / len).toFixed(2)}ms, remove: ${(sum_remove / len).toFixed(2) }ms, min: ${min.toFixed(2)}ms, max: ${max.toFixed(2)}ms`)
-        draw_count = 0
-        sum_total = sum_remove = 0
-        min = Infinity, max = 0
+    const draw_time = performance.now() - startTime
+    if (draw_time > 33.33) {
+        console.log(`draw time: ${draw_time.toFixed(3)}ms`)
     }
 }
 
