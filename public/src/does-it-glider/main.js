@@ -149,15 +149,38 @@ let grid_w = settings.GRID_WIDTH
 let grid_ping = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
 let grid_pong = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
 
-// copy the start into the center of the state
-add_seed(seed, grid_pong)
-add_seed(seed, grid_ping) // grid_ping is grid_pong 1 tick earlier
-// we will ping pong between them
+const load_new_state = (life_seed) => {
+    console.time('load_new_state')
+
+    let grid
+    // clear the state
+    if (ping_pong) {
+        grid = grid_ping // if ping_pong is true, then we just finished applying rule to grid_ping, replace it
+    } else {
+        grid = grid_pong
+    }
+    // clear the grid in place
+    for (let row of grid) {
+        for (let i = 0; i < row.length; i++) {
+            row[i] = '⬛'
+        }
+    }
+
+    // copy the life_seed into the center of the state
+    add_seed(life_seed, grid)
+    // FIX #10 try insta draw to the new seed not visible during the pause_for_new dela 
+    draw(grid_sel, grid, settings.CELL_PX)
+    pause_for_new = Math.round(1.333 * 60) // secs * frames/sec => units of frames
+
+    console.timeEnd('load_new_state')
+}
 
 let tick = 0
-let num_ticks = Math.round((settings.BEAT / 1) / (1000 / 60)) // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
+let num_ticks = Math.round((settings.BEAT / 4) / (1000 / 60)) // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
 let pause_for_new = Math.round(1.333 * 60) // to pause for N seconds, set N sec * 60 frames/sec then round() so that mod (%) works
 let ping_pong = true
+load_new_state(seed)
+
 const event_loop = () => {
     if (pause_for_new == 0) {    // apply the rules to the state
         if (tick % num_ticks == 0) { // only apply rules every num_ticks frames
@@ -167,15 +190,14 @@ const event_loop = () => {
             } else {
                 apply_rules(grid_ping, grid_pong)
             }
+            if (ping_pong) {
+                draw(grid_sel, grid_ping, settings.CELL_PX)
+            } else {
+                draw(grid_sel, grid_pong, settings.CELL_PX)
+            }
         }
     } else {
         pause_for_new-- // HACK, there must be a better way to pause for new and also draw only n frames
-    }
-    if (ping_pong) {
-        draw(grid_sel, grid_ping, settings.CELL_PX) // redraw every frame for smooth pan and zoom
-        // BUG #9 recreating rects every frame is doesn't allow animations to run *AND* it uses too much CPU 
-    } else {
-        draw(grid_sel, grid_pong, settings.CELL_PX) // redraw every frame for smooth pan and zoom
     }
     tick++
     requestAnimationFrame(event_loop) // BUG this might fix issue #5. trying again
@@ -283,33 +305,10 @@ const parse_clipboard = (pasted_clipboard) => {
             .on('end',
                 (_d, i) => {
                     console.log(`.data(life_seed): [${i}] = ${_d}\n`)
-                    if (i == last_line)
+                    if (i == last_line) // fixed #8
                         load_new_state(life_seed || seed)
                 }
-            ) // BUG #8 this transition ends for each line, I want to wait for the last
-    }
-
-    const load_new_state = (life_seed) => {
-        console.time('load_new_state')
-
-        let grid
-        // clear the state
-        if (ping_pong) {
-            grid = grid_ping // if ping_pong is true, then we just finished applying rule to grid_ping, replace it
-        } else {
-            grid = grid_pong
-        }
-        // clear the grid in place
-        for (let row of grid) {
-            for (let i = 0; i < row.length; i++) {
-                row[i] = '⬛'
-            }
-        }
-        // copy the life_seed into the center of the state
-        add_seed(life_seed, grid)
-        pause_for_new = Math.round(1.333 * 60) // secs * frames/sec => units of frames
-
-        console.timeEnd('load_new_state')
+            )
     }
 
     draw_pasted_lines() // this function will chain to the next functions

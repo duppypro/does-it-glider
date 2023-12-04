@@ -187,7 +187,7 @@ export const webgl_context = (parent) => {
         // assume requestAnimationFrame is called 60 times per second
         // 2^53 / 60 / 60 / 60 / 24 / 365 = 4,760,274 years
         // 60fps is too fast. Only aplply the rules and draw some of the time.
-        if (tick % 2 == 0) { // every 20 frames is 1/3 of a second, so 3 fps
+        if (tick % 8 == 0) { // every 20 frames is 1/3 of a second, so 3 fps
             // TODO #7 add smart pause that does not redraw if no game state change and no window resize or zoom
             if (tick == 0) {
                 // do some init on the first frame if needed
