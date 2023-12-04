@@ -1,29 +1,37 @@
 # does-it-glider
-Import a seed for Conway's Life from Discord (or others in the future) and see if it creates a glider.
 
-# Getting Started
-This project uses firebase cloud functions and database.
+Paste a seed for Conway's Life from the clipboard and see if it creates a glider.
 
-1. Create a Firebase Project
-1. Add realtime database, firestore database, and (cloud) functions
-1. Example: https://console.firebase.google.com/project/does-it-glider/overview
-1. $ npm install -g firebase
-1. $ npm install -g firebase-tools (to get the CLI)
-1. $ cd Github project directory (Ex: ~/GitHub/does-it-glider)
-1. $ firebase login (will open a browser window for Auth)
-1. $ firebase init
-    1. I selected 'y' to automatic deploys with GitHub
-    1. configured secrets at https://github.com/duppypro/does-it-glider/settings/secrets/actions
-    1. Created branch 'web-live' instead of default 'main'
-    1. ```Error: Cloud resource location is not set for this project but the operation you are attempting to perform in Cloud Storage requires it. Please see this documentation for more details: https://firebase.google.com/docs/projects/locations```
-        1. Fixed: Must configure Storage on https://console.firebase.google.com/project/does-it-glider/storage
-    1. now getting ```Error: Failed to get or create a stack using the given initialization details: FirebaseError: Unable to parse JSON: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON```
-    2. Trying this fix: https://github.com/firebase/firebase-tools/issues/6472
-        3. ```firebase experiments:disable internalframeworks
-firebase experiments:enable webframeworks```
-    3. trying firebase init yet again: I skipped GitHub actions and it worked
+Inspired by good friend @peteyboy, creator of the first Wordle->Life
 
-# First ```firebase deploy```
+&nbsp;&nbsp;&nbsp;&nbsp;[Wordle Life Mojo](https://warofwordcraft.com/cgi-bin/wordle-life-mojo.cgi)
 
-1. changed version 10.5.2 in src tags to 12.7.0
-2. UNDO the above change to make it work! changed back to 10.5.2
+## Open Source with attribution required
+
+### Copy liberally but please acknowledge where you got it.
+
+That's why I don't minify or uglify the source code.
+
+## Motivation
+
+I am making this as much for the fun of using it as for practicing 'good' or 'clean' coding practices. My first realization is that the definition of 'good' or 'clean' is subjective or at least depends on the goals.
+
+These are some example goals that can change the way the code is implemented:
+
+* **I just want to see the idea working and play with it.**
+  * hard code constants everywhere making fragile assumptions about screen size, memory size, speed, browser version
+  * no attempt at accessibility or internationalization friendly
+  * no instructions, attract mode, onboarding, or help
+  * goal is to get something you can play with quick
+* **I want my friends to use it on different devices and browsers.**
+  * spend some time abstracting the functions that are different across a decent size but incomplete set of targets
+  * replace some hard coded constants with values from a config file
+  * no automated repeatable tests, test manually
+* **Only one developer, maybe two.**
+  * conventions for variable naming and folder structure not documented (or even followed consistently)
+  * limited modularity
+* **Large dev team**
+  * add modularity, smaller files
+  * add an .env or config file for often used constants
+  * consider using a framework
+  * add automated tests so if your changes break other function, it is detected early

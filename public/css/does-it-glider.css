@@ -1,12 +1,15 @@
-/* CSS for does-it-glider */
+/*******************************************************************************
+ *  (c) 2023, David 'Duppy' Proctor, Interface Arts
+ *
+ *  does-it-glider
+ *      css
+ *
+ ******************************************************************************/
 
-.does-it-glider-app {
-    /* width: 100%;
-    height: 100vh; */
-    /* z-index: 1; */
-    /* pointer-events: none;
-    user-select: none; */
-    overflow: hidden;
+.does-it-glider-app
+{ /* this is the topmost parent element for the web app */
+    height: 100vh;
+    /* height: 100mvh; */
     --green: #6aaa64;
     --darkendGreen: #40a030;
     --yellow: #c9b458;
@@ -16,6 +19,7 @@
     --darkGray: #939598;
     --white: #fff;
     --black: #212121;
+    --vscode-blue: #026ec1;/* VSCode 'blue' = #026ec1; */
     /* high contrast */
     --orange: #f5793a;
     --blue: #85c0f9;
@@ -27,10 +31,19 @@
     touch-action: manipulation;
 }
 
-.does-it-glider-app .paste-line,
-.does-it-glider-app .title {
+.touch-target
+{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    text-align: center;
+}
+
+.paste-line,
+.title
+{
     background-color: rgba(0, 0, 0, 0.4);
-    /* pointer-events: none; */
     user-select: none;
     padding-top: 0.25em;
     text-align: center;
@@ -38,24 +51,100 @@
     width: 100%;
     color: var(--darkendYellow);
     font-weight: bold;
-    /* -webkit-text-stroke-width: 1px; */
-    /* -webkit-text-stroke-color: var(--black); */
 }
 
-.does-it-glider-app .paste-line,
-.does-it-glider-app .sub-title {
+.paste-line,
+.sub-title
+{
     font-size: 1em;
     padding-bottom: 0.25em;
+    opacity: 60%;
 }
 
-.does-it-glider-app .touch-target {
-    z-index: 10;
-}
-
-.does-it-glider-app .paste-line {
+.paste-line
+{
     color: var(--white);
     min-height: 1em;
     padding: 0;
     text-align: left;
 }
 
+@keyframes rainbow-color
+{
+    0% {color: red;}
+    14% {color: orange;}
+    28% {color: yellow;}
+    42% {color: lime;}
+    57% {color: blue;}
+    71% {color: indigo;}
+    85% {color: violet;}
+    100% {color: red;}
+}
+
+@keyframes rainbow-fill
+{
+    0% {fill: red;}
+    14% {fill: orange;}
+    28% {fill: yellow;}
+    42% {fill: lime;}
+    57% {fill: blue;}
+    71% {fill: indigo;}
+    85% {fill: violet;}
+    100% {fill: red;}
+}
+
+.cell,
+.cell.dead,
+.cell.⬛
+{ /* this is first in css so all cell common styles go here */
+    fill: transparent;
+}
+
+.pattern-line
+{
+    stroke: #666;
+    stroke-width: 1;
+}
+
+.pattern-background
+{
+    fill: #111;
+}
+
+.grid-fill
+{
+    fill: url(#grid-pattern); 
+}
+
+.cell.live,
+.cell.⬜
+{
+    fill: var(--white);
+}
+
+.cell.red-team,
+.cell.🟥
+{
+    fill: red;
+    stroke: #333;
+    stroke-width: 1.5;
+}
+
+.cell.blue-team,
+.cell.🟦
+{
+    fill: blue;
+    stroke: #333;
+    stroke-width: 1.5;
+}
+
+.cell.⬜,
+.cell.glider
+{
+    animation: rainbow-fill 16ms linear infinite;
+}
+
+.arcade-attract-text
+{
+    animation: rainbow-color 16ms linear infinite;
+}
