@@ -138,7 +138,7 @@
     stroke-width: 1.5;
 }
 
-.cell.⬜,
+/* .cell.⬜, */
 .cell.glider
 {
     animation: rainbow-fill 16ms linear infinite;

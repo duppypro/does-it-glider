@@ -10,7 +10,7 @@ import { settings } from '/src/does-it-glider/settings.js'
 import { d3_plus as d3 } from '/lib/d3-helper.js'
 
 // Conway's Game of Life modules
-import { apply_rules, add_seed } from '/src/conway/play.js'
+import { apply_rules as apply_rules_old_new, add_seed } from '/src/conway/play.js'
 import { append_grid } from '/src/conway/grid.js'
 
 // does-it-glider svg modules
@@ -20,6 +20,9 @@ import { draw } from '/src/does-it-glider/draw.js'
 import { webgl_context } from '/src/mywebgl/render.js'
 
 // Init
+const log = console.log
+const err = console.error
+
 // get query params
 const urlParams = new URLSearchParams(window.location.search)
 const version = urlParams.get('v') || 'stable'
@@ -39,9 +42,9 @@ if (app.empty()) {
 // get the width and height of the app
 let app_rect = app.node().getBoundingClientRect()
 app.style('display', 'flex')
+    // set the flex direction based on the aspect ratio of the app container
     .style('flex-direction', (app_rect.width > app_rect.height) ? 'row' : 'column')
 
-// top half
 let svg_div = d3.select() // initialize to empty selection
 let webgl_div = d3.select() // initialize to empty selection
 
@@ -50,10 +53,9 @@ if (use_svg) {
         .style('background', '#000000ff') // out of bounds color
 }
 
-// bottom half    
 if (use_gl) {
     webgl_div = app.mynew('div.bottom')
-        .style('background', '#e600ffff') // should never see this
+        .style('background', '#e600ffff') // should never see this color
 }
 
 app.selectAll('.top,.bottom') // styles in common for both divs
@@ -67,8 +69,8 @@ let touch_target = app.append('span')
 
 const _title = 'Does it Glider?'
 const _sub_title = 'Tap here to paste Wordle score.'
-// max width reference: '##################################'
-// abbove is max width on smallest mobile (iPhone SE)
+// max width ---- '##################################'
+// abbove #'s are max width on smallest mobile (iPhone SE)
 
 touch_target.append('div')
     .attr('class', 'title')
@@ -84,63 +86,44 @@ if (use_svg) {
     grid_sel = append_grid(svg_div, settings.CELL_PX, settings.GRID_WIDTH, settings.GRID_HEIGHT)
 }
 
-// make a new 2D array the size of the 5x6 start pattern
-let seed = []
-// set the start pattern using life_seed format
-seed[0] = '⬛⬛⬛⬛⬛'
-seed[1] = '⬛⬛⬛⬛⬛'
-seed[2] = '⬛⬛⬜⬛⬛'
-seed[3] = '⬛⬛⬛⬜⬛'
-seed[4] = '⬛⬜⬜⬜⬛'
-seed[5] = '⬛⬛⬛⬛⬛'
+// set the starting seed for attract mode
+let attract_seed = []
+attract_seed[0] = '⬛⬛⬜⬛⬛'
+attract_seed[1] = '⬛⬛⬛⬜⬛'
+attract_seed[2] = '⬛⬜⬜⬜⬛'
 
-//test a wordle fight pattern
+//test a RED team BLUE team wordle fight seed
 /*
-ooRRRoooooBoooB
-ooRRRoooooooBBo
-RRRRRoooooBBBBB
-ooooooooooooooo
-ooooooooooooooo
-ooooooooooooooo
+⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛
+⬛⬛🟥🟥🟥⬛⬛⬛⬛⬛🟦⬛⬛⬛🟦
+⬛⬛🟥🟥🟥⬛⬛⬛⬛⬛⬛⬛🟦🟦⬛
+🟥🟥🟥🟥🟥⬛⬛⬛⬛⬛🟦🟦🟦🟦🟦
+⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛
+⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛
 */
 
 let red_team = []
-red_team[0] = 'ooRRR'
-red_team[1] = 'ooRRR'
-red_team[2] = 'RRRRR'
-red_team[3] = 'ooooo'
-red_team[4] = 'ooooo'
-red_team[5] = 'ooooo'
+red_team[0] = '⬛⬛🟥🟥🟥'
+red_team[1] = '⬛⬛🟥🟥🟥'
+red_team[2] = '🟥🟥🟥🟥🟥'
 
 let blue_team = []
-blue_team[0] = 'BoooB'
-blue_team[1] = 'ooBBo'
-blue_team[2] = 'BBBBB'
-blue_team[3] = 'ooooo'
-blue_team[4] = 'ooooo'
-blue_team[5] = 'ooooo'
+blue_team[0] = '🟦⬛⬛⬛🟦'
+blue_team[1] = '⬛⬛🟦🟦⬛'
+blue_team[2] = '🟦🟦🟦🟦🟦'
 
+// a mosquito seed glides horizontally
 let partial_mosquito = []
-partial_mosquito[0] = 'ooooo'
-partial_mosquito[1] = 'ooooo'
-partial_mosquito[2] = 'oooBo'
-partial_mosquito[3] = 'ooooB'
-partial_mosquito[4] = 'BoooB'
-partial_mosquito[5] = 'oBBBB'
+partial_mosquito[0] = '⬛⬛⬛⬜⬛'
+partial_mosquito[1] = '⬛⬛⬛⬛⬜'
+partial_mosquito[2] = '⬜⬛⬛⬛⬜'
+partial_mosquito[3] = '⬛⬜⬜⬜⬜'
 
-let fight_paces = 5
 // join red team and blue team into start with red team on left and fight_paces dead cells in between
-seed = red_team.map((row, i) => row + '⬛'.repeat(fight_paces) + blue_team[i])
-
-seed.forEach((row, i) => {
-    seed[i] = row
-        .replace(/🟦/g, 'B')
-        .replace(/🟥/g, 'R')
-        .replace(/⬜/g, 'b')
-        .replace(/X/g, 'b')
-        .replace(/⬛/g, 'o')
-        .replace(/\./g, 'o')
-})
+let fight_paces = 5
+attract_seed = red_team.map((red_row, i) =>
+    red_row + '⬛'.repeat(fight_paces) + blue_team[i]
+)
 
 // get the width and height of the grid
 let grid_h = settings.GRID_HEIGHT
@@ -149,81 +132,77 @@ let grid_w = settings.GRID_WIDTH
 let grid_ping = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
 let grid_pong = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
 
-const load_new_state = (life_seed) => {
-    console.time('load_new_state')
-
-    let grid
-    // clear the state
-    if (ping_pong) {
-        grid = grid_ping // if ping_pong is true, then we just finished applying rule to grid_ping, replace it
-    } else {
-        grid = grid_pong
-    }
+const load_new_seed = (new_seed) => {
+    let grid_now = ping_pong ? grid_ping : grid_pong
     // clear the grid in place
-    for (let row of grid) {
+    for (let row of grid_now) {
         for (let i = 0; i < row.length; i++) {
             row[i] = '⬛'
         }
     }
 
-    // copy the life_seed into the center of the state
-    add_seed(life_seed, grid)
-    // FIX #10 try insta draw to the new seed not visible during the pause_for_new dela 
-    draw(grid_sel, grid, settings.CELL_PX)
-    pause_for_new = Math.round(1.333 * 60) // secs * frames/sec => units of frames
+    // fix new_seed rows to be array of chars instead of strings
+    // this makes indexing work with multi byte unicode characters
+    // if the row is already an array its a no-op ([...row] == [...[...row]])
+    // should FIX BUG #12
+    new_seed = new_seed.map(row => [...row])
 
-    console.timeEnd('load_new_state')
+    // copy the life_seed into the center of the grid
+    add_seed(new_seed, grid_now)
+    // replace instadraw with setting a global flag that the event loop will pick up
+    tick = 0 // Just use the tick counter to cause a new draw?
+    // WARNING ⚠️ this means tick isn't really the frame count since beginning of time
+    pause_for_new = Math.round(1.333 * 60) // secs * frames/sec => units of frames
 }
 
 let tick = 0
-let num_ticks = Math.round((settings.BEAT / 4) / (1000 / 60)) // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
-let pause_for_new = Math.round(1.333 * 60) // to pause for N seconds, set N sec * 60 frames/sec then round() so that mod (%) works
+let ticks_per_frame = settings.TICKS_PER_FRAME // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
+let pause_for_new = settings.PAUSE_FOR_NEW // to pause for N seconds, set N sec * 60 frames/sec then round() so that mod (%) works
 let ping_pong = true
-load_new_state(seed)
+load_new_seed(attract_seed)
 
 const event_loop = () => {
-    if (pause_for_new == 0) {    // apply the rules to the state
-        if (tick % num_ticks == 0) { // only apply rules every num_ticks frames
+    if (tick == 0 || !pause_for_new) { // always run the first time even if paused so new grid is drawn
+        if (tick % ticks_per_frame == 0) { // only apply rules every num_ticks frames
             ping_pong = !ping_pong
-            if (ping_pong) { // TODO why wasn't [grid_ping, grid_pong] = [grid_pong, grid_ping] working?
-                apply_rules(grid_pong, grid_ping) // ping_pong is true, grid_ping gets the new state
-                draw(grid_sel, grid_ping, settings.CELL_PX)
-            } else {
-                apply_rules(grid_ping, grid_pong)
-                draw(grid_sel, grid_pong, settings.CELL_PX)
-            }
+            let grid_new = ping_pong ? grid_ping : grid_pong
+            let grid_old = ping_pong ? grid_pong : grid_ping
+            // WTF why wasn't [grid_ping, grid_pong] = [grid_pong, grid_ping] working?
+            apply_rules_old_new(grid_old, grid_new) // ping_pong is true, grid_ping gets the new grid
+            draw(grid_sel, grid_new, settings.CELL_PX) // HACK gotta be a better way to pass CELL_PX
         }
-    } else {
-        pause_for_new-- // HACK, there must be a better way to pause for new and also draw only n frames
     }
+    pause_for_new ? pause_for_new-- : pause_for_new = 0
     tick++
     requestAnimationFrame(event_loop) // BUG this might fix issue #5. trying again
 }
 requestAnimationFrame(event_loop)
 
-let life_seed = []
+let seed = []
 
 const parse_clipboard = (pasted_clipboard) => {
     let pasted_lines = []
     // for importing RLE patterns
     pasted_lines = pasted_clipboard.replace(/\$|!/ug, '\n') // '$' used as end of line and '!' used as end of seed in RLE format
-    pasted_lines = pasted_lines.split(/\r\n|\r|\n/ug)
+    pasted_lines = pasted_lines.split(/\r\n|\r|\n/ug) // TODO is this regex needed for all platforms?
 
     // filter pasted_lines for only lines that are length 5
     // and contain only '⬜', '🟨', '🟩', or '⬛' (or their aliases)
-    let wordle_guesses = []
-    wordle_guesses = pasted_lines
+    let guesses = []
+    guesses = pasted_lines
         .filter(line => line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B|X|\.){5,5}$/ug))
     // this is only the lines with exactly 5 wordle squares
-    console.log(`filtered wordle_guesses:\n${wordle_guesses.join('\n')}`)
+    log(`filtered wordle_guesses:\n${guesses.join('\n')}`)
 
     // convert all '🟨'|'🟩' in wordle_guesses to '⬜' and '⬜'|'⬛' to '⬛'
-    life_seed = []
-    wordle_guesses.map(guess =>
-        life_seed.push(
+    seed = []
+    guesses.map(guess =>
+        seed.push(
             guess
+                // this replacememnt is unique to guesses from wordle
+                // There is a problem that the high contrast mode of Wordle uses '⬜' for dead/empty
+                // but all the other formats I want to support use '⬜' for alive
                 // need an intermediate character to avoid double replacement
-                // try red team 🟥 blue team 🟦 fight idea
                 .replace(/⬜|⬛/ug, '⬛')
                 .replace(/\./ug, '⬛')
                 .replace(/o/ug, '⬛')
@@ -233,13 +212,13 @@ const parse_clipboard = (pasted_clipboard) => {
                 .replace(/b/ug, '⬜')
         )
     )
-    console.log(`life_seed:\n${life_seed.join('\n')}`)
+    log(`life_seed:\n${seed.join('\n')}`)
 
-    let beat_pasted = settings.BEAT
-    let beat_wordle_guesses = settings.BEAT
-    let beat_life_seed = settings.BEAT
+    let beat_pasted = settings.paste_animation.PASTED
+    let beat_guesses = settings.paste_animation.GUESSES
+    let beat_seed = settings.paste_animation.SEED
     // draw/render pasted_lines in the .paste-line divs
-    const draw_pasted_lines = () => {
+    const draw_clipboard_lines = () => {
         const last_line = pasted_lines.length - 1
         app
             .selectAll('.paste-line')
@@ -247,23 +226,22 @@ const parse_clipboard = (pasted_clipboard) => {
             .join(
                 enter => enter.append('div').classed('paste-line', true),
                 update => update,
-                exit => exit
-                    .remove()
+                exit => exit.remove()
             )
             // new line effect on both enter and update
             .html(line => line || '&nbsp;')
             .transition().duration(beat_pasted)
             .remove()
             .on('end',
-                (_d, i) => { if (i == last_line) draw_wordle_guesses() }
+                (_d, i) => { if (i == last_line) draw_guesses() }
             )
     }
 
-    const draw_wordle_guesses = () => {
-        const last_line = wordle_guesses.length - 1
+    const draw_guesses = () => {
+        const last_line = guesses.length - 1
         app
             .selectAll('.paste-line')
-            .data(wordle_guesses)
+            .data(guesses)
             // d3.data() stores the array life_seed on the parent DOM element
             // then d3.join() compares new data to previous data
             // and calls enter, update, or exit on each element of data array
@@ -271,25 +249,24 @@ const parse_clipboard = (pasted_clipboard) => {
             .join(
                 enter => enter.append('div').classed('paste-line', true),
                 update => update,
-                exit => exit
-                    .remove()
+                exit => exit.remove()
             ) //join returns enter and update merged
             .html(d => d)
-            .transition().duration(beat_wordle_guesses)
+            .transition().duration(beat_guesses)
             .remove()
             .on('end',
                 (_d, i) => {
-                    if (i == last_line) draw_life_seed()
+                    if (i == last_line) draw_seed()
                 }
             )
     }
 
-    const draw_life_seed = () => {
-        const last_line = life_seed.length - 1
-        console.log(`draw_life_seed: last_line = ${last_line}`)
+    const draw_seed = () => {
+        const last_line = seed.length - 1
+        log(`draw_life_seed: last_line = ${last_line}`)
         app
             .selectAll('.paste-line')
-            .data(life_seed)
+            .data(seed)
             .join(
                 enter => enter.append('div').classed('paste-line', true),
                 update => update,
@@ -297,31 +274,30 @@ const parse_clipboard = (pasted_clipboard) => {
                     .remove()
             ) //join returns enter and update merged
             .html(d => d)
-            .transition().duration(beat_life_seed)
+            .transition().duration(beat_seed)
             .remove()
             .on('end',
                 (_d, i) => {
-                    console.log(`.data(life_seed): [${i}] = ${_d}\n`)
+                    log(`.data(life_seed): [${i}] = ${_d}\n`)
                     if (i == last_line) // fixed #8
-                        load_new_state(life_seed || seed)
+                        load_new_seed(seed || attract_seed)
                 }
             )
     }
 
-    draw_pasted_lines() // this function will chain to the next functions
+    draw_clipboard_lines() // this function will chain to the next functions
     // ??? is there a better method that hooks into the end of the CSS animation instead of D3?
     // ??? if so, then am I using d3 for anything other than zoom transform or a fancier jquery?
-    // draw_wordle_guesses()
-    // draw_life_seed()
-    // load_new_state(life_seed || start)
 } // end parse_clipboard()
 
-const get_clipboard_text = async (event) => {
-    // get clipboard text
-    const pasted_clipboard = await navigator.clipboard.readText()
-    // BUG #2: pasted_clipboard not working on mobile browsers
-    console.log(`pasted_clipboard:\r\n${pasted_clipboard}`)
-    parse_clipboard(pasted_clipboard)
+const get_clipboard_text = (_e) => {
+    // get clipboard text, ignore event input because it might be a click event not paste
+    navigator.clipboard.readText()
+        .then(clipboard => {
+            log(`clipboard:\n${clipboard}\n`)
+            parse_clipboard(clipboard)
+        })
+    // BUG #2: paste not working on mobile browsers, haven't tested navigator.clipboard.readText() on mobile yet
 }
 
 // paste from clickboard on click(touch) to deal with mobile browsers
@@ -329,7 +305,7 @@ d3.select('.touch-target').on('click', get_clipboard_text)
 // also listen for paste event anywhere on the page
 d3.select('body').on('paste', get_clipboard_text)
 
-// make a webgl canvas in the left_div
+// make a webgl canvas in the other div
 if (use_gl) {
     const gl = webgl_context(webgl_div)
 }

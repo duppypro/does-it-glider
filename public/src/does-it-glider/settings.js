@@ -6,18 +6,26 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 // XXX
+
+const _beat = (60 * 1000) / 90.0 // BEATmsec = (60sec/ min * 1000msec/sec) / 120.0BPM
 export const settings = {
     // game of life configuration
     GRID_WIDTH: 192, // in cells
     GRID_HEIGHT: 192, // in cells
-    WRAP_GRID: false,
-
-    // shader source constants
-    CELL_PX: 16,
-    BORDER_PX: 1, // defined as inwards from the edge of the cell at CELL_PX
 
     // UI preferences
-    BEAT: (60 * 1000) / 90.0,
+    CELL_PX: 16,
+    BORDER_PX: 1, // defined as inwards from the edge of the cell at CELL_PX
     // Use BEAT for the speed of animations and life simulation
     // (60sec/ min * 1000msec/sec) / 120.0BPM -> msec/BEAT
+    BEAT: _beat,
+    // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
+    TICKS_PER_FRAME: Math.round((_beat / 4) / (1000 / 60)),
+    // to pause for N seconds, set N sec * 60 frames/sec then round() so that mod (%) works
+    PAUSE_FOR_NEW: Math.round(1.333 * 60),
+    paste_animation: {
+        PASTED: _beat,
+        GUESSES: _beat,
+        SEED: _beat,
+    }
 }

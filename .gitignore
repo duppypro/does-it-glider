@@ -2,6 +2,7 @@
 .firebase/
 .vscode/
 .DS_Store
+.profile-logs/
 
 ###### below here added by firebase install process ######
 # Logs
