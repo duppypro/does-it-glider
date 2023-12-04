@@ -17,7 +17,7 @@ export const settings = {
     BORDER_PX: 1, // defined as inwards from the edge of the cell at CELL_PX
 
     // UI preferences
-    BEAT: (60 * 1000) / 180.0,
+    BEAT: (60 * 1000) / 90.0,
     // Use BEAT for the speed of animations and life simulation
     // (60sec/ min * 1000msec/sec) / 120.0BPM -> msec/BEAT
 }

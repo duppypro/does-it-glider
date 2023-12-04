@@ -187,12 +187,9 @@ const event_loop = () => {
             ping_pong = !ping_pong
             if (ping_pong) { // TODO why wasn't [grid_ping, grid_pong] = [grid_pong, grid_ping] working?
                 apply_rules(grid_pong, grid_ping) // ping_pong is true, grid_ping gets the new state
-            } else {
-                apply_rules(grid_ping, grid_pong)
-            }
-            if (ping_pong) {
                 draw(grid_sel, grid_ping, settings.CELL_PX)
             } else {
+                apply_rules(grid_ping, grid_pong)
                 draw(grid_sel, grid_pong, settings.CELL_PX)
             }
         }
