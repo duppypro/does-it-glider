@@ -29,7 +29,6 @@ export const add_seed = (seed, grid) => {
         for(let x = cx, sx = 0; sx < sw; x++, sx++) {
             // clip instead of wrap
             if (x >= 0 && y >= 0 && x < gw && y < gh) {
-                // BUG #12 this doesn't work when unicode characters are in a string
                 // must make sure rows are arrays, not strings
                 grid[y][x] = seed[sy][sx]
             }

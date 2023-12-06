@@ -174,7 +174,7 @@ const event_loop = () => {
     }
     pause_for_new ? pause_for_new-- : pause_for_new = 0
     tick++
-    requestAnimationFrame(event_loop) // BUG this might fix issue #5. trying again
+    requestAnimationFrame(event_loop)
 }
 requestAnimationFrame(event_loop)
 
