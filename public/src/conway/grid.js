@@ -46,6 +46,9 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
         .attr('width', `${cell_px}px`)
         .attr('height', `${cell_px}px`)
     // add the grid lines
+    // TODO low priority: make the grid lines stroke-width responsive to zoom scale
+    // scaling the stroke width on the zoom event change of transform is something
+    // that I think I can do it with D3.js but not CSS
     pattern.append('path').attr('class', 'pattern-line')
         .attr('d', `M ${cell_px},0 L 0,0 0,${cell_px}`); // draw top and left edges of each cell
 
