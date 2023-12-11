@@ -144,7 +144,9 @@ const load_new_seed = (new_seed) => {
     // fix new_seed rows to be array of chars instead of strings
     // this makes indexing work with multi byte unicode characters
     // if the row is already an array its a no-op ([...row] == [...[...row]])
-    // should FIX BUG #12
+
+    // BUG #13 I broke paste again, not sure how
+    // It's working, it's just not drawing the seed's first step during the pause
     new_seed = new_seed.map(row => [...row])
 
     // copy the life_seed into the center of the grid
@@ -155,28 +157,32 @@ const load_new_seed = (new_seed) => {
     pause_for_new = Math.round(1.333 * 60) // secs * frames/sec => units of frames
 }
 
-let tick = 0
-let ticks_per_frame = settings.TICKS_PER_FRAME // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
-let pause_for_new = settings.PAUSE_FOR_NEW // to pause for N seconds, set N sec * 60 frames/sec then round() so that mod (%) works
-let ping_pong = true
-load_new_seed(attract_seed)
-
 const event_loop = () => {
     if (tick == 0 || !pause_for_new) { // always run the first time even if paused so new grid is drawn
+        if (tick == 0) {
+            log(`first frame`)
+        }
         if (tick % ticks_per_frame == 0) { // only apply rules every num_ticks frames
             ping_pong = !ping_pong
             let grid_new = ping_pong ? grid_ping : grid_pong
             let grid_old = ping_pong ? grid_pong : grid_ping
             // WTF why wasn't [grid_ping, grid_pong] = [grid_pong, grid_ping] working?
+            // TODO try alternating frames draw() and apply_rules() on different frames to shorten the time spent in any one frame handler
+            draw(grid_sel, grid_old, settings.CELL_PX) // HACK gotta be a better way to pass CELL_PX
             apply_rules_old_new(grid_old, grid_new) // ping_pong is true, grid_ping gets the new grid
-            draw(grid_sel, grid_new, settings.CELL_PX) // HACK gotta be a better way to pass CELL_PX
         }
     }
-    pause_for_new ? pause_for_new-- : pause_for_new = 0
+    pause_for_new > 0 ? pause_for_new-- : pause_for_new = 0
     tick++
     requestAnimationFrame(event_loop)
 }
-requestAnimationFrame(event_loop)
+let tick = 0
+let ticks_per_frame = settings.TICKS_PER_FRAME // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
+let pause_for_new = settings.PAUSE_FOR_NEW // to pause for N seconds, set N sec * 60 frames/sec then round() so that mod (%) works
+let ping_pong = true // ping_pong is true when ping is the current grid, pong is the next grid
+load_new_seed(attract_seed)
+event_loop() // try triggering the event loop to get the first frame of a new seed to draw
+
 
 let seed = []
 

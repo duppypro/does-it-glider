@@ -211,7 +211,7 @@ export const webgl_context = (parent) => {
         requestAnimationFrame(draw)
     }
     let tick = 0
-    draw()
+    // draw()
 
     //  return the context
     return gl

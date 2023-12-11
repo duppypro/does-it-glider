@@ -46,10 +46,6 @@ export const draw = (g, state, cell_px) => { // HACK - do better than passing ce
         }
     }
     
-    const draw_time = performance.now() - startTime
-    if (draw_time > 33.33) {
-        console.log(`draw time: ${draw_time.toFixed(3)}ms`)
-    }
 }
 
 /*******************************************************************************

@@ -104,11 +104,11 @@ export const apply_rules = (grid, new_grid) => {
             }
             // blue_team_neighbors = live_neighbors - red_team_neighbors
             // don't need to track blue_team_neighbors because we calc from red_team_neighbors
-            if (rules[grid[y][x]] && live_neighbors <= 8 && red_team_neighbors <= 8) {
+            if (rules[grid[y][x]] && live_neighbors <= 8 && red_team_neighbors <= 9) {
                 new_grid[y][x] = rules[grid[y][x]][live_neighbors][red_team_neighbors]
             } else {
                 success = false
-                console.error(`apply_rules() error: unknown cell state ${grid[y][x]}\n\tor live_neighbors ${live_neighbors} or red_team_neighbors ${red_team_neighbors} out of bounds.`)
+                console.error(`apply_rules() error: unknown cell at ${y},${x} '${grid[y][x]}'\n\tor live_neighbors ${live_neighbors} or red_team_neighbors ${red_team_neighbors} out of bounds.`)
             }
         }
     }
