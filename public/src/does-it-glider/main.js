@@ -26,7 +26,7 @@ const err = console.error
 // get query params
 const urlParams = new URLSearchParams(window.location.search)
 const version = urlParams.get('v') || 'stable'
-const use_gl = version == 'beta' || version == 'both'
+const use_gl = false //version == 'beta' || version == 'both'
 const use_svg = version == 'stable' || version == 'both'
 // warn if using the beta version
 if (use_gl) {
