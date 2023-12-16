@@ -71,6 +71,9 @@ const _title = 'Does it Glider?'
 const _sub_title = 'Tap here to paste Wordle score.'
 // max width ---- '##################################'
 // abbove #'s are max width on smallest mobile (iPhone SE)
+// TODO add speedometer right side of title bar to allow speed control
+// <img src="https://icons.iconarchive.com/icons/pictogrammers/material/48/speedometer-icon.png" width="48" height="48">
+
 
 touch_target.append('div')
     .attr('class', 'title')
@@ -144,9 +147,6 @@ const load_new_seed = (new_seed) => {
     // fix new_seed rows to be array of chars instead of strings
     // this makes indexing work with multi byte unicode characters
     // if the row is already an array its a no-op ([...row] == [...[...row]])
-
-    // BUG #13 I broke paste again, not sure how
-    // It's working, it's just not drawing the seed's first step during the pause
     new_seed = new_seed.map(row => [...row])
 
     // copy the life_seed into the center of the grid

@@ -10,8 +10,8 @@
 const _beat = (60 * 1000) / 90.0 // BEATmsec = (60sec/ min * 1000msec/sec) / 120.0BPM
 export const settings = {
     // game of life configuration
-    GRID_WIDTH: 192, // in cells
-    GRID_HEIGHT: 192, // in cells
+    GRID_WIDTH: 200,//128, // in cells
+    GRID_HEIGHT: 200,//128, // in cells
 
     // UI preferences
     CELL_PX: 16,
@@ -20,12 +20,12 @@ export const settings = {
     // (60sec/ min * 1000msec/sec) / 120.0BPM -> msec/BEAT
     BEAT: _beat,
     // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
-    TICKS_PER_FRAME: Math.round((_beat / 4) / (1000 / 60)),
+    TICKS_PER_FRAME: Math.round((_beat / 6) / (1000 / 60)),
     // to pause for N seconds, set N sec * 60 frames/sec then round() so that mod (%) works
     PAUSE_FOR_NEW: Math.round(1.333 * 60),
     paste_animation: {
         PASTED: _beat,
         GUESSES: _beat,
         SEED: _beat,
-    }
+    },
 }
