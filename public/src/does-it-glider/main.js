@@ -117,16 +117,16 @@ blue_team[2] = '🟦🟦🟦🟦🟦'
 
 // a mosquito seed glides horizontally
 let partial_mosquito = []
-partial_mosquito[0] = '⬛⬛⬛⬜⬛'
-partial_mosquito[1] = '⬛⬛⬛⬛⬜'
-partial_mosquito[2] = '⬜⬛⬛⬛⬜'
-partial_mosquito[3] = '⬛⬜⬜⬜⬜'
+partial_mosquito[0] = '⬛⬛⬛🟩⬛'
+partial_mosquito[1] = '⬛⬛⬛⬛🟩'
+partial_mosquito[2] = '🟩⬛⬛⬛🟩'
+partial_mosquito[3] = '⬛🟩🟩🟩🟩'
 
 // join red team and blue team into start with red team on left and fight_paces dead cells in between
-let fight_paces = 5
-attract_seed = red_team.map((red_row, i) =>
-    red_row + '⬛'.repeat(fight_paces) + blue_team[i]
-)
+// let fight_paces = 5
+// attract_seed = red_team.map((red_row, i) =>
+//     red_row + '⬛'.repeat(fight_paces) + blue_team[i]
+// )
 
 // get the width and height of the grid
 let grid_h = settings.GRID_HEIGHT
