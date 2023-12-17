@@ -76,41 +76,38 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     g.append('rect').classed('grid-background', true)
     .attr('width', `${G_WIDTH}px`)
     .attr('height', `${G_HEIGHT}px`)
-    
+
     g.append('rect').classed('grid-fill', true) // CSS will fill this with #grid-pattern
     .attr('width', `${G_WIDTH}px`)
     .attr('height', `${G_HEIGHT}px`)
     .style('fill', 'url(#grid-pattern)')
-    
+
     // hook the drag and zoom events to the svg
     // it's important that the transform is relative to the svg
     // then applied to the g element different from the svg
     // https://www.d3indepth.com/zoom-and-pan/#:~:text=It%27s%20helpful%20to%20distinguish%20between%20the%20HTML%20or%20SVG%20element%20that%20receives%20the%20zoom%20and%20pan%20gestures%20and%20the%20elements%20that%20get%20zoomed%20and%20panned%20(the%20elements%20that%20get%20transformed).%20It%27s%20important%20that%20these%20elements%20are%20different%2C%20otherwise%20the%20panning%20won%27t%20work%20properly.
     // DONE figure out how to use .extent() or .translateExtent() properly
-    // DONE DONE I was wrong. .translateExtent() is the right way to do this
     // More appreciation for how clever Michael Bostock is and the usefulness of D3js
     function apply_drag_zoom(event) {
         // use svg zoom and drag units to transform the g element
         let transform = event.transform
         transform = transform.translate(-G_PAD_LEFT, -G_PAD_TOP) // adjust for starting offset
-        // FIXED: Keep off-grid area from coming too far into the screen
         g.attr('transform', transform)
     }
-        
+
     const zoom = d3.zoom()
-        .scaleExtent([1 / 8, 4])
-        .translateExtent([
+        .scaleExtent([2 / cell_px, 64 / cell_px])
+        .translateExtent([ // FIXED: Keep off-grid area from coming too far into the screen
             [-G_PAD_LEFT - cx/4, -G_PAD_TOP - cy/4],
             [app_w + G_PAD_LEFT + cx/4, app_h + G_PAD_TOP + cy/4],
-            // [0 - cx/4, 0 - cy/4],
-            // [app_w + 0 + cx/4, app_h + 0 + cy/4],
         ])
         .on('zoom', apply_drag_zoom)
 
     svg.call(zoom)
     // Set the initial transform
-    // zoom.transform(svg, d3.zoomIdentity.translate(-G_PAD_LEFT, -G_PAD_TOP))  
-    
+    // TODO the zoom.transform didn't work as expected.
+    // I am trying to avoid applying a translation on every apply_drag_zoom()
+    // zoom.transform(svg, d3.zoomIdentity.translate(-G_PAD_LEFT, -G_PAD_TOP))
+
     return g
-} // end grid()
-        
+} // end append_grid()

@@ -10,7 +10,11 @@ import { settings } from '/src/does-it-glider/settings.js'
 import { d3_plus as d3 } from '/lib/d3-helper.js'
 
 // Conway's Game of Life modules
-import { apply_rules as apply_rules_old_new, add_seed } from '/src/conway/play.js'
+import {
+    apply_rules as apply_rules_old_new,
+    add_seed,
+    clear_grid,
+} from '/src/conway/play.js'
 import { append_grid } from '/src/conway/grid.js'
 
 // does-it-glider svg modules
@@ -28,7 +32,7 @@ const err = console.error
 const urlParams = new URLSearchParams(window.location.search)
 const version = urlParams.get('v') || 'stable'
 const use_gl = false //version == 'beta' || version == 'both'
-const use_svg = version == 'stable' || version == 'both'
+const use_svg = true //version == 'stable' || version == 'both'
 // warn if using the beta version
 if (use_gl) {
     console.warn(`Using Beta WebGL version.`)
@@ -72,7 +76,7 @@ const _title = 'Does it Glider?'
 const _sub_title = 'Tap here to paste Wordle score.'
 // max width ---- '##################################'
 // abbove #'s are max width on smallest mobile (iPhone SE)
-// TODO add speedometer right side of title bar to allow speed control
+// TODO add speedometer to allow speed control
 // <img src="https://icons.iconarchive.com/icons/pictogrammers/material/48/speedometer-icon.png" width="48" height="48">
 
 
@@ -84,15 +88,16 @@ touch_target.append('div')
     .attr('class', 'title sub-title')
     .html(_sub_title)
 
-// make a grid in the app DOM element
-let grid_sel = d3.select()
-if (use_svg) {
-    grid_sel = append_grid(svg_div, settings.CELL_PX, settings.GRID_WIDTH, settings.GRID_HEIGHT)
-}
-
 // get the width and height of the grid
 let grid_h = settings.GRID_HEIGHT
 let grid_w = settings.GRID_WIDTH
+let cell_px = settings.CELL_PX
+// make a grid in the app DOM element
+let grid_sel = d3.select()
+if (use_svg) {
+    grid_sel = append_grid(svg_div, cell_px, grid_w, grid_h)
+}
+
 // make a new 2D array the size of the g element divide by 20px
 let grid_ping = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
 let grid_pong = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
@@ -100,11 +105,7 @@ let grid_pong = Array.from({ length: grid_h }, () => Array.from({ length: grid_w
 const load_new_seed = (new_seed) => {
     let grid_now = ping_pong ? grid_ping : grid_pong
     // clear the grid in place
-    for (let row of grid_now) {
-        for (let i = 0; i < row.length; i++) {
-            row[i] = '⬛'
-        }
-    }
+    clear_grid(grid_now)
 
     // fix new_seed rows to be array of chars instead of strings
     // this makes indexing work with multi byte unicode characters
@@ -129,7 +130,7 @@ const event_loop = () => {
             let grid_new = ping_pong ? grid_ping : grid_pong
             let grid_old = ping_pong ? grid_pong : grid_ping
             // TODO try alternating frames draw() and apply_rules() on different frames to shorten the time spent in any one frame handler
-            draw(grid_sel, grid_old, settings.CELL_PX) // HACK gotta be a better way to pass CELL_PX
+            draw(grid_sel, grid_old, cell_px) // HACK gotta be a better way to pass CELL_PX
             apply_rules_old_new(grid_old, grid_new) // ping_pong is true, grid_ping gets the new grid
         }
     }
@@ -145,7 +146,7 @@ load_new_seed(attract_seed)
 event_loop() // try triggering the event loop to get the first frame of a new seed to draw
 
 
-let seed = []
+let seed = [] // TODO do better than using a global for the seed across the paste animations
 
 const parse_clipboard = (pasted_clipboard) => {
     let pasted_lines = []

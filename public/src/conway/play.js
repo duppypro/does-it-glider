@@ -36,7 +36,6 @@ export const add_seed = (seed, grid) => {
     }
 } // end add_seed()
 
-
 // apply_rules
 // INPUT a read-only 2D Array old grid, pre-allocted 2D array for the new grid state
 //     run Conway's Game of Life rules on it
@@ -114,3 +113,11 @@ export const apply_rules = (grid, new_grid) => {
     }
     return success
 } // end apply_rules()
+
+export const clear_grid = (grid) => {
+    for (let row of grid) {
+        for (let i = 0; i < row.length; i++) {
+            row[i] = '⬛'
+        }
+    }
+} // end clear_grid()
