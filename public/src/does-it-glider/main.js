@@ -15,6 +15,7 @@ import { append_grid } from '/src/conway/grid.js'
 
 // does-it-glider svg modules
 import { draw } from '/src/does-it-glider/draw.js'
+import { attract_seed } from '/src/does-it-glider/seeds.js'
 
 // WebGL modules
 import { webgl_context } from '/src/mywebgl/render.js'
@@ -89,45 +90,6 @@ if (use_svg) {
     grid_sel = append_grid(svg_div, settings.CELL_PX, settings.GRID_WIDTH, settings.GRID_HEIGHT)
 }
 
-// set the starting seed for attract mode
-let attract_seed = []
-attract_seed[0] = '⬛⬛⬜⬛⬛'
-attract_seed[1] = '⬛⬛⬛⬜⬛'
-attract_seed[2] = '⬛⬜⬜⬜⬛'
-
-//test a RED team BLUE team wordle fight seed
-/*
-⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛
-⬛⬛🟥🟥🟥⬛⬛⬛⬛⬛🟦⬛⬛⬛🟦
-⬛⬛🟥🟥🟥⬛⬛⬛⬛⬛⬛⬛🟦🟦⬛
-🟥🟥🟥🟥🟥⬛⬛⬛⬛⬛🟦🟦🟦🟦🟦
-⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛
-⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛
-*/
-
-let red_team = []
-red_team[0] = '⬛⬛🟥🟥🟥'
-red_team[1] = '⬛⬛🟥🟥🟥'
-red_team[2] = '🟥🟥🟥🟥🟥'
-
-let blue_team = []
-blue_team[0] = '🟦⬛⬛⬛🟦'
-blue_team[1] = '⬛⬛🟦🟦⬛'
-blue_team[2] = '🟦🟦🟦🟦🟦'
-
-// a mosquito seed glides horizontally
-let partial_mosquito = []
-partial_mosquito[0] = '⬛⬛⬛🟩⬛'
-partial_mosquito[1] = '⬛⬛⬛⬛🟩'
-partial_mosquito[2] = '🟩⬛⬛⬛🟩'
-partial_mosquito[3] = '⬛🟩🟩🟩🟩'
-
-// join red team and blue team into start with red team on left and fight_paces dead cells in between
-// let fight_paces = 5
-// attract_seed = red_team.map((red_row, i) =>
-//     red_row + '⬛'.repeat(fight_paces) + blue_team[i]
-// )
-
 // get the width and height of the grid
 let grid_h = settings.GRID_HEIGHT
 let grid_w = settings.GRID_WIDTH
@@ -166,7 +128,6 @@ const event_loop = () => {
             ping_pong = !ping_pong
             let grid_new = ping_pong ? grid_ping : grid_pong
             let grid_old = ping_pong ? grid_pong : grid_ping
-            // WTF why wasn't [grid_ping, grid_pong] = [grid_pong, grid_ping] working?
             // TODO try alternating frames draw() and apply_rules() on different frames to shorten the time spent in any one frame handler
             draw(grid_sel, grid_old, settings.CELL_PX) // HACK gotta be a better way to pass CELL_PX
             apply_rules_old_new(grid_old, grid_new) // ping_pong is true, grid_ping gets the new grid
@@ -199,6 +160,7 @@ const parse_clipboard = (pasted_clipboard) => {
         .filter(line => line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B|X|\.){5,5}$/ug))
     // this is only the lines with exactly 5 wordle squares
     log(`filtered wordle_guesses:\n${guesses.join('\n')}`)
+    // TODO limit number of lines found to 6
 
     // convert all '🟨'|'🟩' in wordle_guesses to '⬜' and '⬜'|'⬛' to '⬛'
     seed = []
@@ -269,7 +231,6 @@ const parse_clipboard = (pasted_clipboard) => {
 
     const draw_seed = () => {
         const last_line = seed.length - 1
-        log(`draw_life_seed: last_line = ${last_line}`)
         app
             .selectAll('.paste-line')
             .data(seed)
@@ -284,7 +245,6 @@ const parse_clipboard = (pasted_clipboard) => {
             .remove()
             .on('end',
                 (_d, i) => {
-                    log(`.data(life_seed): [${i}] = ${_d}\n`)
                     if (i == last_line) // fixed #8
                         load_new_seed(seed || attract_seed)
                 }

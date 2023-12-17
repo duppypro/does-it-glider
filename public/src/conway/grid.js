@@ -9,18 +9,28 @@ const log = console.log
 const err = console.error
 const min = Math.min
 const max = Math.max
+const round = Math.round
+const clip = (val, smallest = 1, largest = 100) => min(max(smallest, val), largest)
 //TODO LOW PRI: add a debug mode that logs to a textarea instead of console
 //TODO import these shorthands from a shared module
+
 // INPUT a d3 selection
-//     adds a graph paper pattern to it
-//     makes it zoom+pan in response to mouse and touch events
+//     adds an svg with grid lines
+//     attaches a drag and zoom event handler
+//     centers the grid in the app element with overflow hidden
+//     returns a d3 selection of the grid
 // RETURN a d3 selection of the field that other gol functions can use    
 export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
+    // check inputs
     if (!app || app.empty()) {
         return d3.select(null)
     }
-    if (!h) h = w
-    // w, h in units of life cells
+    if (!h) h = w // if h is not specified, make it square
+    clip(cell_px, 1, 256)
+    clip(w, 1, 1024)
+    clip(h, 1, 1024)
+
+    // w, h are in units of cells
     // all other dimensions in units of px
     const G_WIDTH = cell_px * w
     const G_HEIGHT = cell_px * h
@@ -79,27 +89,27 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     // DONE figure out how to use .extent() or .translateExtent() properly
     // DONE DONE I was wrong. .translateExtent() is the right way to do this
     // More appreciation for how clever Michael Bostock is and the usefulness of D3js
-    function apply_drag_zoom({ transform }) {
+    function apply_drag_zoom(event) {
         // use svg zoom and drag units to transform the g element
+        let transform = event.transform
         transform = transform.translate(-G_PAD_LEFT, -G_PAD_TOP) // adjust for starting offset
         // FIXED: Keep off-grid area from coming too far into the screen
         g.attr('transform', transform)
     }
         
-    svg.call(
-        d3.zoom()
-            .scaleExtent([1 / 8, 4])
-            .translateExtent([
-                [-G_PAD_LEFT - cx/4, -G_PAD_TOP - cy/4],
-                [app_w + G_PAD_LEFT + cx/4, app_h + G_PAD_TOP + cy/4],
-            ])
-            .on('zoom', apply_drag_zoom)
-            .on('end',
-                ({ transform }) => {
-                    log('end drag+zoom', transform.toString())
-                }
-            )
-    )
+    const zoom = d3.zoom()
+        .scaleExtent([1 / 8, 4])
+        .translateExtent([
+            [-G_PAD_LEFT - cx/4, -G_PAD_TOP - cy/4],
+            [app_w + G_PAD_LEFT + cx/4, app_h + G_PAD_TOP + cy/4],
+            // [0 - cx/4, 0 - cy/4],
+            // [app_w + 0 + cx/4, app_h + 0 + cy/4],
+        ])
+        .on('zoom', apply_drag_zoom)
+
+    svg.call(zoom)
+    // Set the initial transform
+    // zoom.transform(svg, d3.zoomIdentity.translate(-G_PAD_LEFT, -G_PAD_TOP))  
     
     return g
 } // end grid()
