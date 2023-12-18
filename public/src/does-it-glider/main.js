@@ -79,14 +79,13 @@ const _sub_title = 'Tap here to paste Wordle score.'
 // TODO add speedometer to allow speed control
 // <img src="https://icons.iconarchive.com/icons/pictogrammers/material/48/speedometer-icon.png" width="48" height="48">
 
-
 touch_target.append('div')
     .attr('class', 'title')
     .html(_title)
-
 touch_target.append('div')
     .attr('class', 'title sub-title')
     .html(_sub_title)
+let line_height = touch_target.select('.sub-title').node().clientHeight
 
 // get the width and height of the grid
 let grid_h = settings.GRID_HEIGHT
@@ -116,7 +115,8 @@ const load_new_seed = (new_seed) => {
     add_seed(new_seed, grid_now)
     // replace instadraw with setting a global flag that the event loop will pick up
     tick = 0 // Just use the tick counter to cause a new draw?
-    // WARNING ⚠️ this means tick isn't really the frame count since beginning of time
+    // WARNING ⚠️ this means tick isn't the frame count since beginning of time, just frame count since new seed
+    // also: generation # != frame count
     pause_for_new = Math.round(1.333 * 60) // secs * frames/sec => units of frames
 }
 
@@ -153,34 +153,43 @@ const parse_clipboard = (pasted_clipboard) => {
     // for importing RLE patterns
     pasted_lines = pasted_clipboard.replace(/\$|!/ug, '\n') // '$' used as end of line and '!' used as end of seed in RLE format
     pasted_lines = pasted_lines.split(/\r\n|\r|\n/ug) // TODO is this regex needed for all platforms?
+    pasted_lines = pasted_lines.slice(0, 40) // limit to 40 lines (arbitrary limit, only first 6 will be Wordle lines)
 
     // filter pasted_lines for only lines that are length 5
     // and contain only '⬜', '🟨', '🟩', or '⬛' (or their aliases)
     let guesses = []
-    guesses = pasted_lines
-        .filter(line => line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B|X|\.){5,5}$/ug))
+    guesses = pasted_lines.filter(line => {
+        line.trim()
+        return line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B|X|\.){5,5}$/ug)
+    })
     // this is only the lines with exactly 5 wordle squares
     log(`filtered wordle_guesses:\n${guesses.join('\n')}`)
     // TODO limit number of lines found to 6
 
     // convert all '🟨'|'🟩' in wordle_guesses to '⬜' and '⬜'|'⬛' to '⬛'
+    const text_line_to_seed_line = (line) => {
+        return line
+            // this replacememnt is unique to guesses from wordle
+            // There is a problem that the high contrast mode of Wordle uses '⬜' for dead/empty
+            // but all the other formats I want to support use '⬜' for alive
+            // need an intermediate character to avoid double replacement
+            .replace(/⬜|⬛/ug, '⬛')
+            .replace(/🟨|🟧/ug, '⬜')
+            .replace(/🟩|🟦/ug, '⬜')
+            .replace(/\./ug, '⬛')
+            .replace(/X/ug, '⬜')
+            .replace(/o/ug, '⬛')
+            .replace(/b/ug, '⬜')
+    }
+        
     seed = []
-    guesses.map(guess =>
-        seed.push(
-            guess
-                // this replacememnt is unique to guesses from wordle
-                // There is a problem that the high contrast mode of Wordle uses '⬜' for dead/empty
-                // but all the other formats I want to support use '⬜' for alive
-                // need an intermediate character to avoid double replacement
-                .replace(/⬜|⬛/ug, '⬛')
-                .replace(/\./ug, '⬛')
-                .replace(/o/ug, '⬛')
-                .replace(/🟨|🟧/ug, '⬜') // hits in wrong location are red team
-                .replace(/🟩|🟦/ug, '⬜') // hits in correct location are blue team
-                .replace(/X/ug, '⬜')
-                .replace(/b/ug, '⬜')
-        )
-    )
+    guesses.map(guess => {
+        guess = text_line_to_seed_line(guess)
+        if (guess?.length == 5) {
+            seed.push(guess)
+        }
+    })
+    seed = seed.slice(0, 6) // limit to 6 lines, the max number of guesses in Wordle
     log(`life_seed:\n${seed.join('\n')}`)
 
     let beat_pasted = settings.paste_animation.PASTED
@@ -189,21 +198,40 @@ const parse_clipboard = (pasted_clipboard) => {
     // draw/render pasted_lines in the .paste-line divs
     const draw_clipboard_lines = () => {
         const last_line = pasted_lines.length - 1
+        const cw = app.node().clientWidth
+        const ch = app.node().clientHeight
         app
             .selectAll('.paste-line')
-            .data(pasted_lines)
+            .data(pasted_lines.reverse()) // reverse the order so the last line is at the bottom
             .join(
-                enter => enter.append('div').classed('paste-line', true),
+                enter => enter.append('div').classed('paste-line', true)
+                    .style('position', 'absolute')
+                    .style('background-color', '#00000000')
+                    .style('opacity', 1)
+                    .style('top', (_d, i) => `${-(i + 1) * line_height}px`) // drop in from above the screen
+                    .style('text-align', 'center'),
+                    // .style('left', `${cw/2 - 5*line_height/2}px`),
                 update => update,
                 exit => exit.remove()
             )
-            // new line effect on both enter and update
             .html(line => line || '&nbsp;')
+            .transition().duration((_d, i) => beat_pasted)
+            .delay((_d, i) => i * beat_pasted / 4) // stagger the lines
+            .ease(d3.easeBounce)
+            .style('top', (_d, i) => `${ch *0.4 - (i + 1) * line_height}px`) // drop to 25% down the screen
+            .transition().delay((_d, i) => (last_line - i + 1) * beat_pasted / 4)
             .transition().duration(beat_pasted)
+            .style('opacity', 0)
             .remove()
             .on('end',
-                (_d, i) => { if (i == last_line) draw_guesses() }
+                (_d, i) => {
+                    if (i == last_line) // fixed #8
+                        load_new_seed(seed || attract_seed)
+                }
             )
+            // .on('end',
+            //     (_d, i) => { if (i == last_line) draw_guesses() }
+            // )
     }
 
     const draw_guesses = () => {
