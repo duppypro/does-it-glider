@@ -22,7 +22,7 @@ const COLOR_TO_CLASS = {
     'B': '🟦',
 }
 // modify the DOM from a 2D array of Conway's Game of Life (gol_state)
-export const draw = (g, state, cell_px) => { // HACK - do better than passing cell_px down, add some class 
+export const draw = (g, state, cell_px, opacity = 1) => { // HACK - do better than passing cell_px down, add some class 
     const startTime = performance.now()
     
     // render/draw each live cell in state as a white rect in the svg
@@ -38,6 +38,7 @@ export const draw = (g, state, cell_px) => { // HACK - do better than passing ce
                 g.insert('rect', '.grid-lines') // render this before/below grid-lines but after grid-background
                 .classed('cell', true)
                 .classed(COLOR_TO_CLASS[state[y][x]], true)
+                .style('opacity', opacity)
                 .attr('x', `${x * cell_px}px`)
                 .attr('y', `${y * cell_px}px`)
                 .attr('width', `${cell_px}px`)

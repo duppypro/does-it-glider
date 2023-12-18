@@ -8,11 +8,12 @@
 // XXX
 
 // LAST DEPLOY _beat = (60 * 1000) / 90.0 // BEATmsec = (60sec/ min * 1000msec/sec) / 120.0BPM
-const _beat = (60 * 1000) / 45.0 //180.0 // BEATmsec = (60sec/ min * 1000msec/sec) / 120.0BPM
+const _beat = (60 * 1000) / 90.0 //180.0 // BEATmsec = (60sec/ min * 1000msec/sec) / 120.0BPM
 export const settings = {
     // game of life configuration
     // at least 1 pattern needs size 192x192, just barely fits.
-    GRID_WIDTH: 256, // in cells
+    // Use an odd number of cells horizontally so that the 5x6 seed centers on the screen
+    GRID_WIDTH: 255, // in cells
     GRID_HEIGHT: 256, // in cells
 
     // UI preferences

@@ -26,7 +26,11 @@ import { webgl_context } from '/src/mywebgl/render.js'
 
 // Init
 const log = console.log
+const warn = console.warn
 const err = console.error
+const min = Math.min
+const max = Math.max
+const round = Math.round
 
 // get query params
 const urlParams = new URLSearchParams(window.location.search)
@@ -35,7 +39,7 @@ const use_gl = false //version == 'beta' || version == 'both'
 const use_svg = true //version == 'stable' || version == 'both'
 // warn if using the beta version
 if (use_gl) {
-    console.warn(`Using Beta WebGL version.`)
+    warn(`Using Beta WebGL version.`)
 }
 // initialize
 let app = d3.select('.does-it-glider-app')
@@ -101,6 +105,32 @@ if (use_svg) {
 let grid_ping = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
 let grid_pong = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
 
+const event_loop = () => {
+    draw(
+        grid_sel,
+        ping_pong ? grid_ping : grid_pong,
+        cell_px, // HACK gotta be a better way to pass CELL_PX
+        pause_for_new ? min(tick / 60, 1.0) : 1.0,
+    )
+    if (tick % ticks_per_frame == 0 && !pause_for_new) { // only apply rules every num_ticks frames
+        ping_pong = !ping_pong
+        let grid_new = ping_pong ? grid_ping : grid_pong
+        let grid_old = ping_pong ? grid_pong : grid_ping
+        // TODO try alternating frames draw() and apply_rules() on different frames to shorten the time spent in any one frame handler
+        apply_rules_old_new(grid_old, grid_new) // ping_pong is true, grid_ping gets the new grid
+    }
+    pause_for_new > 0 ? pause_for_new-- : pause_for_new = 0
+    tick++
+    requestAnimationFrame(event_loop)
+}
+let tick = 0
+let ticks_per_frame = settings.TICKS_PER_FRAME // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
+let pause_for_new = settings.PAUSE_FOR_NEW // to pause for N seconds, set N sec * 60 frames/sec then round() so that mod (%) works
+let ping_pong = true // ping_pong is true when ping is the current grid, pong is the next grid
+let beat_pasted = settings.paste_animation.PASTED / 1.333
+let beat_guesses = settings.paste_animation.GUESSES
+let beat_seed = settings.paste_animation.SEED
+
 const load_new_seed = (new_seed) => {
     let grid_now = ping_pong ? grid_ping : grid_pong
     // clear the grid in place
@@ -117,31 +147,12 @@ const load_new_seed = (new_seed) => {
     tick = 0 // Just use the tick counter to cause a new draw?
     // WARNING ⚠️ this means tick isn't the frame count since beginning of time, just frame count since new seed
     // also: generation # != frame count
-    pause_for_new = Math.round(1.333 * 60) // secs * frames/sec => units of frames
+
+    pause_for_new = round((2 * beat_seed / 1000) * 60) // secs * frames/sec => units of frames
+    const re_center = d3.zoomIdentity.translate(0, 0).scale(1)
+    d3.zoom().transform(svg_div, re_center)
 }
 
-const event_loop = () => {
-    if (tick == 0 || !pause_for_new) { // always run the first time even if paused so new grid is drawn
-        if (tick == 0) {
-            log(`first frame`)
-        }
-        if (tick % ticks_per_frame == 0) { // only apply rules every num_ticks frames
-            ping_pong = !ping_pong
-            let grid_new = ping_pong ? grid_ping : grid_pong
-            let grid_old = ping_pong ? grid_pong : grid_ping
-            // TODO try alternating frames draw() and apply_rules() on different frames to shorten the time spent in any one frame handler
-            draw(grid_sel, grid_old, cell_px) // HACK gotta be a better way to pass CELL_PX
-            apply_rules_old_new(grid_old, grid_new) // ping_pong is true, grid_ping gets the new grid
-        }
-    }
-    pause_for_new > 0 ? pause_for_new-- : pause_for_new = 0
-    tick++
-    requestAnimationFrame(event_loop)
-}
-let tick = 0
-let ticks_per_frame = settings.TICKS_PER_FRAME // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
-let pause_for_new = settings.PAUSE_FOR_NEW // to pause for N seconds, set N sec * 60 frames/sec then round() so that mod (%) works
-let ping_pong = true // ping_pong is true when ping is the current grid, pong is the next grid
 load_new_seed(attract_seed)
 event_loop() // try triggering the event loop to get the first frame of a new seed to draw
 
@@ -153,14 +164,16 @@ const parse_clipboard = (pasted_clipboard) => {
     // for importing RLE patterns
     pasted_lines = pasted_clipboard.replace(/\$|!/ug, '\n') // '$' used as end of line and '!' used as end of seed in RLE format
     pasted_lines = pasted_lines.split(/\r\n|\r|\n/ug) // TODO is this regex needed for all platforms?
-    pasted_lines = pasted_lines.slice(0, 40) // limit to 40 lines (arbitrary limit, only first 6 will be Wordle lines)
+    pasted_lines = pasted_lines.slice(0, 24) // limit to 24 lines (arbitrary limit, only 6 can be Wordle lines)
 
     // filter pasted_lines for only lines that are length 5
     // and contain only '⬜', '🟨', '🟩', or '⬛' (or their aliases)
+    // use .map() instead of .filter() so the index is preserved
     let guesses = []
-    guesses = pasted_lines.filter(line => {
+    guesses = pasted_lines.map(line => {
         line.trim()
-        return line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B|X|\.){5,5}$/ug)
+        const guess = line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B|X|\.){5,5}$/ug)
+        return guess && guess[0] || ''
     })
     // this is only the lines with exactly 5 wordle squares
     log(`filtered wordle_guesses:\n${guesses.join('\n')}`)
@@ -168,7 +181,7 @@ const parse_clipboard = (pasted_clipboard) => {
 
     // convert all '🟨'|'🟩' in wordle_guesses to '⬜' and '⬜'|'⬛' to '⬛'
     const text_line_to_seed_line = (line) => {
-        return line
+        return line && line
             // this replacememnt is unique to guesses from wordle
             // There is a problem that the high contrast mode of Wordle uses '⬜' for dead/empty
             // but all the other formats I want to support use '⬜' for alive
@@ -192,9 +205,6 @@ const parse_clipboard = (pasted_clipboard) => {
     seed = seed.slice(0, 6) // limit to 6 lines, the max number of guesses in Wordle
     log(`life_seed:\n${seed.join('\n')}`)
 
-    let beat_pasted = settings.paste_animation.PASTED
-    let beat_guesses = settings.paste_animation.GUESSES
-    let beat_seed = settings.paste_animation.SEED
     // draw/render pasted_lines in the .paste-line divs
     const draw_clipboard_lines = () => {
         const last_line = pasted_lines.length - 1
@@ -208,76 +218,29 @@ const parse_clipboard = (pasted_clipboard) => {
                     .style('position', 'absolute')
                     .style('background-color', '#00000000')
                     .style('opacity', 1)
+                    .style('transform', 'scale(1)')
                     .style('top', (_d, i) => `${-(i + 1) * line_height}px`) // drop in from above the screen
                     .style('text-align', 'center'),
-                    // .style('left', `${cw/2 - 5*line_height/2}px`),
                 update => update,
                 exit => exit.remove()
             )
             .html(line => line || '&nbsp;')
             .transition().duration((_d, i) => beat_pasted)
             .delay((_d, i) => i * beat_pasted / 4) // stagger the lines
-            .ease(d3.easeBounce)
-            .style('top', (_d, i) => `${ch *0.4 - (i + 1) * line_height}px`) // drop to 25% down the screen
-            .transition().delay((_d, i) => (last_line - i + 1) * beat_pasted / 4)
+            .ease(d3.easePolyIn.exponent(3))
+            .style('top', (_d, i) => {
+                const top = `${ch * 1 / 2 - (i - 2) * line_height}px`
+                return top
+            })
+            .transition().delay((_d, i) => (last_line - i) * beat_pasted / 4)
             .transition().duration(beat_pasted)
-            .style('opacity', 0)
+            .style('opacity', 0*0.5)
+            .style('transform', `scale(${0*5/6})`)
+            .style('top', `${ch * 1 / 2}px`)
             .remove()
-            .on('end',
-                (_d, i) => {
-                    if (i == last_line) // fixed #8
-                        load_new_seed(seed || attract_seed)
-                }
-            )
-            // .on('end',
-            //     (_d, i) => { if (i == last_line) draw_guesses() }
-            // )
-    }
-
-    const draw_guesses = () => {
-        const last_line = guesses.length - 1
-        app
-            .selectAll('.paste-line')
-            .data(guesses)
-            // d3.data() stores the array life_seed on the parent DOM element
-            // then d3.join() compares new data to previous data
-            // and calls enter, update, or exit on each element of data array
-            // as appropriate for diff of new data comapred to previous data
-            .join(
-                enter => enter.append('div').classed('paste-line', true),
-                update => update,
-                exit => exit.remove()
-            ) //join returns enter and update merged
-            .html(d => d)
-            .transition().duration(beat_guesses)
-            .remove()
-            .on('end',
-                (_d, i) => {
-                    if (i == last_line) draw_seed()
-                }
-            )
-    }
-
-    const draw_seed = () => {
-        const last_line = seed.length - 1
-        app
-            .selectAll('.paste-line')
-            .data(seed)
-            .join(
-                enter => enter.append('div').classed('paste-line', true),
-                update => update,
-                exit => exit
-                    .remove()
-            ) //join returns enter and update merged
-            .html(d => d)
-            .transition().duration(beat_seed)
-            .remove()
-            .on('end',
-                (_d, i) => {
-                    if (i == last_line) // fixed #8
-                        load_new_seed(seed || attract_seed)
-                }
-            )
+            .on('end', (_d, i) => {
+                if (i == last_line) load_new_seed(seed || attract_seed)
+            })
     }
 
     draw_clipboard_lines() // this function will chain to the next functions
