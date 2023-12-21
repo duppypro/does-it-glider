@@ -19,7 +19,9 @@ let rule_mode = '🟥🟦'
 //    copy (overwriting) seed to the center of the destination grid
 // RETURN nothing, modifies destination array
 export const add_seed = (seed, grid) => {
-    const sh = seed.length, sw = seed[0].length // WARN assumes seed[0] is same length as all rows
+    if (!seed?.length)
+        return
+    const sh = seed?.length, sw = seed ? seed[0].length : 0 // WARN assumes seed[0] is same length as all rows
     const gh = grid.length, gw = grid[0].length
     // coordinates of upper left corner of seed when seed is centered in grid
     const cx = Math.round((gw - sw) / 2)

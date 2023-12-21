@@ -15,7 +15,10 @@ import {
     add_seed,
     clear_grid,
 } from '/src/conway/play.js'
-import { append_grid } from '/src/conway/grid.js'
+import {
+    append_grid,
+    zoom_grid,
+} from '/src/conway/grid.js'
 
 // does-it-glider svg modules
 import { draw } from '/src/does-it-glider/draw.js'
@@ -149,8 +152,7 @@ const load_new_seed = (new_seed) => {
     // also: generation # != frame count
 
     pause_for_new = round((2 * beat_seed / 1000) * 60) // secs * frames/sec => units of frames
-    const re_center = d3.zoomIdentity.translate(0, 0).scale(1)
-    d3.zoom().transform(svg_div, re_center)
+
 }
 
 load_new_seed(attract_seed)
@@ -233,6 +235,12 @@ const parse_clipboard = (pasted_clipboard) => {
                 return top
             })
             .transition().delay((_d, i) => (last_line - i) * beat_pasted / 4)
+            .on('end', (_d, i) => {
+                if (i == last_line) {
+                    // FIXED #3: zoom_grid() is not working on mobile browsers
+                    zoom_grid(0, 0, 1)
+                }
+            })
             .transition().duration(beat_pasted)
             .style('opacity', 0*0.5)
             .style('transform', `scale(${0*5/6})`)

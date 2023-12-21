@@ -5,6 +5,8 @@
 //      grid
 ////////////////////////////////////////////////////////////////////////////////
 
+import { settings } from '/src/does-it-glider/settings.js'
+
 const log = console.log
 const err = console.error
 const min = Math.min
@@ -14,6 +16,17 @@ const clip = (val, smallest = 1, largest = 100) => min(max(smallest, val), large
 //TODO LOW PRI: add a debug mode that logs to a textarea instead of console
 //TODO import these shorthands from a shared module
 
+let G_WIDTH
+let G_HEIGHT
+let app_w
+let app_h
+let G_PAD_LEFT
+let G_PAD_TOP
+let cx
+let cy
+let svg = d3.select()
+let g = d3.select()
+let zoom = d3.zoom()
 // INPUT a d3 selection
 //     adds an svg with grid lines
 //     attaches a drag and zoom event handler
@@ -32,23 +45,23 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
 
     // w, h are in units of cells
     // all other dimensions in units of px
-    const G_WIDTH = cell_px * w
-    const G_HEIGHT = cell_px * h
-    const app_w = app.node().clientWidth
-    const app_h = app.node().clientHeight
-    const G_PAD_LEFT = (G_WIDTH - app_w) / 2
-    const G_PAD_TOP = (G_HEIGHT - app_h) / 2
-    const cx = app_w / 2
-    const cy = app_h / 2
+    G_WIDTH = cell_px * w
+    G_HEIGHT = cell_px * h
+    app_w = app.node().clientWidth
+    app_h = app.node().clientHeight
+    G_PAD_LEFT = (G_WIDTH - app_w) / 2
+    G_PAD_TOP = (G_HEIGHT - app_h) / 2
+    cx = app_w / 2
+    cy = app_h / 2
 
     // Create the SVG
-    const svg = app.insert('svg', 'span.touch-target') // insert before the touch target so it renders underneath
+    svg = app.insert('svg', 'span.touch-target') // insert before the touch target so it renders underneath
         .attr('width', `${app_w}px`)
         .attr('height', `${app_h}px`)
     // need this g element so we can transform it
     // and leave the svg container static
     // Create a g element inside the svg    
-    const g = svg.append('g')
+    g = svg.append('g')
         .attr('width', `100%`)
         .attr('height', `100%`)
         .attr('transform', `translate(${-G_PAD_LEFT}, ${-G_PAD_TOP})`)
@@ -90,16 +103,17 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     // More appreciation for how clever Michael Bostock is and the usefulness of D3js
     function apply_drag_zoom(event) {
         // use svg zoom and drag units to transform the g element
-        let transform = event.transform
+        let transform
+        transform = !isNaN(event.transform.x) ? event.transform : d3.zoomIdentity
         transform = transform.translate(-G_PAD_LEFT, -G_PAD_TOP) // adjust for starting offset
         g.attr('transform', transform)
     }
 
-    const zoom = d3.zoom()
-        .scaleExtent([2 / cell_px, 64 / cell_px])
+    zoom = d3.zoom()
+        .scaleExtent([2 / 16, 64 / 16]) // #BUG this 16 should be cell_px
         .translateExtent([ // FIXED: Keep off-grid area from coming too far into the screen
-            [-G_PAD_LEFT - cx/4, -G_PAD_TOP - cy/4],
-            [app_w + G_PAD_LEFT + cx/4, app_h + G_PAD_TOP + cy/4],
+            [-G_PAD_LEFT - cx / 4, -G_PAD_TOP - cy / 4],
+            [app_w + G_PAD_LEFT + cx / 4, app_h + G_PAD_TOP + cy / 4],
         ])
         .on('zoom', apply_drag_zoom)
 
@@ -111,3 +125,16 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
 
     return g
 } // end append_grid()
+
+export const zoom_grid = (x, y, k) => {
+    let tx = d3.zoomIdentity.translate(x - G_PAD_LEFT, y - G_PAD_TOP).scale(k)
+    // let tx = d3.zoomIdentity.translate(x , y).scale(k)
+    log(`zoom_grid() tx: ${tx}`)
+    // svg.call(zoom.transform, tx)
+    g.transition().duration(settings.paste_animation.PASTED / 1.333)
+        .ease(d3.easePolyIn.exponent(3))
+        .attr('transform', tx)
+        // .on('end', () => {
+        //     svg.call(zoom.transform, tx)
+        // })
+}
