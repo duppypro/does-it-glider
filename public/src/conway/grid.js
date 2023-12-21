@@ -134,7 +134,8 @@ export const zoom_grid = (x, y, k) => {
     g.transition().duration(settings.paste_animation.PASTED / 1.333)
         .ease(d3.easePolyIn.exponent(3))
         .attr('transform', tx)
-        // .on('end', () => {
-        //     svg.call(zoom.transform, tx)
-        // })
+        .on('end', () => {
+            tx = tx.translate(+G_PAD_LEFT, +G_PAD_TOP)
+            svg.call(zoom.transform, tx)
+        })
 }

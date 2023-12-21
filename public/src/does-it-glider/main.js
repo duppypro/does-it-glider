@@ -237,7 +237,7 @@ const parse_clipboard = (pasted_clipboard) => {
             .transition().delay((_d, i) => (last_line - i) * beat_pasted / 4)
             .on('end', (_d, i) => {
                 if (i == last_line) {
-                    // FIXED #3: zoom_grid() is not working on mobile browsers
+                    // FIXED for realz #3: zoom_grid() re-center on paste works
                     zoom_grid(0, 0, 1)
                 }
             })
