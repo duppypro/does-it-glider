@@ -113,7 +113,7 @@ const event_loop = () => {
         grid_sel,
         ping_pong ? grid_ping : grid_pong,
         cell_px, // HACK gotta be a better way to pass CELL_PX
-        pause_for_new ? min(tick / 60, 1.0) : 1.0,
+        pause_for_new ? min(tick / 90, 1.0) : 1.0, // opacity for fade in
     )
     if (tick % ticks_per_frame == 0 && !pause_for_new) { // only apply rules every num_ticks frames
         ping_pong = !ping_pong
@@ -237,6 +237,7 @@ const parse_clipboard = (pasted_clipboard) => {
             .transition().delay((_d, i) => (last_line - i) * beat_pasted / 4)
             .on('end', (_d, i) => {
                 if (i == last_line) {
+                    clear_grid(ping_pong ? grid_ping : grid_pong)
                     // FIXED for realz #3: zoom_grid() re-center on paste works
                     zoom_grid(0, 0, 1)
                 }
