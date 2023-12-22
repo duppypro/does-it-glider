@@ -1,7 +1,7 @@
 let glider_seed = [];
-glider_seed[0] = '⬛⬛⬜⬛⬛'
-glider_seed[1] = '⬛⬛⬛⬜⬛'
-glider_seed[2] = '⬛⬜⬜⬜⬛'
+glider_seed[0] = '⬛⬛🟦⬛⬛'
+glider_seed[1] = '⬛⬛⬛🟦⬛'
+glider_seed[2] = '⬛🟦🟦🟦⬛'
 
 //test a RED team BLUE team wordle fight seed
 /*

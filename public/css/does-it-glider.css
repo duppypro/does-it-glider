@@ -147,7 +147,7 @@
 .cell.blue-team,
 .cell.🟦
 {
-    fill: blue;
+    fill: var(--vscode-blue);
     stroke: #333;
     stroke-width: 1.5;
 }

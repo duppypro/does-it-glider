@@ -6,26 +6,26 @@
 //////////////////////////////////////////////////////////////////////
 
 // Configuration
-import { settings } from '/src/does-it-glider/settings.js'
-import { d3_plus as d3 } from '/lib/d3-helper.js'
+import { settings } from './settings.js'
+import { d3_plus as d3 } from '../../lib/d3-helper.js'
 
 // Conway's Game of Life modules
 import {
     apply_rules as apply_rules_old_new,
     add_seed,
     clear_grid,
-} from '/src/conway/play.js'
+} from '../conway/play.js'
 import {
     append_grid,
     zoom_grid,
-} from '/src/conway/grid.js'
+} from '../conway/grid.js'
 
 // does-it-glider svg modules
-import { draw } from '/src/does-it-glider/draw.js'
-import { attract_seed } from '/src/does-it-glider/seeds.js'
+import { draw } from './draw.js'
+import { attract_seed } from './seeds.js'
 
 // WebGL modules
-import { webgl_context } from '/src/mywebgl/render.js'
+import { webgl_context } from '../mywebgl/render.js'
 
 // Init
 const log = console.log
@@ -248,7 +248,7 @@ const parse_clipboard = (pasted_clipboard) => {
             .style('top', `${ch * 1 / 2}px`)
             .remove()
             .on('end', (_d, i) => {
-                if (i == last_line) load_new_seed(seed?.length || attract_seed)
+                if (i == last_line) load_new_seed(seed?.length ? seed : attract_seed)
             })
     }
 

@@ -117,6 +117,7 @@ export const apply_rules = (grid, new_grid) => {
 } // end apply_rules()
 
 export const clear_grid = (grid) => {
+    rule_mode = '🟥🟦'
     for (let row of grid) {
         for (let i = 0; i < row.length; i++) {
             row[i] = '⬛'
