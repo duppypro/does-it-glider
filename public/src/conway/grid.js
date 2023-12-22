@@ -117,6 +117,17 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
         ])
         .on('zoom', apply_drag_zoom)
 
+    // svg
+    //     .on('touchstart mousedown', function (event) {
+    //         event.preventDefault()
+    //     })
+
+    g
+        .on('touchstart mousedown', function (event) {
+            event.preventDefault()
+        })
+
+
     svg.call(zoom)
     // Set the initial transform
     // TODO the zoom.transform didn't work as expected.
@@ -131,11 +142,12 @@ export const zoom_grid = (x, y, k) => {
     // let tx = d3.zoomIdentity.translate(x , y).scale(k)
     log(`zoom_grid() tx: ${tx}`)
     // svg.call(zoom.transform, tx)
-    g.transition().duration(settings.paste_animation.PASTED / 1.333)
+    g.transition()
+        .duration(settings.paste_animation.PASTED / 1.333)
         .ease(d3.easePolyIn.exponent(3))
         .attr('transform', tx)
         .on('end', () => {
             tx = tx.translate(+G_PAD_LEFT, +G_PAD_TOP)
-            svg.call(zoom.transform, tx)
+            zoom.transform(svg, tx)
         })
 }

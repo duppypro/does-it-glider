@@ -248,7 +248,7 @@ const parse_clipboard = (pasted_clipboard) => {
             .style('top', `${ch * 1 / 2}px`)
             .remove()
             .on('end', (_d, i) => {
-                if (i == last_line) load_new_seed(seed || attract_seed)
+                if (i == last_line) load_new_seed(seed?.length || attract_seed)
             })
     }
 
@@ -257,7 +257,8 @@ const parse_clipboard = (pasted_clipboard) => {
     // ??? if so, then am I using d3 for anything other than zoom transform or a fancier jquery?
 } // end parse_clipboard()
 
-const get_clipboard_text = (_e) => {
+const get_clipboard_text = (event) => {
+    event.preventDefault()
     // get clipboard text, ignore event input because it might be a click event not paste
     navigator.clipboard.readText()
         .then(clipboard => {
@@ -267,10 +268,8 @@ const get_clipboard_text = (_e) => {
     // BUG #2: paste not working on mobile browsers, haven't tested navigator.clipboard.readText() on mobile yet
 }
 
-// paste from clickboard on click(touch) to deal with mobile browsers
+// paste from clipboard on click(touch) (ignore paste) event to deal with mobile browsers
 d3.select('.touch-target').on('click', get_clipboard_text)
-// also listen for paste event anywhere on the page
-d3.select('body').on('paste', get_clipboard_text)
 
 // make a webgl canvas in the other div
 if (use_gl) {

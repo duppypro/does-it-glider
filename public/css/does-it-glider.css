@@ -28,7 +28,11 @@
     font-family: 'Roboto Mono', sans-serif;
     font-size: 18px;
     /* https://stackoverflow.com/questions/46167604/ios-html-disable-double-tap-to-zoom */
-    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;  /* Chrome, Safari and Opera */
+    -moz-user-select: none;     /* Firefox */
+    -ms-user-select: none;      /* IE/Edge */
+    touch-action: manipulation; /* Prevent default touch behaviors */
 }
 
 .touch-target
@@ -38,11 +42,21 @@
     left: 0;
     width: 100%;
     text-align: center;
+    user-select: none;
+    -webkit-user-select: none;  /* Chrome, Safari and Opera */
+    -moz-user-select: none;     /* Firefox */
+    -ms-user-select: none;      /* IE/Edge */
+    touch-action: manipulation; /* Prevent default touch behaviors */
 }
 
 .paste-line,
 .title
 {
+    user-select: none;
+    -webkit-user-select: none;  /* Chrome, Safari and Opera */
+    -moz-user-select: none;     /* Firefox */
+    -ms-user-select: none;      /* IE/Edge */
+    touch-action: manipulation; /* Prevent default touch behaviors */
     background-color: rgba(0, 0, 0, 0.4);
     user-select: none;
     padding-top: 0.25em;
