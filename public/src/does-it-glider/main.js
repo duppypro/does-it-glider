@@ -239,12 +239,14 @@ const parse_clipboard = (pasted_clipboard) => {
                 if (i == last_line) {
                     clear_grid(ping_pong ? grid_ping : grid_pong)
                     // FIXED for realz #3: zoom_grid() re-center on paste works
-                    zoom_grid(0, 0, 1)
+                    zoom_grid(0, 0, 1) // TODO zoom_grid has it's own transition duration.
+                    // TODO Improve this so the duration of zoom_grid and the next transition off screen
+                    // TODO don't have to be manually synced
                 }
             })
             .transition().duration(beat_pasted)
-            .style('opacity', 0*0.5)
-            .style('transform', `scale(${0*5/6})`)
+            .style('opacity', 0)
+            .style('transform', `scale(0)`)
             .style('top', `${ch * 1 / 2}px`)
             .remove()
             .on('end', (_d, i) => {
