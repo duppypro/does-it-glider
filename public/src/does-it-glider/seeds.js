@@ -5,9 +5,9 @@
 
 // ANCHOR attract mode seeds
 let glider_seed = []
-glider_seed[0] = '⬛⬛🟦⬛⬛'
-glider_seed[1] = '⬛⬛⬛🟦⬛'
-glider_seed[2] = '⬛🟦🟦🟦⬛'
+glider_seed[0] = '⬛⬛⬜⬛⬛'
+glider_seed[1] = '⬛⬛⬛⬜⬛'
+glider_seed[2] = '⬛⬜⬜⬜⬛'
 
 //test a RED team BLUE team wordle fight seed
 /*
@@ -28,10 +28,8 @@ blue_team[2] = '🟦🟦🟦🟦🟦'
 // join red team and blue team into start with red team on left
 // and fight_paces dead cells in between
 const fight_paces = 5;
-let red_v_blue = red_team.map(
-    (red_row, i) => {
-        red_row + '⬛'.repeat(fight_paces) + blue_team[i]
-    }
+let red_blue = red_team.map(
+    (red_row, i) => red_row + '⬛'.repeat(fight_paces) + blue_team[i]
 )
 
 // a mosquito seed glides horizontally

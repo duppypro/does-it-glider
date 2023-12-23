@@ -5,13 +5,14 @@
 //      play
 ////////////////////////////////////////////////////////////////////////////////
 
-import { settings } from '/src/does-it-glider/settings.js'
-import { rules } from '/src/conway/rules.js'
+import { rule_sets } from './rules.js'
 
+const log = console.log
 // play Conway's Game of Life
 
 // start in red blue mode, but if we ever see a '⬜', switch permanently to Conway mode
 let rule_mode = '🟥🟦'
+let rules = rule_sets[rule_mode]
 
 // add_seed
 // INPUT a seed and a destination grid
@@ -21,7 +22,7 @@ let rule_mode = '🟥🟦'
 export const add_seed = (seed, grid) => {
     if (!seed?.length)
         return
-    const sh = seed?.length, sw = seed ? seed[0].length : 0 // WARN assumes seed[0] is same length as all rows
+    const sh = seed.length, sw = seed ? seed[0].length : 0 // WARN assumes seed[0] is same length as all rows
     const gh = grid.length, gw = grid[0].length
     // coordinates of upper left corner of seed when seed is centered in grid
     const cx = Math.round((gw - sw) / 2)
@@ -33,18 +34,22 @@ export const add_seed = (seed, grid) => {
             if (x >= 0 && y >= 0 && x < gw && y < gh) {
                 // must make sure rows are arrays, not strings
                 grid[y][x] = seed[sy][sx]
+                if (seed[sy][sx] == '⬜') {
+                    // any use of '⬜' will switch to Conway mode
+                    rule_mode = '⬜'
+                    rules = rule_sets[rule_mode]
+                }
             }
         }   
     }
 } // end add_seed()
 
 // apply_rules
-// INPUT a read-only 2D Array old grid, pre-allocted 2D array for the new grid state
+// INPUT a read-only 2D Array old grid, pre-allocted 2D array for the new grid
 //     run Conway's Game of Life rules on it
 // RETURN true if successful, false if error    
 export const apply_rules = (grid, new_grid) => {
-    let success = true
-    // get the height and width of the state
+    // get the height and width of the grid
     const h = grid.length, w = grid[0].length
     // check that the new_grid is the same size as the grid
     if (new_grid.length != h || new_grid[0].length != w) {
@@ -52,72 +57,49 @@ export const apply_rules = (grid, new_grid) => {
         return false
     }
     
-    // loop over 2D array state
+    // loop over 2D array cells
     // and apply the rules to each cell
     for(let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
             // if we see a '⬜' anywhere, change the rules to Conway mode
-            if (rule_mode == '🟥🟦' && grid[y][x] == '⬜') {
+            if (grid[y][x] == '⬜') {
+                // any use of '⬜' will switch to Conway mode
                 rule_mode = '⬜'
+                rules = rule_sets[rule_mode]
             }
-            if (rule_mode == '⬜' && (grid[y][x] == '🟥' || grid[y][x] == '🟦')) {
-                grid[y][x] = '⬜'
-            }
-            // count the number of neighbors that are alive
-            let live_neighbors = 0
-            let red_team_neighbors = 0
-            // don't need blue count because it can be computed from live_neighbors - red_team_neighbors
+            // count the number of neighbors that are live
+            let live_count = 0
+            let red_count = 0
+            // don't need blue count because it can be computed from live_count - red_count
             // loop over the 3x3 grid around the cell
-            let peek = '⬛'
             for(let ny = y-1; ny <= y+1; ny++) {
-                for(let nx = x-1; nx <= x+1; nx++) {
+                for (let nx = x - 1; nx <= x + 1; nx++) {
+                    let peek
                     // don't count the cell itself, it is not a neighbor
                     if (nx == x && ny == y) continue
-                    if (settings.WRAP_GRID) {
-                        // wrap around the edges of the grid
-                        peek = grid[(ny + h) % h][(nx + w) % w]
+                    if (nx >= 0 && ny >= 0 && nx < w && ny < h) {
+                        peek = grid[ny][nx]
                     } else {
-                        // don't wrap
-                        if (nx < 0 || ny < 0 || nx >= w || ny >= h) {
-                            peek = '⬛' // HACK a continue might be faster, but I'm opting for clarity
-                        } else {
-                            peek = grid[ny][nx]
-                        }
+                        peek = '⬛' // all cells outside the grid are dead
                     }
-                    // count the alive neighbors
-                    if (peek == 'o' || peek == '.' || peek == '⬛') {
-                        peek = '⬛'
-                        continue
-                    }
-                    live_neighbors += 1
-                    if (peek == '🟥' || peek == 'R') { // TODO fix this to use is_red_team()
-                        red_team_neighbors += 1
-                    }
-                        // blue_team_neighbors += 1
-                        // Don't count blue neighbors here because it can be computed from live_neighbors - red_team_neighbors
+                    // count the live neighbors
+                    // TODO fix this to use is_red() and is_live()
+                    live_count += (peek != '⬛')
+                    red_count += (peek == '🟥')
+                    // blue_count += (peek == '🟦')
+                    // Unnecessary, blue_count is implied by live_count - red_count
                 }
             }
-            if (rule_mode == '⬜') {
-                red_team_neighbors = 9 // HACK force the result to be Conway, not red v blue
-                if (peek != '⬛') {
-                    peek = '⬜'
-                }
-            }
-            // blue_team_neighbors = live_neighbors - red_team_neighbors
-            // don't need to track blue_team_neighbors because we calc from red_team_neighbors
-            if (rules[grid[y][x]] && live_neighbors <= 8 && red_team_neighbors <= 9) {
-                new_grid[y][x] = rules[grid[y][x]][live_neighbors][red_team_neighbors]
-            } else {
-                success = false
-                console.error(`apply_rules() error: unknown cell at ${y},${x} '${grid[y][x]}'\n\tor live_neighbors ${live_neighbors} or red_team_neighbors ${red_team_neighbors} out of bounds.`)
-            }
+            new_grid[y][x] = rules[grid[y][x]][live_count][red_count]
         }
     }
-    return success
+    return true
 } // end apply_rules()
 
 export const clear_grid = (grid) => {
     rule_mode = '🟥🟦'
+    rules = rule_sets[rule_mode]
+    // any use of '⬜' will switch to Conway mode
     for (let row of grid) {
         for (let i = 0; i < row.length; i++) {
             row[i] = '⬛'

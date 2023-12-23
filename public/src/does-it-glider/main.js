@@ -57,8 +57,9 @@ app.style('display', 'flex')
     // set the flex direction based on the aspect ratio of the app container
     .style('flex-direction', (app_rect.width > app_rect.height) ? 'row' : 'column')
 
-let svg_div = d3.select() // initialize to empty selection
-let webgl_div = d3.select() // initialize to empty selection
+const empty_sel = d3.select()
+let svg_div = empty_sel // initialize to empty selection
+let webgl_div = empty_sel // initialize to empty selection
 
 if (use_svg) {
     svg_div = app.mynew('div.top')
@@ -99,7 +100,7 @@ let grid_h = settings.GRID_HEIGHT
 let grid_w = settings.GRID_WIDTH
 let cell_px = settings.CELL_PX
 // make a grid in the app DOM element
-let grid_sel = d3.select()
+let grid_sel = empty_sel
 if (use_svg) {
     grid_sel = append_grid(svg_div, cell_px, grid_w, grid_h)
 }
