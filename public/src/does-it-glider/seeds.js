@@ -1,4 +1,10 @@
-let glider_seed = [];
+//////////////////////////////////////////////////////////////////////
+//  (c) 2023, David 'Duppy' Proctor, Interface Arts
+//
+//////////////////////////////////////////////////////////////////////
+
+// ANCHOR attract mode seeds
+let glider_seed = []
 glider_seed[0] = '⬛⬛🟦⬛⬛'
 glider_seed[1] = '⬛⬛⬛🟦⬛'
 glider_seed[2] = '⬛🟦🟦🟦⬛'
@@ -9,12 +15,12 @@ glider_seed[2] = '⬛🟦🟦🟦⬛'
 ⬛⬛🟥🟥🟥⬛⬛⬛⬛⬛⬛⬛🟦🟦⬛
 🟥🟥🟥🟥🟥⬛⬛⬛⬛⬛🟦🟦🟦🟦🟦
 */
-let red_team = [];
+let red_team = []
 red_team[0] = '⬛⬛🟥🟥🟥'
 red_team[1] = '⬛⬛🟥🟥🟥'
 red_team[2] = '🟥🟥🟥🟥🟥'
 
-let blue_team = [];
+let blue_team = []
 blue_team[0] = '🟦⬛⬛⬛🟦'
 blue_team[1] = '⬛⬛🟦🟦⬛'
 blue_team[2] = '🟦🟦🟦🟦🟦'
@@ -29,7 +35,7 @@ let red_v_blue = red_team.map(
 )
 
 // a mosquito seed glides horizontally
-let partial_mosquito = [];
+let partial_mosquito = []
 partial_mosquito[0] = '⬛⬛⬛🟩⬛'
 partial_mosquito[1] = '⬛⬛⬛⬛🟩'
 partial_mosquito[2] = '🟩⬛⬛⬛🟩'
