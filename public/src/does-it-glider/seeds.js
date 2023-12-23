@@ -34,9 +34,9 @@ let red_blue = red_team.map(
 
 // a mosquito seed glides horizontally
 let partial_mosquito = []
-partial_mosquito[0] = '⬛⬛⬛🟩⬛'
-partial_mosquito[1] = '⬛⬛⬛⬛🟩'
-partial_mosquito[2] = '🟩⬛⬛⬛🟩'
-partial_mosquito[3] = '⬛🟩🟩🟩🟩'
+partial_mosquito[0] = '⬛⬛⬛⬜⬛'
+partial_mosquito[1] = '⬛⬛⬛⬛⬜'
+partial_mosquito[2] = '⬜⬛⬛⬛⬜'
+partial_mosquito[3] = '⬛⬜⬜⬜⬜'
 
 export const attract_seed = glider_seed
