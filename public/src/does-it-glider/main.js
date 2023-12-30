@@ -20,9 +20,11 @@ import {
     zoom_grid,
 } from '../conway/grid.js'
 
-// does-it-glider svg modules
+// does-it-glider modules
 import { draw } from './draw.js'
-import { attract_seed } from './seeds.js'
+import * as seeds from './seeds.js'
+let attract_seed = seeds.glider
+attract_seed = seeds.red_blue
 
 // WebGL modules
 import { webgl_context } from '../mywebgl/render.js'
@@ -179,8 +181,6 @@ const parse_clipboard = (pasted_clipboard) => {
         return guess && guess[0] || ''
     })
     // this is only the lines with exactly 5 wordle squares
-    log(`filtered wordle_guesses:\n${guesses.join('\n')}`)
-    // TODO limit number of lines found to 6
 
     // convert all '🟨'|'🟩' in wordle_guesses to '⬜' and '⬜'|'⬛' to '⬛'
     const text_line_to_seed_line = (line) => {
@@ -206,7 +206,6 @@ const parse_clipboard = (pasted_clipboard) => {
         }
     })
     seed = seed.slice(0, 6) // limit to 6 lines, the max number of guesses in Wordle
-    log(`life_seed:\n${seed.join('\n')}`)
 
     // draw/render pasted_lines in the .paste-line divs
     const draw_clipboard_lines = () => {
@@ -239,7 +238,6 @@ const parse_clipboard = (pasted_clipboard) => {
             .on('end', (_d, i) => {
                 if (i == last_line) {
                     clear_grid(ping_pong ? grid_ping : grid_pong)
-                    // FIXED for realz #3: zoom_grid() re-center on paste works
                     zoom_grid(0, 0, 1) // TODO zoom_grid has it's own transition duration.
                     // TODO Improve this so the duration of zoom_grid and the next transition off screen
                     // TODO don't have to be manually synced
@@ -255,7 +253,7 @@ const parse_clipboard = (pasted_clipboard) => {
             })
     }
 
-    draw_clipboard_lines() // this function will chain to the next functions
+    draw_clipboard_lines()
     // ??? is there a better method that hooks into the end of the CSS animation instead of D3?
     // ??? if so, then am I using d3 for anything other than zoom transform or a fancier jquery?
 } // end parse_clipboard()
@@ -264,10 +262,7 @@ const get_clipboard_text = (event) => {
     event.preventDefault()
     // get clipboard text, ignore event input because it might be a click event not paste
     navigator.clipboard.readText()
-        .then(clipboard => {
-            log(`clipboard:\n${clipboard}\n`)
-            parse_clipboard(clipboard)
-        })
+        .then(parse_clipboard)
     // BUG #2: paste not working on mobile browsers, haven't tested navigator.clipboard.readText() on mobile yet
 }
 

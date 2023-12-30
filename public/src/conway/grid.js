@@ -25,7 +25,7 @@ let G_PAD_TOP
 let cx
 let cy
 let svg = d3.select()
-let g = d3.select()
+let grid = d3.select()
 let zoom = d3.zoom()
 // INPUT a d3 selection
 //     adds an svg with grid lines
@@ -61,13 +61,13 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     // need this g element so we can transform it
     // and leave the svg container static
     // Create a g element inside the svg    
-    g = svg.append('g')
+    grid = svg.append('g')
         .attr('width', `100%`)
         .attr('height', `100%`)
         .attr('transform', `translate(${-G_PAD_LEFT}, ${-G_PAD_TOP})`)
 
     // Create the graph paper pattern
-    const pattern = g.append('defs')
+    const pattern = grid.append('defs')
         .append('pattern')
         .attr('id', 'grid-pattern') // WARN this ID name must match the url(CSS selector) used in the grid-fill class
         .attr('class', 'cell dead')
@@ -86,11 +86,11 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     pattern.append('path').attr('class', 'pattern-line')
     .attr('d', `M ${cell_px},0 L 0,0 0,${cell_px}`); // draw top and left edges of each cell
 
-    g.append('rect').classed('grid-background', true)
+    grid.append('rect').classed('grid-background', true)
     .attr('width', `${G_WIDTH}px`)
     .attr('height', `${G_HEIGHT}px`)
 
-    g.append('rect').classed('grid-fill', true) // CSS will fill this with #grid-pattern
+    grid.append('rect').classed('grid-fill', true) // CSS will fill this with #grid-pattern
     .attr('width', `${G_WIDTH}px`)
     .attr('height', `${G_HEIGHT}px`)
     .style('fill', 'url(#grid-pattern)')
@@ -106,23 +106,18 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
         let transform
         transform = !isNaN(event.transform.x) ? event.transform : d3.zoomIdentity
         transform = transform.translate(-G_PAD_LEFT, -G_PAD_TOP) // adjust for starting offset
-        g.attr('transform', transform)
+        grid.attr('transform', transform)
     }
 
     zoom = d3.zoom()
         .scaleExtent([2 / 16, 64 / 16]) // #BUG this 16 should be cell_px
-        .translateExtent([ // FIXED: Keep off-grid area from coming too far into the screen
+        .translateExtent([ // Prevent grid from panning completely off screen
             [-G_PAD_LEFT - cx / 4, -G_PAD_TOP - cy / 4],
             [app_w + G_PAD_LEFT + cx / 4, app_h + G_PAD_TOP + cy / 4],
         ])
         .on('zoom', apply_drag_zoom)
 
-    // svg
-    //     .on('touchstart mousedown', function (event) {
-    //         event.preventDefault()
-    //     })
-
-    g
+    grid
         .on('touchstart mousedown', function (event) {
             event.preventDefault()
         })
@@ -134,20 +129,14 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     // I am trying to avoid applying a translation on every apply_drag_zoom()
     // zoom.transform(svg, d3.zoomIdentity.translate(-G_PAD_LEFT, -G_PAD_TOP))
 
-    return g
+    return grid
 } // end append_grid()
 
 export const zoom_grid = (x, y, k) => {
-    let tx = d3.zoomIdentity.translate(x - G_PAD_LEFT, y - G_PAD_TOP).scale(k)
-    // let tx = d3.zoomIdentity.translate(x , y).scale(k)
-    log(`zoom_grid() tx: ${tx}`)
-    // svg.call(zoom.transform, tx)
-    g.transition()
+    let tx = d3.zoomIdentity.translate(x, y).scale(k)
+    grid.transition()
         .duration(settings.paste_animation.PASTED / 1.333)
         .ease(d3.easePolyIn.exponent(3))
-        .attr('transform', tx)
-        .on('end', () => {
-            tx = tx.translate(+G_PAD_LEFT, +G_PAD_TOP)
-            zoom.transform(svg, tx)
-        })
+        .attr('transform', tx.translate(-G_PAD_LEFT, -G_PAD_TOP))
+        .on('end', () => { zoom.transform(svg, tx) })
 }

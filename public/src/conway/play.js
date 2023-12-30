@@ -7,12 +7,16 @@
 
 import { rule_sets } from './rules.js'
 
-const log = console.log
-// play Conway's Game of Life
+let rule_mode
+let rules
 
+const set_rule_mode = (new_mode) => {
+    rule_mode = new_mode
+    rules = rule_sets[rule_mode]
+}
+
+set_rule_mode('🟥🟦')
 // start in red blue mode, but if we ever see a '⬜', switch permanently to Conway mode
-let rule_mode = '🟥🟦'
-let rules = rule_sets[rule_mode]
 
 // add_seed
 // INPUT a seed and a destination grid
@@ -36,8 +40,7 @@ export const add_seed = (seed, grid) => {
                 grid[y][x] = seed[sy][sx]
                 if (seed[sy][sx] == '⬜') {
                     // any use of '⬜' will switch to Conway mode
-                    rule_mode = '⬜'
-                    rules = rule_sets[rule_mode]
+                    set_rule_mode('⬜')
                 }
             }
         }   
@@ -64,8 +67,7 @@ export const apply_rules = (grid, new_grid) => {
             // if we see a '⬜' anywhere, change the rules to Conway mode
             if (grid[y][x] == '⬜') {
                 // any use of '⬜' will switch to Conway mode
-                rule_mode = '⬜'
-                rules = rule_sets[rule_mode]
+                set_rule_mode('⬜')
             }
             // count the number of neighbors that are live
             let live_count = 0
@@ -97,8 +99,7 @@ export const apply_rules = (grid, new_grid) => {
 } // end apply_rules()
 
 export const clear_grid = (grid) => {
-    rule_mode = '🟥🟦'
-    rules = rule_sets[rule_mode]
+    set_rule_mode('🟥🟦')
     // any use of '⬜' will switch to Conway mode
     for (let row of grid) {
         for (let i = 0; i < row.length; i++) {

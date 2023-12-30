@@ -17,7 +17,7 @@ export const settings = {
     GRID_HEIGHT: 256, // in cells
 
     // UI preferences
-    CELL_PX: 16,
+    CELL_PX: 8,
     BORDER_PX: 1, // defined as inwards from the edge of the cell at CELL_PX
     // Use BEAT for the speed of animations and life simulation
     // (60sec/ min * 1000msec/sec) / 120.0BPM -> msec/BEAT

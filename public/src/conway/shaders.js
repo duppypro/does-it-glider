@@ -61,11 +61,12 @@ export const grid_frag_shader_src = glsl`
         gl_FragColor = vec4(color, 1.0);
     }
 `
-// ??? I wasn't able to get literal expansion working
-// ??? because maybe cell_w is not in glsl context
-// ??? it is replacing __cell_w with '' instead of the expected '16.000'
-// ??? this isn't really a language issue, it's the glsl formatting extension
-// ??? it's looking for "glsl`" specifcally and not glsl('shader source code')
+// I wasn't able to get literal expansion working
+// because maybe cell_w is not in glsl context
+// it is replacing __cell_w with '' instead of the expected '16.000'
+// this isn't really a language issue, it's the glsl formatting extension
+// it's looking for "glsl`" specifcally and not glsl('shader source code')
+// TODO try this: I think if cell_w is in the context that uses grid_frag_shader_src the string literal will expand
 .replace(/\b__cell_w\b/ug, cell_w)
 .replace(/\b__cell_h\b/ug, cell_h)
 .replace(/\b__border\b/ug, border)
