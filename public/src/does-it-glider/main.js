@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////////////////
 //  (c) 2023, David 'Duppy' Proctor, Interface Arts
 //
-//  main
-//      top-level code for does-it-glider
+//  does-it-glider
+//      main
 //////////////////////////////////////////////////////////////////////
 
 // Configuration
@@ -24,7 +24,7 @@ import {
 import { draw } from './draw.js'
 import * as seeds from './seeds.js'
 let attract_seed = seeds.glider
-attract_seed = seeds.red_blue
+// attract_seed = seeds.red_blue
 
 // WebGL modules
 import { webgl_context } from '../mywebgl/render.js'
@@ -111,51 +111,71 @@ if (use_svg) {
 let grid_ping = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
 let grid_pong = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
 
+let gen_count
+const msec_per_tick = 1000.0 / 60.0 // 60fps requestAnimationFrame() defacto standard
+let new_pause_countdown = settings.NEW_PAUSE_MSEC
+let ping_pong = true // ping_pong is true when ping is the current grid, pong is the next grid
+let beat_pasted = settings.MSEC_PER_BEAT
+let msec_per_gen = settings.MSEC_PER_GEN
+let msec_to_next_gen = 0
+let last_timestamp = 0
+const timedelta_history = Array(10).fill(0)
+let history_index = 0
+
 const event_loop = () => {
+    const timestamp = performance.now()
     draw(
         grid_sel,
         ping_pong ? grid_ping : grid_pong,
         cell_px, // HACK gotta be a better way to pass CELL_PX
-        pause_for_new ? min(tick / 90, 1.0) : 1.0, // opacity for fade in
+        d3.easeQuadOut(1.0 - new_pause_countdown / settings.NEW_PAUSE_MSEC) // opacity fade in
     )
-    if (tick % ticks_per_frame == 0 && !pause_for_new) { // only apply rules every num_ticks frames
-        ping_pong = !ping_pong
-        let grid_new = ping_pong ? grid_ping : grid_pong
-        let grid_old = ping_pong ? grid_pong : grid_ping
-        // TODO try alternating frames draw() and apply_rules() on different frames to shorten the time spent in any one frame handler
-        apply_rules_old_new(grid_old, grid_new) // ping_pong is true, grid_ping gets the new grid
+    // TODO only draw if needed for pan + zoom
+    let prev_index = history_index
+    history_index = (history_index + 1) % timedelta_history.length
+    timedelta_history[prev_index] = (timestamp - timedelta_history[prev_index]).toFixed(3)
+    if (history_index == 0) {
+        // log(`timestamp_history ${timedelta_history}`)
     }
-    pause_for_new > 0 ? pause_for_new-- : pause_for_new = 0
-    tick++
+
+    if (msec_to_next_gen <= 0) {
+        msec_to_next_gen += msec_per_gen
+        if (new_pause_countdown <= 0) {
+            ping_pong = !ping_pong
+            // when ping_pong is true, grid_ping gets the new grid
+            if (ping_pong) {
+                apply_rules_old_new(grid_pong, grid_ping)
+            } else {
+                apply_rules_old_new(grid_ping, grid_pong)
+            }
+            gen_count++
+            if (gen_count % 500 == 0) {
+                log(`gen_count ${gen_count}`)
+            }
+        }
+    }
+    last_timestamp = timestamp
+    new_pause_countdown > 0 ? new_pause_countdown -= msec_per_tick : new_pause_countdown = 0
+    msec_to_next_gen -= msec_per_tick
     requestAnimationFrame(event_loop)
 }
-let tick = 0
-let ticks_per_frame = settings.TICKS_PER_FRAME // BEATmsec / (1000msec/60frame) ->  num_ticks has units of frames
-let pause_for_new = settings.PAUSE_FOR_NEW // to pause for N seconds, set N sec * 60 frames/sec then round() so that mod (%) works
-let ping_pong = true // ping_pong is true when ping is the current grid, pong is the next grid
-let beat_pasted = settings.paste_animation.PASTED / 1.333
-let beat_guesses = settings.paste_animation.GUESSES
-let beat_seed = settings.paste_animation.SEED
 
 const load_new_seed = (new_seed) => {
+    // TODO next: why did I declare this in here? move it to grid.js
+    // might require moving ping pong into grid.js
     let grid_now = ping_pong ? grid_ping : grid_pong
-    // clear the grid in place
-    clear_grid(grid_now)
-
+    
     // fix new_seed rows to be array of chars instead of strings
     // this makes indexing work with multi byte unicode characters
     // if the row is already an array its a no-op ([...row] == [...[...row]])
     new_seed = new_seed.map(row => [...row])
-
-    // copy the life_seed into the center of the grid
+    // TODO LOW PRI: move this 2d array fixup into seeds.js
+    
+    clear_grid(grid_now)
     add_seed(new_seed, grid_now)
-    // replace instadraw with setting a global flag that the event loop will pick up
-    tick = 0 // Just use the tick counter to cause a new draw?
-    // WARNING ⚠️ this means tick isn't the frame count since beginning of time, just frame count since new seed
-    // also: generation # != frame count
 
-    pause_for_new = round((2 * beat_seed / 1000) * 60) // secs * frames/sec => units of frames
-
+    new_pause_countdown = settings.NEW_PAUSE_MSEC
+    gen_count = 0
 }
 
 load_new_seed(attract_seed)
@@ -212,9 +232,10 @@ const parse_clipboard = (pasted_clipboard) => {
         const last_line = pasted_lines.length - 1
         const cw = app.node().clientWidth
         const ch = app.node().clientHeight
+        pasted_lines.reverse() // reverse the order so the last line is at the bottom
         app
             .selectAll('.paste-line')
-            .data(pasted_lines.reverse()) // reverse the order so the last line is at the bottom
+            .data(pasted_lines)
             .join(
                 enter => enter.append('div').classed('paste-line', true)
                     .style('position', 'absolute')

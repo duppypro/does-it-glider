@@ -25,8 +25,9 @@
     --blue: #85c0f9;
     /* font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif; */
     /* font-family: HandelGothic, "Trebuchet MS", monospace; */
-    font-family: 'Roboto Mono', sans-serif;
-    font-family: "Verdana", sans-serif;
+    /* font-family: 'Roboto Mono', sans-serif; */
+    /* font-family: "Verdana", sans-serif; */
+    font-family: "Cubano", sans-serif;
     font-size: 18px;
     /* https://stackoverflow.com/questions/46167604/ios-html-disable-double-tap-to-zoom */
     user-select: none;

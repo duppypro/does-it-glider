@@ -110,7 +110,7 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     }
 
     zoom = d3.zoom()
-        .scaleExtent([2 / 16, 64 / 16]) // #BUG this 16 should be cell_px
+        .scaleExtent([2 / 8, 64 / 8]) // #BUG this 8 should be cell_px
         .translateExtent([ // Prevent grid from panning completely off screen
             [-G_PAD_LEFT - cx / 4, -G_PAD_TOP - cy / 4],
             [app_w + G_PAD_LEFT + cx / 4, app_h + G_PAD_TOP + cy / 4],
@@ -122,11 +122,10 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
             event.preventDefault()
         })
 
-
     svg.call(zoom)
     // Set the initial transform
-    // TODO the zoom.transform didn't work as expected.
-    // I am trying to avoid applying a translation on every apply_drag_zoom()
+    // TODO avoid applying a translation on every apply_drag_zoom()
+    // the line below didn't work as expected.
     // zoom.transform(svg, d3.zoomIdentity.translate(-G_PAD_LEFT, -G_PAD_TOP))
 
     return grid
@@ -135,7 +134,7 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
 export const zoom_grid = (x, y, k) => {
     let tx = d3.zoomIdentity.translate(x, y).scale(k)
     grid.transition()
-        .duration(settings.paste_animation.PASTED / 1.333)
+        .duration(settings.NEW_PAUSE_MSEC)
         .ease(d3.easePolyIn.exponent(3))
         .attr('transform', tx.translate(-G_PAD_LEFT, -G_PAD_TOP))
         .on('end', () => { zoom.transform(svg, tx) })

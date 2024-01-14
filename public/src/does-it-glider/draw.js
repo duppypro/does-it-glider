@@ -5,10 +5,6 @@
 //      draw
 ////////////////////////////////////////////////////////////////////////////////
 
-let draw_count = 0, sum_total = 0, sum_remove = 0
-let min = Infinity, max = 0
-let total = 0, time = 0
-
 const COLOR_TO_CLASS = {
     '⬛': false,
     'o': false,
