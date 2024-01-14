@@ -85,6 +85,13 @@
     text-align: left;
 }
 
+.gen-count
+{
+    font-size: 0.7em;
+    color: var(--white);
+    text-align: right;
+}
+
 @keyframes rainbow-color
 {
     0% {color: red;}

@@ -95,6 +95,9 @@ touch_target.append('div')
 touch_target.append('div')
     .attr('class', 'title sub-title')
     .html(_sub_title)
+touch_target.append('div')
+    .attr('class', 'title gen-count')
+    .html('00000')
 let line_height = touch_target.select('.sub-title').node().clientHeight
 
 // get the width and height of the grid
@@ -130,6 +133,7 @@ const event_loop = () => {
 
     if (msec_to_next_gen <= 0) {
         msec_to_next_gen += msec_per_gen
+        d3.select('.gen-count').html(`${gen_count}`.padStart(5, '0'))
         if (new_pause_countdown <= 0) {
             ping_pong = !ping_pong
             // when ping_pong is true, grid_ping gets the new grid
@@ -139,9 +143,6 @@ const event_loop = () => {
                 apply_rules_old_new(grid_ping, grid_pong)
             }
             gen_count++
-            if (gen_count % 500 == 0) {
-                log(`gen_count ${gen_count}`)
-            }
         }
     }
     new_pause_countdown > 0 ? new_pause_countdown -= msec_per_tick : new_pause_countdown = 0
