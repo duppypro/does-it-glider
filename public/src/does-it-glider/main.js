@@ -118,12 +118,8 @@ let ping_pong = true // ping_pong is true when ping is the current grid, pong is
 let beat_pasted = settings.MSEC_PER_BEAT
 let msec_per_gen = settings.MSEC_PER_GEN
 let msec_to_next_gen = 0
-let last_timestamp = 0
-const timedelta_history = Array(10).fill(0)
-let history_index = 0
 
 const event_loop = () => {
-    const timestamp = performance.now()
     draw(
         grid_sel,
         ping_pong ? grid_ping : grid_pong,
@@ -131,12 +127,6 @@ const event_loop = () => {
         d3.easeQuadOut(1.0 - new_pause_countdown / settings.NEW_PAUSE_MSEC) // opacity fade in
     )
     // TODO only draw if needed for pan + zoom
-    let prev_index = history_index
-    history_index = (history_index + 1) % timedelta_history.length
-    timedelta_history[prev_index] = (timestamp - timedelta_history[prev_index]).toFixed(3)
-    if (history_index == 0) {
-        // log(`timestamp_history ${timedelta_history}`)
-    }
 
     if (msec_to_next_gen <= 0) {
         msec_to_next_gen += msec_per_gen
@@ -154,7 +144,6 @@ const event_loop = () => {
             }
         }
     }
-    last_timestamp = timestamp
     new_pause_countdown > 0 ? new_pause_countdown -= msec_per_tick : new_pause_countdown = 0
     msec_to_next_gen -= msec_per_tick
     requestAnimationFrame(event_loop)
