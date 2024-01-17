@@ -87,8 +87,11 @@
 
 .gen-count
 {
-    font-size: 0.7em;
+    font-size: 0.75em;
     color: var(--white);
+    opacity: 60%;
+    box-sizing: border-box;
+    padding-right: 0.5em;
     text-align: right;
 }
 

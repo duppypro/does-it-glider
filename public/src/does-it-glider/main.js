@@ -24,7 +24,7 @@ import {
 import { draw } from './draw.js'
 import * as seeds from './seeds.js'
 let attract_seed = seeds.glider
-// attract_seed = seeds.red_blue
+attract_seed = seeds.red_blue
 
 // WebGL modules
 import { webgl_context } from '../mywebgl/render.js'
@@ -134,7 +134,7 @@ const event_loop = () => {
     if (msec_to_next_gen <= 0) {
         msec_to_next_gen += msec_per_gen
         d3.select('.gen-count').html(`${gen_count}`.padStart(5, '0'))
-        if (new_pause_countdown <= 0) {
+        if (new_pause_countdown <= 0 && gen_count < 9999) {
             ping_pong = !ping_pong
             // when ping_pong is true, grid_ping gets the new grid
             if (ping_pong) {
