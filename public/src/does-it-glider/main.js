@@ -1,86 +1,26 @@
 //////////////////////////////////////////////////////////////////////
-//  (c) 2023, David 'Duppy' Proctor, Interface Arts
+//  (c) 2023, 2024, David 'Duppy' Proctor, Interface Arts
 //
-//  does-it-glider
+//  does-it-glider or 'dig'
 //      main
 //////////////////////////////////////////////////////////////////////
 
-// Configuration
-import { settings } from './settings.js'
+// nick names so I can type less
+const {log, warn, err} = console
+
+// Imports
 import { d3_plus as d3 } from '../../lib/d3-helper.js'
+import * as dig from './imports.js'
 
-// Conway's Game of Life modules
-import {
-    apply_rules as apply_rules_old_new,
-    add_seed,
-    clear_grid,
-} from '../conway/play.js'
-import {
-    append_grid,
-    zoom_grid,
-} from '../conway/grid.js'
-
-// does-it-glider modules
-import { draw } from './draw.js'
-import * as seeds from './seeds.js'
-let attract_seed = seeds.glider
-attract_seed = seeds.red_blue
-
-// WebGL modules
-import { webgl_context } from '../mywebgl/render.js'
-
-// Init
-const log = console.log
-const warn = console.warn
-const err = console.error
-const min = Math.min
-const max = Math.max
-const round = Math.round
-
-// get query params
-const urlParams = new URLSearchParams(window.location.search)
-const version = urlParams.get('v') || 'stable'
-const use_gl = false //version == 'beta' || version == 'both'
-const use_svg = true //version == 'stable' || version == 'both'
-// warn if using the beta version
-if (use_gl) {
-    warn(`Using Beta WebGL version.`)
-}
-// initialize
-let app = d3.select('.does-it-glider-app')
-if (app.empty()) {
-    app = d3.select('body').mynew(`div.does-it-glider-app`, ':first-child')
+const app_sel = d3.select('#does-it-glider-app')
+if (app_sel.empty()) {
+    err('<div> with id="does-it-glider-app" not found.')
 }
 
-// Position the divs using flex grid
-// get the width and height of the app
-let app_rect = app.node().getBoundingClientRect()
-app.style('display', 'flex')
-    // set the flex direction based on the aspect ratio of the app container
-    .style('flex-direction', (app_rect.width > app_rect.height) ? 'row' : 'column')
-
-const empty_sel = d3.select()
-let svg_div = empty_sel // initialize to empty selection
-let webgl_div = empty_sel // initialize to empty selection
-
-if (use_svg) {
-    svg_div = app.mynew('div.top')
-        .style('background', '#000000ff') // out of bounds color
-}
-
-if (use_gl) {
-    webgl_div = app.mynew('div.bottom')
-        .style('background', '#e600ffff') // should never see this color
-}
-
-app.selectAll('.top,.bottom') // styles in common for both divs
-    .style('overflow', 'hidden') // tested, this is needed to avoid scroll bars
-    .style('position', 'relative')
-    .style('flex', '1')
 
 // Create the title    
-let touch_target = app.append('span')
-    .classed('touch-target', true)
+const touch_target = app_sel.append('span')
+.classed('touch-target', true)
 
 const _title = 'Does it Glider?'
 const _sub_title = 'Tap here to paste Wordle score.'
@@ -90,44 +30,46 @@ const _sub_title = 'Tap here to paste Wordle score.'
 // <img src="https://icons.iconarchive.com/icons/pictogrammers/material/48/speedometer-icon.png" width="48" height="48">
 
 touch_target.append('div')
-    .attr('class', 'title')
-    .html(_title)
+.attr('class', 'title')
+.html(_title)
 touch_target.append('div')
-    .attr('class', 'title sub-title')
-    .html(_sub_title)
+.attr('class', 'title sub-title')
+.html(_sub_title)
 touch_target.append('div')
-    .attr('class', 'title gen-count')
-    .html('00000')
-let line_height = touch_target.select('.sub-title').node().clientHeight
+.attr('class', 'title gen-count')
+.html('00000')
 
-// get the width and height of the grid
-let grid_h = settings.GRID_HEIGHT
-let grid_w = settings.GRID_WIDTH
-let cell_px = settings.CELL_PX
+// get the width and height of the grid and screen size parameters
+const line_height = touch_target.select('.sub-title').node().clientHeight
+let {
+    GRID_HEIGHT, GRID_WIDTH, CELL_PX,
+    NEW_PAUSE_MSEC, MSEC_PER_BEAT, MSEC_PER_GEN,
+} = dig.settings
+
 // make a grid in the app DOM element
-let grid_sel = empty_sel
-if (use_svg) {
-    grid_sel = append_grid(svg_div, cell_px, grid_w, grid_h)
-}
+const grid_sel = dig.append_grid(app_sel, CELL_PX, GRID_WIDTH, GRID_HEIGHT)
+
+const attract_seed = dig.seeds.glider // glider or red_blue
 
 // make a new 2D array the size of the g element divide by 20px
-let grid_ping = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
-let grid_pong = Array.from({ length: grid_h }, () => Array.from({ length: grid_w }, () => '⬛'))
+// TODO move ping pong into game-board modules
+let grid_ping = Array.from({ length: GRID_HEIGHT }, () => Array.from({ length: GRID_WIDTH }, () => '⬛'))
+let grid_pong = Array.from({ length: GRID_HEIGHT }, () => Array.from({ length: GRID_WIDTH }, () => '⬛'))
 
 let gen_count
 const msec_per_tick = 1000.0 / 60.0 // 60fps requestAnimationFrame() defacto standard
-let new_pause_countdown = settings.NEW_PAUSE_MSEC
+let new_pause_countdown = NEW_PAUSE_MSEC
 let ping_pong = true // ping_pong is true when ping is the current grid, pong is the next grid
-let beat_pasted = settings.MSEC_PER_BEAT
-let msec_per_gen = settings.MSEC_PER_GEN
+let beat_pasted = MSEC_PER_BEAT
+let msec_per_gen = MSEC_PER_GEN
 let msec_to_next_gen = 0
 
 const event_loop = () => {
-    draw(
+    dig.draw(
         grid_sel,
         ping_pong ? grid_ping : grid_pong,
-        cell_px, // HACK gotta be a better way to pass CELL_PX
-        d3.easeQuadOut(1.0 - new_pause_countdown / settings.NEW_PAUSE_MSEC) // opacity fade in
+        CELL_PX, // HACK gotta be a better way to pass CELL_PX
+        d3.easeQuadOut(1.0 - new_pause_countdown / NEW_PAUSE_MSEC) // opacity fade in
     )
     // TODO only draw if needed for pan + zoom
 
@@ -138,9 +80,9 @@ const event_loop = () => {
             ping_pong = !ping_pong
             // when ping_pong is true, grid_ping gets the new grid
             if (ping_pong) {
-                apply_rules_old_new(grid_pong, grid_ping)
+                dig.apply_rules_old_new(grid_pong, grid_ping)
             } else {
-                apply_rules_old_new(grid_ping, grid_pong)
+                dig.apply_rules_old_new(grid_ping, grid_pong)
             }
             gen_count++
         }
@@ -154,17 +96,17 @@ const load_new_seed = (new_seed) => {
     // TODO next: why did I declare this in here? move it to grid.js
     // might require moving ping pong into grid.js
     let grid_now = ping_pong ? grid_ping : grid_pong
-    
+
     // fix new_seed rows to be array of chars instead of strings
     // this makes indexing work with multi byte unicode characters
     // if the row is already an array its a no-op ([...row] == [...[...row]])
     new_seed = new_seed.map(row => [...row])
     // TODO LOW PRI: move this 2d array fixup into seeds.js
-    
-    clear_grid(grid_now)
-    add_seed(new_seed, grid_now)
 
-    new_pause_countdown = settings.NEW_PAUSE_MSEC
+    dig.clear_grid(grid_now)
+    dig.add_seed(new_seed, grid_now)
+
+    new_pause_countdown = NEW_PAUSE_MSEC
     gen_count = 0
 }
 
@@ -207,7 +149,7 @@ const parse_clipboard = (pasted_clipboard) => {
             .replace(/o/ug, '⬛')
             .replace(/b/ug, '⬜')
     }
-        
+
     seed = []
     guesses.map(guess => {
         guess = text_line_to_seed_line(guess)
@@ -220,10 +162,10 @@ const parse_clipboard = (pasted_clipboard) => {
     // draw/render pasted_lines in the .paste-line divs
     const draw_clipboard_lines = () => {
         const last_line = pasted_lines.length - 1
-        const cw = app.node().clientWidth
-        const ch = app.node().clientHeight
+        const cw = app_sel.node().clientWidth
+        const ch = app_sel.node().clientHeight
         pasted_lines.reverse() // reverse the order so the last line is at the bottom
-        app
+        app_sel
             .selectAll('.paste-line')
             .data(pasted_lines)
             .join(
@@ -248,8 +190,8 @@ const parse_clipboard = (pasted_clipboard) => {
             .transition().delay((_d, i) => (last_line - i) * beat_pasted / 4)
             .on('end', (_d, i) => {
                 if (i == last_line) {
-                    clear_grid(ping_pong ? grid_ping : grid_pong)
-                    zoom_grid(0, 0, 1) // TODO zoom_grid has it's own transition duration.
+                    dig.clear_grid(ping_pong ? grid_ping : grid_pong)
+                    dig.zoom_grid(0, 0, 1) // TODO zoom_grid has it's own transition duration.
                     // TODO Improve this so the duration of zoom_grid and the next transition off screen
                     // TODO don't have to be manually synced
                 }
@@ -279,8 +221,3 @@ const get_clipboard_text = (event) => {
 
 // paste from clipboard on click(touch) (ignore paste) event to deal with mobile browsers
 d3.select('.touch-target').on('click', get_clipboard_text)
-
-// make a webgl canvas in the other div
-if (use_gl) {
-    const gl = webgl_context(webgl_div)
-}

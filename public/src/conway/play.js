@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-//  (c) 2023, David 'Duppy' Proctor, Interface Arts
+//  (c) 2023, 2024, David 'Duppy' Proctor, Interface Arts
 //
 //  conway
 //      play
@@ -33,7 +33,7 @@ export const add_seed = (seed, grid) => {
     const cy = Math.round((gh - sh) / 2)
     // loop over seed and copy each cell into the center of grid
     for (let y = cy, sy = 0; sy < sh; y++, sy++) {
-        for(let x = cx, sx = 0; sx < sw; x++, sx++) {
+        for (let x = cx, sx = 0; sx < sw; x++, sx++) {
             // clip instead of wrap
             if (x >= 0 && y >= 0 && x < gw && y < gh) {
                 // must make sure rows are arrays, not strings
@@ -43,7 +43,7 @@ export const add_seed = (seed, grid) => {
                     set_rule_mode('⬜')
                 }
             }
-        }   
+        }
     }
 } // end add_seed()
 
@@ -59,10 +59,10 @@ export const apply_rules = (grid, new_grid) => {
         console.error(`apply_rules() error: new_grid is not the same size as grid`)
         return false
     }
-    
+
     // loop over 2D array cells
     // and apply the rules to each cell
-    for(let y = 0; y < h; y++) {
+    for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
             // if we see a '⬜' anywhere, change the rules to Conway mode
             if (grid[y][x] == '⬜') {
@@ -74,7 +74,7 @@ export const apply_rules = (grid, new_grid) => {
             let red_count = 0
             // don't need blue count because it can be computed from live_count - red_count
             // loop over the 3x3 grid around the cell
-            for(let ny = y-1; ny <= y+1; ny++) {
+            for (let ny = y - 1; ny <= y + 1; ny++) {
                 for (let nx = x - 1; nx <= x + 1; nx++) {
                     let peek
                     // don't count the cell itself, it is not a neighbor

@@ -1,12 +1,12 @@
 /*******************************************************************************
- *  (c) 2023, David 'Duppy' Proctor, Interface Arts
+ *  (c) 2023, 2024, David 'Duppy' Proctor, Interface Arts
  *
  *  does-it-glider
  *      css
  *
  ******************************************************************************/
 
-.does-it-glider-app
+#does-it-glider-app
 { /* this is the topmost parent element for the web app */
     height: 100vh;
     /* height: 100mvh; */

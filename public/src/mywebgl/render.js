@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////
-//  (c) 2023, David 'Duppy' Proctor, Interface Arts
+//  (c) 2023, 2024, David 'Duppy' Proctor, Interface Arts
 //
 //  render_sandbox
 //      webgl_context
@@ -29,7 +29,7 @@ export const webgl_context = (parent) => {
     const cell_px = settings.CELL_PX
     const gw = settings.GRID_WIDTH * cell_px // num cells * px/cell -> num pixels
     const gh = settings.GRID_HEIGHT * cell_px
-    
+
     //BUGBUG #4 render does not respond to resize events
 
     // set parent to rare background color to help debug if canvas is not covering entire parent
@@ -76,7 +76,7 @@ export const webgl_context = (parent) => {
         console.error(`WebGL frag compile err: ${gl.getShaderInfoLog(fragment_shader)}`)
         return
     }
-    
+
     // Create a program and attach the shaders
     const program = gl.createProgram()
     gl.attachShader(program, vertex_shader)
@@ -110,11 +110,11 @@ export const webgl_context = (parent) => {
         gl.ARRAY_BUFFER,
         // make a rectangle from 2 triangles
         new Float32Array([
-            -1.0, -1.0,        0.0, gh, // lower left in clip space is 0, 1 in grid space
+            -1.0, -1.0, 0.0, gh, // lower left in clip space is 0, 1 in grid space
             +1.0, -1.0, gw, gh, // lower right in clip space is 1, 1 in grid space
-            -1.0, +1.0,        0.0,         0.0, // upper left in clip space is 0, 0 in grid space
-            +1.0, +1.0, gw,         0.0, // upper right in clip space is 1, 0 in grid space
-        ]), 
+            -1.0, +1.0, 0.0, 0.0, // upper left in clip space is 0, 0 in grid space
+            +1.0, +1.0, gw, 0.0, // upper right in clip space is 1, 0 in grid space
+        ]),
         gl.STATIC_DRAW
     )
 
@@ -177,7 +177,7 @@ export const webgl_context = (parent) => {
     }
 
     canvas.call(d3.zoom()
-        .scaleExtent([1/cell_px, 4])
+        .scaleExtent([1 / cell_px, 4])
         .on('zoom', apply_zoom)
     )
 
