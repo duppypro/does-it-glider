@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-//  (c) 2023, David 'Duppy' Proctor, Interface Arts
+//  (c) 2023, 2024, David 'Duppy' Proctor, Interface Arts
 //
 //  conway and modified red team blue team rules
 //      rules
@@ -75,8 +75,8 @@ const RED_BLUE_RULES = {
         ['⬛', '⬛', '⬛', '⬛', '⬛', '⬛', '⬛', '⬛', '⬛', '⬛',], // live_count 8
     ],
     '🟦': [
-    // REMEMBER: we index by red neighbors, so the rule at index(row) 2 is the rule for 2 live neighbors
-    // 2nd row first element is 2 - 0 -> 2 blue neighbors, next element is 2 - 1 -> 1 blue neighbor, etc.  
+        // REMEMBER: we index by red neighbors, so the rule at index(row) 2 is the rule for 2 live neighbors
+        // 2nd row first element is 2 - 0 -> 2 blue neighbors, next element is 2 - 1 -> 1 blue neighbor, etc.  
         ['⬛', '⬛', '⬛', '⬛', '⬛', '⬛', '⬛', '⬛', '⬛',], // live_count 0
         ['⬛', '⬛', '⬛', '⬛', '⬛', '⬛', '⬛', '⬛', '⬛',], // live_count 1
         ['🟦', '🟦', '🟥', '⬛', '⬛', '⬛', '⬛', '⬛', '⬛',], // live_count 2

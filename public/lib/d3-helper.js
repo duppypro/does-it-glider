@@ -8,7 +8,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 export const d3_plus = (() => {
-    d3.selection.prototype.mynew = function (selector, where) {
+    d3.selection.prototype.emmet = function (selector, where) {
         var match = selector.match(/^(\w+)(?:#([\w-]+))?(?:\.([\w-.]+))?$/);
         if (!match) {
             this.insert(selector, where);

@@ -1,9 +1,11 @@
 ////////////////////////////////////////////////////////////////////////////////
-//  (c) 2023, David 'Duppy' Proctor, Interface Arts
+//  (c) 2023, 2024, David 'Duppy' Proctor, Interface Arts
 //
 //  conway
 //      grid
 ////////////////////////////////////////////////////////////////////////////////
+
+import { settings } from '/src/does-it-glider/settings.js'
 
 const log = console.log
 const err = console.error
@@ -14,49 +16,17 @@ const clip = (val, smallest = 1, largest = 100) => min(max(smallest, val), large
 //TODO LOW PRI: add a debug mode that logs to a textarea instead of console
 //TODO import these shorthands from a shared module
 
+let G_WIDTH
+let G_HEIGHT
 let app_w
 let app_h
+let G_PAD_LEFT
+let G_PAD_TOP
 let cx
 let cy
 let svg = d3.select()
 let grid = d3.select()
 let zoom = d3.zoom()
-
-// Switch to using a Class for the Grid
-
-export class Grid {
-    constructor(cell_px = 20, w = 12, h = false) {
-        // check inputs
-        if (!h) h = w // if h is not specified, make it square
-        this.w = clip(w, 1, 1024)
-        this.h = clip(h, 1, 1024)
-        this.cell_px = clip(cell_px, 1, 256)
-
-        // w, h are in units of cells
-        // all other dimensions in units of px
-        this.G_WIDTH = this.cell_px * this.w
-        this.G_HEIGHT = this.cell_px * this.h
-    }
-    
-    append_grid(app_element) {
-        if (!app_element || app_element.empty()) {
-            return d3.select(null)
-        } else {
-            this.app = app_element
-        }
-        this.app_w = this.app.node().clientWidth
-        this.app_h = this.app.node().clientHeight
-        this.G_PAD_LEFT = (this.G_WIDTH - this.app_w) / 2
-        this.G_PAD_TOP = (this.G_HEIGHT - this.app_h) / 2
-        this.cx = this.app_w / 2
-        this.cy = this.app_h / 2
-
-    }
-
-
-}
-
-// THE OLD WAY BELOW vvvv
 // INPUT a d3 selection
 //     adds an svg with grid lines
 //     attaches a drag and zoom event handler
@@ -114,16 +84,16 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     // scaling the stroke width on the zoom event change of transform is something
     // that I think I can do it with D3.js but not CSS
     pattern.append('path').attr('class', 'pattern-line')
-    .attr('d', `M ${cell_px},0 L 0,0 0,${cell_px}`); // draw top and left edges of each cell
+        .attr('d', `M ${cell_px},0 L 0,0 0,${cell_px}`); // draw top and left edges of each cell
 
     grid.append('rect').classed('grid-background', true)
-    .attr('width', `${G_WIDTH}px`)
-    .attr('height', `${G_HEIGHT}px`)
+        .attr('width', `${G_WIDTH}px`)
+        .attr('height', `${G_HEIGHT}px`)
 
     grid.append('rect').classed('grid-fill', true) // CSS will fill this with #grid-pattern
-    .attr('width', `${G_WIDTH}px`)
-    .attr('height', `${G_HEIGHT}px`)
-    .style('fill', 'url(#grid-pattern)')
+        .attr('width', `${G_WIDTH}px`)
+        .attr('height', `${G_HEIGHT}px`)
+        .style('fill', 'url(#grid-pattern)')
 
     // hook the drag and zoom events to the svg
     // it's important that the transform is relative to the svg

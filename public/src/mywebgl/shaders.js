@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-//  (c) 2023, David 'Duppy' Proctor, Interface Arts
+//  (c) 2023, 2024, David 'Duppy' Proctor, Interface Arts
 //
 //  conway_shaders is an implementation of Conway's Game of Life in WebGL
 //      contains vertex and fragment shaders as javascript string literals
@@ -8,7 +8,7 @@
 import { settings } from '/src/does-it-glider/settings.js'
 
 // define a null op glsl so that the glsl-literal vscode extension will highlight the syntax
-const glsl = (x) => x+'' // HACK force glsl to return a string so we can use .replace()
+const glsl = (x) => x + '' // HACK force glsl to return a string so we can use .replace()
 
 const cell_w = `${settings.CELL_PX.toFixed(3)}`
 const cell_h = `${settings.CELL_PX.toFixed(3)}`
@@ -61,16 +61,16 @@ export const grid_frag_shader_src = glsl`
         gl_FragColor = vec4(color, 1.0);
     }
 `
-// I wasn't able to get literal expansion working
-// because maybe cell_w is not in glsl context
-// it is replacing __cell_w with '' instead of the expected '16.000'
-// this isn't really a language issue, it's the glsl formatting extension
-// it's looking for "glsl`" specifcally and not glsl('shader source code')
-// TODO try this: I think if cell_w is in the context that uses grid_frag_shader_src the string literal will expand
-.replace(/\b__cell_w\b/ug, cell_w)
-.replace(/\b__cell_h\b/ug, cell_h)
-.replace(/\b__border\b/ug, border)
-.replace(/\b__epsilon\b/ug, epsilon)
+    // I wasn't able to get literal expansion working
+    // because maybe cell_w is not in glsl context
+    // it is replacing __cell_w with '' instead of the expected '16.000'
+    // this isn't really a language issue, it's the glsl formatting extension
+    // it's looking for "glsl`" specifcally and not glsl('shader source code')
+    // TODO try this: I think if cell_w is in the context that uses grid_frag_shader_src the string literal will expand
+    .replace(/\b__cell_w\b/ug, cell_w)
+    .replace(/\b__cell_h\b/ug, cell_h)
+    .replace(/\b__border\b/ug, border)
+    .replace(/\b__epsilon\b/ug, epsilon)
 // end grid_frag_shader_src
 
 export const rainbow_fragment_shader_src = glsl`
