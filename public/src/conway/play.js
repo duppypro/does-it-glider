@@ -32,6 +32,7 @@ export const add_seed = (seed, grid) => {
     const cx = Math.round((gw - sw) / 2)
     const cy = Math.round((gh - sh) / 2)
     // loop over seed and copy each cell into the center of grid
+    set_rule_mode('🟥🟦')
     for (let y = cy, sy = 0; sy < sh; y++, sy++) {
         for (let x = cx, sx = 0; sx < sw; x++, sx++) {
             // clip instead of wrap
@@ -62,13 +63,9 @@ export const apply_rules = (grid, new_grid) => {
 
     // loop over 2D array cells
     // and apply the rules to each cell
+    let peek, lookup
     for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
-            // if we see a '⬜' anywhere, change the rules to Conway mode
-            if (grid[y][x] == '⬜') {
-                // any use of '⬜' will switch to Conway mode
-                set_rule_mode('⬜')
-            }
             // count the number of neighbors that are live
             let live_count = 0
             let red_count = 0
@@ -76,7 +73,6 @@ export const apply_rules = (grid, new_grid) => {
             // loop over the 3x3 grid around the cell
             for (let ny = y - 1; ny <= y + 1; ny++) {
                 for (let nx = x - 1; nx <= x + 1; nx++) {
-                    let peek
                     // don't count the cell itself, it is not a neighbor
                     if (nx == x && ny == y) continue
                     if (nx >= 0 && ny >= 0 && nx < w && ny < h) {
@@ -92,7 +88,13 @@ export const apply_rules = (grid, new_grid) => {
                     // Unnecessary, blue_count is implied by live_count - red_count
                 }
             }
-            new_grid[y][x] = rules[grid[y][x]][live_count][red_count]
+            peek = grid[y][x]
+            lookup = rules[peek]
+            if (!lookup) {
+                console.error(`apply_rules() error: unknown cell state '${peek}'`)
+                return false
+            }
+            new_grid[y][x] = lookup[live_count][red_count]
         }
     }
     return true

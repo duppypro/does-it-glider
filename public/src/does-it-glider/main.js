@@ -146,14 +146,16 @@ const parse_clipboard = (pasted_clipboard) => {
             .replace(/🟩|🟦/ug, '⬜')
             .replace(/\./ug, '⬛')
             .replace(/X/ug, '⬜')
-            .replace(/o/ug, '⬛')
-            .replace(/b/ug, '⬜')
+            .replace(/b/ug, '⬛')
+            .replace(/o/ug, '⬜')
+            .replace(/R/ug, '🟥')
+            .replace(/B/ug, '🟦')
     }
 
     seed = []
     guesses.map(guess => {
         guess = text_line_to_seed_line(guess)
-        if (guess?.length == 5) {
+        if (guess?.length) {
             seed.push(guess)
         }
     })
@@ -202,7 +204,9 @@ const parse_clipboard = (pasted_clipboard) => {
             .style('top', `${ch * 1 / 2}px`)
             .remove()
             .on('end', (_d, i) => {
-                if (i == last_line) load_new_seed(seed?.length ? seed : attract_seed)
+                if (i == last_line) {
+                    load_new_seed(seed?.length ? seed : attract_seed)
+                }
             })
     }
 
