@@ -142,9 +142,9 @@ const parse_clipboard = (pasted_clipboard) => {
             // There is a problem that the high contrast mode of Wordle uses '⬜' for dead/empty
             // but all the other formats I want to support use '⬜' for alive
             // need an intermediate character to avoid double replacement
-            .replace(/⬜|⬛/ug, '⬛')
-            .replace(/🟨|🟧/ug, '⬜')
-            .replace(/🟩|🟦/ug, '⬜')
+            .replace(/⬜|⬛/ug, 'b')
+            .replace(/🟨|🟧/ug, 'o')
+            .replace(/🟩|🟦/ug, 'o')
             .replace(/\./ug, '⬛')
             .replace(/X/ug, '⬜')
             .replace(/b/ug, '⬛')
