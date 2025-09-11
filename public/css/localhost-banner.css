@@ -1,0 +1,18 @@
+.localhost-banner {
+    display: none; /* Hide banner by default. Script will override dispplay: if not production environment */
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    min-width: 100em;
+    width: max-content;
+    transform: translate(calc(-50% + 0.707*5*1em),calc(50% - 0.707*5*1em)) rotate(45deg);
+    background: #ffeb3b;
+    color: #111;
+    padding: 0.333em;
+    text-align: center;
+    font-family: sans-serif;
+    font-size: 0.667em;
+    font-weight: bold;
+    z-index: 9999;
+    letter-spacing: 1px;
+}

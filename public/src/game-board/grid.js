@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 import { d3_plus as d3 } from '../../lib/d3-helper.js'
-import { settings } from '/src/does-it-glider/settings.js'
+import { settings } from '../does-it-glider/settings.js'
 
 const log = console.log
 const err = console.error

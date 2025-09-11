@@ -9,7 +9,7 @@
 const {log, warn, err} = console
 
 // Imports
-import { d3_plus as d3 } from '../../lib/d3-helper.js'
+import { d3, d3_plus } from '../../lib/d3-helper.js'
 import * as dig from './imports.js'
 
 const app_sel = d3.select('#does-it-glider-app')
@@ -49,7 +49,7 @@ let {
 // make a grid in the app DOM element
 const grid_sel = dig.append_grid(app_sel, CELL_PX, GRID_WIDTH, GRID_HEIGHT)
 
-const attract_seed = dig.seeds.glider // glider or red_blue
+const attract_seed = dig.seeds.partial_mosquito // glider or red_blue
 
 // make a new 2D array the size of the g element divide by 20px
 // TODO move ping pong into game-board modules
@@ -142,9 +142,9 @@ const parse_clipboard = (pasted_clipboard) => {
             // There is a problem that the high contrast mode of Wordle uses '⬜' for dead/empty
             // but all the other formats I want to support use '⬜' for alive
             // need an intermediate character to avoid double replacement
-            .replace(/⬜|⬛/ug, '⬛')
-            .replace(/🟨|🟧/ug, '⬜')
-            .replace(/🟩|🟦/ug, '⬜')
+            .replace(/⬜|⬛/ug, 'b')
+            .replace(/🟨|🟧/ug, 'o')
+            .replace(/🟩|🟦/ug, 'o')
             .replace(/\./ug, '⬛')
             .replace(/X/ug, '⬜')
             .replace(/b/ug, '⬛')
