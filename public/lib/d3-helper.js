@@ -7,6 +7,10 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+export { d3 };
+
 export const d3_plus = (() => {
     d3.selection.prototype.emmet = function (selector, where) {
         var match = selector.match(/^(\w+)(?:#([\w-]+))?(?:\.([\w-.]+))?$/);

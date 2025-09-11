@@ -1,5 +1,5 @@
 .localhost-banner {
-    display: none;
+    display: none; /* Hide banner by default. Script will override dispplay: if not production environment */
     position: fixed;
     left: 0;
     bottom: 0;

@@ -15,20 +15,18 @@
 	</style>
 </head>
 <body>
-		<div class="localhost-banner">
-			LOCALHOST
-			<script>
-				// Detect if not production environment and show banner
-				if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-					document.currentScript.parentElement.style.display = 'block';
-				}
-			</script>
-		</div>		
-		<div id="does-it-glider-app">
-			<!-- WebApp content goes here -->
-		</div>
-		<script src="https://d3js.org/d3.v7.min.js"></script>
-		<!-- TODO update to using module version of d3js and import from main.js -->
-		<script type="module" src="src/does-it-glider/main.js"></script>
-	</body>
+	<div id="does-it-glider-app">
+		<!-- WebApp content goes here -->
+	</div>
+	<script type="module" src="src/does-it-glider/main.js"></script>
+	<div class="localhost-banner">
+		LOCALHOST
+		<script>
+			// Detect if not production environment and show banner
+			if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+				document.currentScript.parentElement.style.display = 'block';
+			}
+		</script>
+	</div>
+</body>
 </html>
