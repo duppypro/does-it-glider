@@ -37,10 +37,10 @@ touch_target.append('div')
 .html(_sub_title)
 touch_target.append('div')
 .attr('class', 'title gen-count')
-.html('00000')
+.html('-----')
 
 // get the width and height of the grid and screen size parameters
-const line_height = touch_target.select('.sub-title').node().clientHeight
+const line_height = Math.max(24, touch_target.select('.sub-title').node().clientHeight)
 let {
     GRID_HEIGHT, GRID_WIDTH, CELL_PX,
     NEW_PAUSE_MSEC, MSEC_PER_BEAT, MSEC_PER_GEN,

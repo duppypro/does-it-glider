@@ -80,7 +80,7 @@
 .paste-line
 {
     color: var(--white);
-    min-height: 1em;
+    min-height: 0.5vh;
     padding: 0;
     text-align: left;
 }
