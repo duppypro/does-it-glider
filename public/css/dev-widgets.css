@@ -20,16 +20,18 @@
 
 /* Version widget */
 .version-widget {
+    display: none;
     position: fixed;
     left: 0;
     bottom: 0;
-    padding: 0.5em 1em;
+    padding: 0.33em;
     color: #fff;
-    background: linear-gradient(45deg, purple 0%, black 100%);
+    transform: translate(calc(-50% + 0.707*4*1em),calc(50% - 0.707*4*1em)) rotate(45deg);
+    background: linear-gradient(0deg, purple 0%, black 100%);
     font-family: sans-serif;
-    font-size: 1em;
+    font-size: 0.6em;
     font-weight: bold;
-    z-index: 9999;
+    z-index: 9990;
     border-top-right-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     letter-spacing: 1px;
