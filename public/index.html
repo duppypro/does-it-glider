@@ -18,9 +18,8 @@
 		<!-- WebApp content goes here -->
 	</div>
 	<script type="module" src="src/does-it-glider/main.js"></script>
-	<div class="localhost-banner">LOCALHOST</div>
-	<div class="version-widget">Loading version...</div>
-	<script>
+	<div class="localhost-banner" hidden>LOCALHOST</div>
+	<div class="version-widget" hidden>Loading version...</div>	<script>
 		// Detect if not production environment and show banner
 		if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
 			// Fetch version from version.txt file
