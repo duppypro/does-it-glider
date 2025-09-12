@@ -1,0 +1,36 @@
+/* Localhost debug banner */
+.localhost-banner {
+    display: none;
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    min-width: 100em;
+    width: max-content;
+    transform: translate(calc(-50% + 0.707*5*1em),calc(50% - 0.707*5*1em)) rotate(45deg);
+    background: #ffeb3b;
+    color: #111;
+    padding: 0.333em;
+    text-align: center;
+    font-family: sans-serif;
+    font-size: 0.667em;
+    font-weight: bold;
+    z-index: 9999;
+    letter-spacing: 1px;
+}
+
+/* Version widget */
+.version-widget {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    padding: 0.5em 1em;
+    color: #fff;
+    background: linear-gradient(45deg, purple 0%, black 100%);
+    font-family: sans-serif;
+    font-size: 1em;
+    font-weight: bold;
+    z-index: 9999;
+    border-top-right-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    letter-spacing: 1px;
+}
