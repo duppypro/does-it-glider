@@ -128,11 +128,9 @@ const parse_clipboard = (pasted_clipboard) => {
     // use .map() instead of .filter() so the index is preserved
     let guesses = []
     guesses = pasted_lines.map(line => {
-        line.trim()
-        // const guess = line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B|X|\.){5,5}$/ug)
-        const guess = line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B|X|\.){5,}$/ug)
-        return guess && guess[0] || ''
-    })
+        line = line.trim()
+        const guess = line.match(/^(⬜|🟨|🟩|⬛|🟦|🟧|o|b|R|B){5}$/u)
+        return guess && guess[0] || ''    })
     // this is only the lines with exactly 5 wordle squares
 
     // convert all '🟨'|'🟩' in wordle_guesses to '⬜' and '⬜'|'⬛' to '⬛'
