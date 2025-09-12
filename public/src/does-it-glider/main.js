@@ -137,20 +137,28 @@ const parse_clipboard = (pasted_clipboard) => {
 
     // convert all '🟨'|'🟩' in wordle_guesses to '⬜' and '⬜'|'⬛' to '⬛'
     const text_line_to_seed_line = (line) => {
-        return line && line
-            // this replacememnt is unique to guesses from wordle
-            // There is a problem that the high contrast mode of Wordle uses '⬜' for dead/empty
-            // but all the other formats I want to support use '⬜' for alive
-            // need an intermediate character to avoid double replacement
-            .replace(/⬜|⬛/ug, 'b')
-            .replace(/🟨|🟧/ug, 'o')
-            .replace(/🟩|🟦/ug, 'o')
-            .replace(/\./ug, '⬛')
-            .replace(/X/ug, '⬜')
-            .replace(/b/ug, '⬛')
-            .replace(/o/ug, '⬜')
-            .replace(/R/ug, '🟥')
-            .replace(/B/ug, '🟦')
+        if (!line) return line;
+        // Convert to array of code points for robust emoji handling
+        return Array.from(line).map(char => {
+            switch (char) {
+                case '⬜': // Wordle white is light mode empty
+                case '⬛': // Wordle black is dark mode empty
+                case 'b':  // 'b' is blank/empty/dead in the $bbobb$ format
+                    return '⬛';
+                case '🟨': // Wordle yellow is dark mode alive
+                case '🟧': // orange is light mode alive
+                case '🟩': // green is dark mode alive
+                case '🟦': // blue is light mode alive
+                case 'o':  // 'o' is alive in the $bbobb$ format
+                    return '⬜';
+                case 'R':
+                    return '🟥';
+                case 'B':
+                    return '🟦';
+                default:
+                    return char;
+            }
+        }).join('');
     }
 
     seed = []
