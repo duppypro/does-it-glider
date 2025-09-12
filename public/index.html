@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <head>
 	<meta charset="utf-8">
@@ -19,15 +18,21 @@
 		<!-- WebApp content goes here -->
 	</div>
 	<script type="module" src="src/does-it-glider/main.js"></script>
-	<div class="localhost-banner">
-		LOCALHOST
-		<div class="version-widget">v1.0.0</div>
-		<script>
-			// Detect if not production environment and show banner
-			if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-				document.currentScript.parentElement.style.display = 'block';
-			}
-		</script>
-	</div>
+	<div class="localhost-banner" hidden>LOCALHOST</div>
+	<div class="version-widget" hidden>Loading version...</div>	<script>
+		// Detect if not production environment and show banner
+		if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+			// Fetch version from version.txt file
+			fetch('version.txt')
+			.then(res => res.text())
+			.then(hash => {
+				// Remove non-printable and non-ASCII characters
+				const cleanHash = hash.replace(/[^\x20-\x7E]/g, '').trim();
+				document.querySelector('.version-widget').textContent = `${cleanHash}`
+			});
+			document.querySelectorAll('.localhost-banner, .version-widget')
+				.forEach(el => {el.style.display = 'block'})
+		}
+	</script>
 </body>
 </html>

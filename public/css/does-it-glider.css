@@ -80,7 +80,9 @@
 .paste-line
 {
     color: var(--white);
-    min-height: 1em;
+    /* Ensure at least one line height; avoid viewport-coupled clipping */
+    min-height: 1em;   /* fallback */
+    min-height: 1lh;   /* modern browsers */
     padding: 0;
     text-align: left;
 }
