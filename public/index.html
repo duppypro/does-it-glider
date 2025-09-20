@@ -18,20 +18,25 @@
 		<!-- WebApp content goes here -->
 	</div>
 	<script type="module" src="src/does-it-glider/main.js"></script>
-	<div class="localhost-banner" hidden>LOCALHOST</div>
-	<div class="version-widget" hidden>Loading version...</div>	<script>
+	<div class="dev-banner" hidden>LOCALHOST</div>
+	<div class="version-widget" hidden>-------</div>	<script>
 		// Show banner and version only if version.txt exists
 				fetch('version.txt')
 					.then(res => {
 						if (res.ok) {
 							return res.text()
 						}
+						return Promise.reject()
 					})
-					.then(hash => {
-						// Remove non-printable and non-ASCII characters
-						const cleanHash = hash.replace(/[^\x20-\x7E]/g, '').trim()
-						document.querySelector('.version-widget').textContent = `${cleanHash}`
-						document.querySelectorAll('.localhost-banner, .version-widget')
+					.then(version => {
+						let cleanVersion = '???????'
+						if (version) {
+							cleanVersion = version.replace(/[^\x20-\x7E]/g, '').trim()
+						}
+						if (cleanVersion.length == 7) {
+							document.querySelector('.version-widget').textContent = `${cleanVersion}`
+						}
+						document.querySelectorAll('.dev-banner, .version-widget')
 							.forEach(el => {el.style.display = 'block'})
 					})
 	</script>

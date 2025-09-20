@@ -1,5 +1,5 @@
-/* Localhost debug banner */
-.localhost-banner {
+/* Development debug banner */
+.dev-banner {
     display: none;
     position: fixed;
     left: 0;
