@@ -18,22 +18,24 @@
 		<!-- WebApp content goes here -->
 	</div>
 	<script type="module" src="src/does-it-glider/main.js"></script>
-	<div class="dev-banner" hidden>LOCALHOST</div>
-	<div class="version-widget" hidden>-------</div>	<script>
+	<div class="dev-banner">LOCALHOST</div>
+	<div class="version-widget">-------</div>
+	<script>
 		// Show banner and version only if version.txt exists
-				fetch('version.txt')
-					.then(res => {
-						if (res.ok) {
-							return res.text()
-						}
-						return Promise.reject()
-					})
-					.then(version => {
-						version = version.trim().substring(0, 6)
-						document.querySelector('.version-widget').textContent = `${version}`
-						document.querySelectorAll('.dev-banner, .version-widget')
-							.forEach(el => {el.style.display = 'block'})
-					})
+		fetch('version.txt', { cache: 'no-store' })
+			.then(res => {
+				if (res.ok) {
+					return res.text()
+				}
+				return Promise.reject()
+			})
+			.then(version => {
+				version = version.trim().substring(0, 6)
+				document.querySelector('.version-widget').textContent = `${version}`
+				document.querySelectorAll('.dev-banner, .version-widget')
+					.forEach(el => {el.style.display = 'block'})
+			})
+			.catch(() => {})
 	</script>
 </body>
 </html>

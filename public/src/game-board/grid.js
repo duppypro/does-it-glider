@@ -25,8 +25,8 @@ let G_PAD_LEFT
 let G_PAD_TOP
 let cx
 let cy
-let svg = d3.select()
-let grid = d3.select()
+let svg = d3.select(null)
+let grid = d3.select(null)
 let zoom = d3.zoom()
 // INPUT a d3 selection
 //     adds an svg with grid lines
@@ -119,9 +119,7 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
         .on('zoom', apply_drag_zoom)
 
     grid
-        .on('touchstart mousedown', function (event) {
-            event.preventDefault()
-        })
+        .on('pointerdown', (event) => { event.preventDefault() })
 
     svg.call(zoom)
     // Set the initial transform

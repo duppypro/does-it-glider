@@ -160,7 +160,7 @@ const parse_clipboard = (pasted_clipboard) => {
     }
 
     seed = []
-    guesses.map(guess => {
+    guesses.forEach(guess => { // CodeRabbit: forEach not map cuz map's return is not used
         guess = text_line_to_seed_line(guess)
         if (guess?.length) {
             seed.push(guess)
@@ -227,6 +227,7 @@ const get_clipboard_text = (event) => {
     // get clipboard text, ignore event input because it might be a click event not paste
     navigator.clipboard.readText()
         .then(parse_clipboard)
+        .catch(() => { /* no-op */ })
     // BUG #2: paste not working on mobile browsers, haven't tested navigator.clipboard.readText() on mobile yet
 }
 
