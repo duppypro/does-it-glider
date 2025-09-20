@@ -29,13 +29,8 @@
 						return Promise.reject()
 					})
 					.then(version => {
-						let cleanVersion = '???????'
-						if (version) {
-							cleanVersion = version.replace(/[^\x20-\x7E]/g, '').trim()
-						}
-						if (cleanVersion.length == 7) {
-							document.querySelector('.version-widget').textContent = `${cleanVersion}`
-						}
+						version = version.trim().substring(0, 6)
+						document.querySelector('.version-widget').textContent = `${version}`
 						document.querySelectorAll('.dev-banner, .version-widget')
 							.forEach(el => {el.style.display = 'block'})
 					})
