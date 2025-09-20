@@ -30,7 +30,8 @@ export const d3_plus = (() => {
         }
 
         if (classes && classes.trim()) {
-            selection.attr('class', classes.replace(/\./g, ' '));
+            // Split classes by '.' and join with spaces
+            selection.attr('class', classes.split('.').join(' '));
         }
 
         return selection;
