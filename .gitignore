@@ -1,3 +1,5 @@
+# Version file only displayed when local hosting for debug
+public/version.txt
 # OS and editor files
 .DS_Store
 .vscode/
@@ -22,4 +24,8 @@ dist/
 build/
 
 # Environment files
-.env*
+.env
+.env.local
+.env.production
+.env.development
+.env.test
