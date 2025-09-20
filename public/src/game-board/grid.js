@@ -40,9 +40,9 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
         return d3.select(null)
     }
     if (!h) h = w // if h is not specified, make it square
-    clip(cell_px, 1, 256)
-    clip(w, 1, 1024)
-    clip(h, 1, 1024)
+    cell_px = clip(cell_px, 1, 256)
+    w = clip(w, 1, 1024)
+    h = clip(h, 1, 1024)
 
     // w, h are in units of cells
     // all other dimensions in units of px
