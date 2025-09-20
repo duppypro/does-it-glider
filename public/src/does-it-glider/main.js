@@ -40,7 +40,7 @@ touch_target.append('div')
 .html('-----')
 
 // get the width and height of the grid and screen size parameters
-const line_height = Math.max(24, touch_target.select('.sub-title').node().clientHeight)
+const line_height = Math.max(12, touch_target.select('.sub-title').node().clientHeight)
 let {
     GRID_HEIGHT, GRID_WIDTH, CELL_PX,
     NEW_PAUSE_MSEC, MSEC_PER_BEAT, MSEC_PER_GEN,
@@ -49,7 +49,7 @@ let {
 // make a grid in the app DOM element
 const grid_sel = dig.append_grid(app_sel, CELL_PX, GRID_WIDTH, GRID_HEIGHT)
 
-const attract_seed = dig.seeds.partial_mosquito // glider or red_blue
+const attract_seed = dig.seeds.glider // glider or red_blue
 
 // make a new 2D array the size of the g element divide by 20px
 // TODO move ping pong into game-board modules

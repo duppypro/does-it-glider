@@ -9,7 +9,7 @@
     transform: translate(calc(-50% + 0.707*5*1em),calc(50% - 0.707*5*1em)) rotate(45deg);
     background: #ffeb3b;
     color: #111;
-    padding: 0.333em;
+    padding: 0.25em;
     text-align: center;
     font-family: sans-serif;
     font-size: 0.667em;
@@ -24,13 +24,13 @@
     position: fixed;
     left: 0;
     bottom: 0;
-    padding: 0.33em;
+    padding: 0.33em 20em;
     color: #fff;
-    transform: translate(calc(-50% + 0.707*4*1em),calc(50% - 0.707*4*1em)) rotate(45deg);
+    transform: translate(calc(-50% + 0.707*7*1em),calc(50% - 0.707*7*1em)) rotate(45deg);
     background: linear-gradient(0deg, purple 0%, black 100%);
     font-family: sans-serif;
     font-size: 0.6em;
-    font-weight: bold;
+    font-weight: normal;
     z-index: 9990;
     border-top-right-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);

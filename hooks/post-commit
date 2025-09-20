@@ -1,0 +1,3 @@
+#!/bin/sh
+git rev-parse --abbrev-ref HEAD > public/version.txt
+git diff --shortstat | awk '/file[s]? changed/ {print " +"$4"/-"$6}' >> public/version.txt

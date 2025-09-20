@@ -8,8 +8,7 @@
 
 #does-it-glider-app
 { /* this is the topmost parent element for the web app */
-    height: 100vh;
-    /* height: 100mvh; */
+    height: 100dvh;
     --green: #6aaa64;
     --darkendGreen: #40a030;
     --yellow: #c9b458;
