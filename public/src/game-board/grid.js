@@ -5,7 +5,7 @@
 //      grid
 ////////////////////////////////////////////////////////////////////////////////
 
-import { d3_plus as d3 } from '../../lib/d3-helper.js'
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import { settings } from '../does-it-glider/settings.js'
 
 const log = console.log

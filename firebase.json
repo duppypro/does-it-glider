@@ -1,19 +1,4 @@
 {
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git*",
-        "firebase-debug.log",
-        "firebase-debug.*.log"
-      ]
-    }
-  ],
-  "database": {
-    "rules": "database.rules.json"
-  },
   "hosting": {
     "public": "public",
     "ignore": [
@@ -21,34 +6,5 @@
       "**/.*",
       "**/node_modules/**"
     ]
-  },
-  "emulators": {
-    "auth": {
-      "port": 9099
-    },
-    "functions": {
-      "port": 5003
-    },
-    "database": {
-      "port": 9000
-    },
-    "hosting": {
-      "port": 5002,
-      "host": "0.0.0.0"
-    },
-    "pubsub": {
-      "port": 8085
-    },
-    "eventarc": {
-      "port": 9299
-    },
-    "ui": {
-      "enabled": true
-    },
-    "singleProjectMode": true
-  },
-  "remoteconfig": {
-    "template": "remoteconfig.template.json"
-  },
-  "extensions": {}
+  }
 }

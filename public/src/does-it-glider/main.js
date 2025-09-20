@@ -9,8 +9,8 @@
 const {log, warn, err} = console
 
 // Imports
-import { d3, d3_plus } from '../../lib/d3-helper.js'
-import * as dig from './imports.js'
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import * as dig from './imports.js' // dig is short for Does-It-Glider
 
 const app_sel = d3.select('#does-it-glider-app')
 if (app_sel.empty()) {
