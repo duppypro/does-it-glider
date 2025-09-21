@@ -5,9 +5,9 @@
 //      local-stats
 ////////////////////////////////////////////a//////////////////////////
 
-export const SEED_COUNT_KEY = 'dig_unique_seed_count_v1'
-export const SEED_HASHES_KEY = 'dig_unique_seed_hashes_v1'
-export const BROWSER_ID_KEY = 'dig_browser_id_v1'
+const SEED_COUNT_KEY = 'dig_unique_seed_count_v1'
+const SEED_HASHES_KEY = 'dig_unique_seed_hashes_v1'
+const BROWSER_ID_KEY = 'dig_browser_id_v1'
 
 export function getOrCreateBrowserId() {
     let id = localStorage.getItem(BROWSER_ID_KEY)
