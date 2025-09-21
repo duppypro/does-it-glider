@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  (c) 2023, 2024, David 'Duppy' Proctor, Interface Arts
+ *  (c) 2023, 2024, 2025 David 'Duppy' Proctor, Interface Arts
  *
  *  does-it-glider
  *      css
@@ -36,12 +36,15 @@
     touch-action: manipulation; /* Prevent default touch behaviors */
 }
 
-.touch-target
+.touch-target,
+.stats
 {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
+    min-height: 1em;   /* fallback */
+    min-height: 1lh;   /* modern browsers */
     text-align: center;
     user-select: none;
     -webkit-user-select: none;  /* Chrome, Safari and Opera */
@@ -86,7 +89,8 @@
     text-align: left;
 }
 
-.gen-count
+.gen-count,
+.seed-count
 {
     font-size: 0.75em;
     color: var(--white);

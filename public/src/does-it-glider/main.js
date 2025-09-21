@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////
-//  (c) 2023, 2024, David 'Duppy' Proctor, Interface Arts
+//  (c) 2023, 2024, 2025 David 'Duppy' Proctor, Interface Arts
 //
 //  does-it-glider or 'dig'
 //      main
@@ -9,18 +9,18 @@
 const {log, warn, err} = console
 
 // Imports
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm"
 import * as dig from './imports.js' // dig is short for Does-It-Glider
+import * as local_stats from './local-stats.js'
 
+// Find the div by unique ID
 const app_sel = d3.select('#does-it-glider-app')
 if (app_sel.empty()) {
     err('<div> with id="does-it-glider-app" not found.')
 }
 
-
 // Create the title    
-const touch_target = app_sel.append('span')
-.classed('touch-target', true)
+const touch_target_sel = app_sel.append('span').classed('touch-target', true)
 
 const _title = 'Does it Glider?'
 const _sub_title = 'Tap here to paste Wordle score.'
@@ -29,18 +29,20 @@ const _sub_title = 'Tap here to paste Wordle score.'
 // TODO add speedometer to allow speed control
 // <img src="https://icons.iconarchive.com/icons/pictogrammers/material/48/speedometer-icon.png" width="48" height="48">
 
-touch_target.append('div')
-.attr('class', 'title')
-.html(_title)
-touch_target.append('div')
-.attr('class', 'title sub-title')
-.html(_sub_title)
-touch_target.append('div')
-.attr('class', 'title gen-count')
-.html('-----')
+touch_target_sel.append('div').classed('title', true)
+    .html(_title)
+touch_target_sel.append('div').classed('title sub-title', true)
+    .html(_sub_title)
+
+// Create the stats display
+const stats_sel = app_sel.append('span').classed('stats', true)
+const gen_count_sel = stats_sel.append('div').classed('gen-count', true)
+    .html('-----')
+const seed_count_sel = stats_sel.append('div').classed('seed-count', true)
+    .html('Seeds submitted: 0')
 
 // get the width and height of the grid and screen size parameters
-const line_height = Math.max(12, touch_target.select('.sub-title').node().clientHeight)
+const line_height = Math.max(12, touch_target_sel.select('.sub-title').node().clientHeight)
 let {
     GRID_HEIGHT, GRID_WIDTH, CELL_PX,
     NEW_PAUSE_MSEC, MSEC_PER_BEAT, MSEC_PER_GEN,
@@ -110,7 +112,17 @@ const load_new_seed = (new_seed) => {
     gen_count = 0
 }
 
+function updateSeedCount() {
+    const count = local_stats.getSeedCount()
+    if (seed_count_sel) {
+        seed_count_sel.style('display', 'block')
+        seed_count_sel.html(`Seeds submitted: ${count}`)
+    }
+}
+
 load_new_seed(attract_seed)
+local_stats.getOrCreateBrowserId() // for unique browser ID in local storage
+updateSeedCount()
 event_loop() // try triggering the event loop to get the first frame of a new seed to draw
 
 
@@ -135,28 +147,28 @@ const parse_clipboard = (pasted_clipboard) => {
 
     // convert all '🟨'|'🟩' in wordle_guesses to '⬜' and '⬜'|'⬛' to '⬛'
     const text_line_to_seed_line = (line) => {
-        if (!line) return line;
+        if (!line) return line
         // Convert to array of code points for robust emoji handling
         return Array.from(line).map(char => {
             switch (char) {
                 case '⬜': // Wordle white is light mode empty
                 case '⬛': // Wordle black is dark mode empty
                 case 'b':  // 'b' is blank/empty/dead in the $bbobb$ format
-                    return '⬛';
+                    return '⬛'
                 case '🟨': // Wordle yellow is dark mode alive
                 case '🟧': // orange is light mode alive
                 case '🟩': // green is dark mode alive
                 case '🟦': // blue is light mode alive
                 case 'o':  // 'o' is alive in the $bbobb$ format
-                    return '⬜';
+                    return '⬜'
                 case 'R':
-                    return '🟥';
+                    return '🟥'
                 case 'B':
-                    return '🟦';
+                    return '🟦'
                 default:
-                    return char;
+                    return char
             }
-        }).join('');
+        }).join('')
     }
 
     seed = []
@@ -220,6 +232,19 @@ const parse_clipboard = (pasted_clipboard) => {
     draw_clipboard_lines()
     // ??? is there a better method that hooks into the end of the CSS animation instead of D3?
     // ??? if so, then am I using d3 for anything other than zoom transform or a fancier jquery?
+
+    // After parsing, if seed is valid then store it in local storage
+    if (seed && seed.length > 0) {
+        const hash = local_stats.hashSeed(seed)
+        let hashes = local_stats.getSeedHashes()
+        if (!hashes.includes(hash)) {
+            hashes.push(hash)
+            local_stats.setSeedHashes(hashes)
+            local_stats.setSeedCount(hashes.length)
+            updateSeedCount()
+        }
+    }
+
 } // end parse_clipboard()
 
 const get_clipboard_text = (event) => {

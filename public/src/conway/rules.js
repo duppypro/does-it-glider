@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-//  (c) 2023, 2024, David 'Duppy' Proctor, Interface Arts
+//  (c) 2023, 2024, 2025 David 'Duppy' Proctor, Interface Arts
 //
 //  conway and modified red team blue team rules
 //      rules
