@@ -1,11 +1,13 @@
-# Version file only displayed when local hosting for debug
-public/version.txt
 # OS and editor files
 .DS_Store
 .vscode/
 
 # Firebase local config
 .firebase/
+
+# Development file only displayed when local hosting for debug, created by hooks scripts
+public/version.txt
+public/branch_name.txt
 
 # Logs
 *.log

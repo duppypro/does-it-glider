@@ -16,9 +16,6 @@ import * as local_stats from './local-stats.js'
 
 // Find the top app div by unique ID
 const app_sel = d3.select('#does-it-glider-app')
-if (app_sel.empty()) {
-    err('<div> with id="does-it-glider-app" not found.')
-}    
 
 // Create the title    
 const _title = 'Does it Glider?'
@@ -254,7 +251,6 @@ const get_clipboard_text = (event) => {
     navigator.clipboard.readText()
         .then(parse_clipboard)
         .catch(() => { /* no-op */ })
-    // BUG #2: paste not working on mobile browsers, haven't tested navigator.clipboard.readText() on mobile yet
 }
 
 // First code run after creation of mostly static DOM elements

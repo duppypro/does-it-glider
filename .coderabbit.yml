@@ -4,5 +4,5 @@ review_guidelines:
   - "Add more detailed deep dive explanation than usual."
 ignore_rules:
   - "Do not comment on adding line end semicolons."
-  - "Do not reccommend existence checks or guards for functions that are available in all modern browsers."
+  - "Do not recommend existence checks or guards for functions that are available in all modern browsers."
 tone: "direct"

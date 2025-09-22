@@ -118,9 +118,6 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
         ])
         .on('zoom', apply_drag_zoom)
 
-    grid
-        .on('pointerdown', (event) => { event.preventDefault() })
-
     svg.call(zoom)
     // Set the initial transform
     // TODO avoid applying a translation on every apply_drag_zoom()

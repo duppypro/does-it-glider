@@ -48,7 +48,7 @@
 			})
 			.then(branch_name => {
 				branch_name = branch_name.trim().substring(0, 169)
-				document.querySelector('.branch-widget').innerHTML = `${branch_name}`
+				document.querySelector('.branch-widget').textContent = `${branch_name}`
 				document.querySelector('.branch-widget')
 					.style.display = 'block'
 			})

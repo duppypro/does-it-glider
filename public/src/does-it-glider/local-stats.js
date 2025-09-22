@@ -20,12 +20,12 @@ let cached_max_gen_count = null
 
 export function get_seed_hashes() {
     if (cached_seed_hashes !== null) return cached_seed_hashes
-    try {
+    try { // because JSON.parse throws errors on invalid JSON instead of just returning null
         cached_seed_hashes = JSON.parse(localStorage.getItem(SEED_HASHES_KEY) || '{}')
-        return cached_seed_hashes
     } catch {
-        return {}
+        cached_seed_hashes = {}
     }
+    return cached_seed_hashes
 }
 
 export function add_seed_hash(hash) {
@@ -33,8 +33,8 @@ export function add_seed_hash(hash) {
     if (!hashes[hash]) {
         hashes[hash] = true;
         cached_seed_hashes = hashes
-        localStorage.setItem(SEED_HASHES_KEY, JSON.stringify(hashes))
         cached_seed_count = Object.keys(hashes).length
+        localStorage.setItem(SEED_HASHES_KEY, JSON.stringify(hashes))
     }
 }
 

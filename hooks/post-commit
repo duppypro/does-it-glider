@@ -1,4 +1,13 @@
 #!/bin/sh
+set -eu
 git rev-parse --abbrev-ref HEAD > public/branch_name.txt
 git rev-parse --short HEAD > public/version.txt
-git diff --shortstat | awk '/file[s]? changed/ {print "<span style=\"color: green;\">+"$4"</span>/<span style=\"color: red;\">-"$6"</span>"}' >> public/version.txt
+git diff --shortstat --format='' HEAD \
+| awk '{
+  ins=0; del=0;
+  for (i=1; i<=NF; i++) {
+    if ($(i+1) ~ /^insertion/) ins=$i;
+    if ($(i+1) ~ /^deletion/)  del=$i;
+  }
+  printf("<span style=\"color: green;\">+%d</span>/<span style=\"color: red;\">-%d</span>\n", ins, del);
+}' >> public/version.txt
