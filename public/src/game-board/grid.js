@@ -111,7 +111,7 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     }
 
     zoom = d3.zoom()
-        .scaleExtent([2 / 8, 64 / 8]) // #BUG this 8 should be cell_px
+        .scaleExtent([2 / cell_px, 64 / cell_px])
         .translateExtent([ // Prevent grid from panning completely off screen
             [-G_PAD_LEFT - cx / 4, -G_PAD_TOP - cy / 4],
             [app_w + G_PAD_LEFT + cx / 4, app_h + G_PAD_TOP + cy / 4],

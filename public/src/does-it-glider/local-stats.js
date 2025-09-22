@@ -3,59 +3,63 @@
 //
 //  does-it-glider
 //      local-stats
-////////////////////////////////////////////a//////////////////////////
+//////////////////////////////////////////////////////////////////////
 
-const SEED_COUNT_KEY = 'dig_unique_seed_count_v1'
-const SEED_HASHES_KEY = 'dig_unique_seed_hashes_v1'
-const BROWSER_ID_KEY = 'dig_browser_id_v1'
-const MAX_GEN_COUNT_KEY = 'dig_max_gen_count_v1'
+const APP_UNIQUE_PREFIX = 'Interface_Arts_does-it-glider_duppy_v1.2025.09.21'
+const SEED_HASHES_KEY = `${APP_UNIQUE_PREFIX}_unique_seed_hashes`
+const MAX_GEN_COUNT_KEY = `${APP_UNIQUE_PREFIX}_max_gen_count`
 
-export function getOrCreateBrowserId() {
-    let id = localStorage.getItem(BROWSER_ID_KEY)
-    if (!id) {
-        id = crypto.randomUUID()
-        console.log(`ID for local storage: ${id}`)
-        localStorage.setItem(BROWSER_ID_KEY, id)
-    }
-    return id
+export function hash_seed(seed_arr) {
+    // Use joined string as the key
+    return seed_arr.join('\n')
 }
 
-export function hashSeed(seedArr) {
-    // Simple hash: join lines and get proper UTF-8
+let cached_seed_hashes = null
+let cached_seed_count = null
+let cached_max_gen_count = null
+
+export function get_seed_hashes() {
+    if (cached_seed_hashes !== null) return cached_seed_hashes
     try {
-        const str = seedArr.join('\n')
-        // Use TextEncoder for proper UTF-8 encoding
-        const data = new TextEncoder().encode(str)
-        return btoa(String.fromCharCode(...data))
+        cached_seed_hashes = JSON.parse(localStorage.getItem(SEED_HASHES_KEY) || '{}')
+        return cached_seed_hashes
     } catch {
-        return seedArr.join('\n')
+        return {}
     }
 }
 
-export function getSeedHashes() {
-    try {
-        return JSON.parse(localStorage.getItem(SEED_HASHES_KEY) || '[]')
-    } catch {
-        return []
+export function add_seed_hash(hash) {
+    let hashes = get_seed_hashes();
+    if (!hashes[hash]) {
+        hashes[hash] = true;
+        cached_seed_hashes = hashes
+        localStorage.setItem(SEED_HASHES_KEY, JSON.stringify(hashes))
+        cached_seed_count = Object.keys(hashes).length
     }
 }
 
-export function setSeedHashes(hashes) {
-    localStorage.setItem(SEED_HASHES_KEY, JSON.stringify(hashes))
+export function get_seed_count() {
+    if (cached_seed_count === null) {
+        cached_seed_count = Object.keys(get_seed_hashes()).length
+    }
+    return cached_seed_count
 }
 
-export function getSeedCount() {
-    return Number(localStorage.getItem(SEED_COUNT_KEY) || '0')
+export function get_max_gen_count() {
+    if (cached_max_gen_count !== null) return cached_max_gen_count
+    cached_max_gen_count = Number(localStorage.getItem(MAX_GEN_COUNT_KEY) || '0')
+    return cached_max_gen_count
 }
 
-export function setSeedCount(count) {
-    localStorage.setItem(SEED_COUNT_KEY, String(count))
-}
-
-export function getMaxGenCount() {
-    return Number(localStorage.getItem(MAX_GEN_COUNT_KEY) || '0')
-}
-
-export function setMaxGenCount(count) {
+export function set_max_gen_count(count) {
+    cached_max_gen_count = count
     localStorage.setItem(MAX_GEN_COUNT_KEY, String(count))
+}
+
+export function reset_stats() {
+    localStorage.removeItem(SEED_HASHES_KEY);
+    localStorage.removeItem(MAX_GEN_COUNT_KEY);
+    cached_seed_count = null;
+    cached_seed_hashes = null;
+    cached_max_gen_count = null;
 }

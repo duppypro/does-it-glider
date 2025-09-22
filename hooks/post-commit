@@ -1,3 +1,4 @@
 #!/bin/sh
-git rev-parse --abbrev-ref HEAD > public/version.txt
-git diff --shortstat | awk '/file[s]? changed/ {print " +"$4"/-"$6}' >> public/version.txt
+git rev-parse --abbrev-ref HEAD > public/branch_name.txt
+git rev-parse --short HEAD > public/version.txt
+git diff --shortstat | awk '/file[s]? changed/ {print "<span style=\"color: green;\">+"$4"</span>/<span style=\"color: red;\">-"$6"</span>"}' >> public/version.txt

@@ -2,7 +2,8 @@
   "hosting": {
     "public": "public",
     "ignore": [
-      "version.txt"
+      "version.txt",
+      "branch_name.txt"
     ]
   }
 }

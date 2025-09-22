@@ -13,4 +13,5 @@ jobs:
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DOES_IT_GLIDER }}'
+          channelId: 'pr${{ github.event.pull_request.number }}'
           projectId: does-it-glider

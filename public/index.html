@@ -20,7 +20,8 @@
 	</div>
 	<script type="module" src="src/does-it-glider/main.js"></script>
 	<div class="dev-banner">DEVELOPMENT</div>
-	<div class="version-widget">-------</div>
+	<div class="version-widget">HASH +/-</div>
+	<div class="branch-widget">branch name</div>
 	<script>
 		// Show banner and version only if version.txt exists
 		fetch('version.txt', { cache: 'no-store' })
@@ -31,10 +32,25 @@
 				return Promise.reject()
 			})
 			.then(version => {
-				version = version.trim().substring(0, 41)
-				document.querySelector('.version-widget').textContent = `${version}`
+				version = version.trim().substring(0, 169)
+				document.querySelector('.version-widget').innerHTML = `${version}`
 				document.querySelectorAll('.dev-banner, .version-widget')
 					.forEach(el => {el.style.display = 'block'})
+			})
+			.catch(() => {})
+		// Show branch name only if branch_name.txt exists
+		fetch('branch_name.txt', { cache: 'no-store' })
+			.then(res => {
+				if (res.ok) {
+					return res.text()
+				}
+				return Promise.reject()
+			})
+			.then(branch_name => {
+				branch_name = branch_name.trim().substring(0, 169)
+				document.querySelector('.branch-widget').innerHTML = `${branch_name}`
+				document.querySelector('.branch-widget')
+					.style.display = 'block'
 			})
 			.catch(() => {})
 	</script>
