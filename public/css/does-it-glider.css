@@ -36,13 +36,17 @@
     touch-action: manipulation; /* Prevent default touch behaviors */
 }
 
+.touch-target
+{
+    left: 0;
+    width: 100%;
+    touch-action: manipulation; /* Prevent default touch behaviors */
+}
 .touch-target,
 .stats
 {
     position: absolute;
     top: 0;
-    left: 0;
-    width: 100%;
     min-height: 1em;   /* fallback */
     min-height: 1lh;   /* modern browsers */
     text-align: center;
@@ -50,7 +54,13 @@
     -webkit-user-select: none;  /* Chrome, Safari and Opera */
     -moz-user-select: none;     /* Firefox */
     -ms-user-select: none;      /* IE/Edge */
-    touch-action: manipulation; /* Prevent default touch behaviors */
+}
+.stats
+{
+    width:fit-content;
+    right: 0;
+    font-family: 'Roboto Mono', 'Fira Mono', 'IBM Plex Mono', 'Space Mono', 'JetBrains Mono', monospace;
+    pointer-events: none;
 }
 
 .paste-line,
@@ -90,14 +100,25 @@
 }
 
 .gen-count,
-.seed-count
+.seed-count,
+.max-gen-count
 {
     font-size: 0.75em;
     color: var(--white);
-    opacity: 60%;
+    opacity: 80%;
     box-sizing: border-box;
     padding-right: 0.5em;
     text-align: right;
+    display: block;
+    position: relative;
+    right: 0;
+    margin-left: auto;
+    margin-right: 0;
+    width: fit-content;
+    min-width: 1em;
+    /* max-width: 100dvw; */
+    white-space: nowrap;
+    touch-action: manipulation; /* Prevent default touch behaviors */
 }
 
 @keyframes rainbow-color

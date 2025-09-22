@@ -39,7 +39,9 @@ const stats_sel = app_sel.append('span').classed('stats', true)
 const gen_count_sel = stats_sel.append('div').classed('gen-count', true)
     .html('-----')
 const seed_count_sel = stats_sel.append('div').classed('seed-count', true)
-    .html('Seeds submitted: 0')
+    .html('Seeds submitted: -')
+const max_gen_count_sel = stats_sel.append('div').classed('max-gen-count', true)
+     .html('Max generations: -')
 
 // get the width and height of the grid and screen size parameters
 const line_height = Math.max(12, touch_target_sel.select('.sub-title').node().clientHeight)
@@ -87,6 +89,12 @@ const event_loop = () => {
                 dig.apply_rules_old_new(grid_ping, grid_pong)
             }
             gen_count++
+            // Update max-gen-count if needed
+            const prevMax = local_stats.getMaxGenCount()
+            if (gen_count > prevMax) {
+                local_stats.setMaxGenCount(gen_count)
+                max_gen_count_sel.html(`Max generations: ${gen_count}`)
+            }
         }
     }
     new_pause_countdown > 0 ? new_pause_countdown -= msec_per_tick : new_pause_countdown = 0
@@ -114,15 +122,17 @@ const load_new_seed = (new_seed) => {
 
 function updateSeedCount() {
     const count = local_stats.getSeedCount()
-    if (seed_count_sel) {
-        seed_count_sel.style('display', 'block')
-        seed_count_sel.html(`Seeds submitted: ${count}`)
-    }
+    seed_count_sel.html(`Seeds submitted: ${count}`)
+}
+function updateMaxGenCount() {
+    const count = local_stats.getMaxGenCount()
+    max_gen_count_sel.html(`Max generations: ${count}`)
 }
 
 load_new_seed(attract_seed)
 local_stats.getOrCreateBrowserId() // for unique browser ID in local storage
 updateSeedCount()
+updateMaxGenCount()
 event_loop() // try triggering the event loop to get the first frame of a new seed to draw
 
 

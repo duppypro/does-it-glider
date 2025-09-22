@@ -8,6 +8,7 @@
 const SEED_COUNT_KEY = 'dig_unique_seed_count_v1'
 const SEED_HASHES_KEY = 'dig_unique_seed_hashes_v1'
 const BROWSER_ID_KEY = 'dig_browser_id_v1'
+const MAX_GEN_COUNT_KEY = 'dig_max_gen_count_v1'
 
 export function getOrCreateBrowserId() {
     let id = localStorage.getItem(BROWSER_ID_KEY)
@@ -49,4 +50,12 @@ export function getSeedCount() {
 
 export function setSeedCount(count) {
     localStorage.setItem(SEED_COUNT_KEY, String(count))
+}
+
+export function getMaxGenCount() {
+    return Number(localStorage.getItem(MAX_GEN_COUNT_KEY) || '0')
+}
+
+export function setMaxGenCount(count) {
+    localStorage.setItem(MAX_GEN_COUNT_KEY, String(count))
 }
