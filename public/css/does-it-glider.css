@@ -73,7 +73,6 @@
     -ms-user-select: none;      /* IE/Edge */
     touch-action: manipulation; /* Prevent default touch behaviors */
     background-color: rgba(0, 0, 0, 0.4);
-    user-select: none;
     padding-top: 0.25em;
     text-align: center;
     font-size: 2em;
