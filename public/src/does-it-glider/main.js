@@ -120,10 +120,22 @@ const load_new_seed = (new_seed) => {
     gen_count = 0
 }
 
+/**
+ * Refresh the displayed number of submitted seeds in the UI.
+ *
+ * Reads the current seed count from local_stats and updates the text of the `seed_count_sel` element
+ * to "Seeds submitted: N".
+ */
 function updateSeedCount() {
     const count = local_stats.getSeedCount()
     seed_count_sel.html(`Seeds submitted: ${count}`)
 }
+/**
+ * Refresh the displayed "Max generations" stat from persistent storage.
+ *
+ * Retrieves the stored maximum generation count via local_stats.getMaxGenCount()
+ * and updates the max_gen_count_sel DOM element's HTML to reflect the value.
+ */
 function updateMaxGenCount() {
     const count = local_stats.getMaxGenCount()
     max_gen_count_sel.html(`Max generations: ${count}`)
