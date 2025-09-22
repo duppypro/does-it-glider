@@ -1,46 +1,45 @@
 //////////////////////////////////////////////////////////////////////
-//  (c) 2023, 2024, David 'Duppy' Proctor, Interface Arts
+//  (c) 2023, 2024, 2025 David 'Duppy' Proctor, Interface Arts
 //
 //  does-it-glider or 'dig'
 //      main
 //////////////////////////////////////////////////////////////////////
 
-// nick names so I can type less
-const {log, warn, err} = console
-
 // Imports
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm"
 import * as dig from './imports.js' // dig is short for Does-It-Glider
+import * as local_stats from './local-stats.js'
 
+//
+// Create the mostly static DOM elements for does-it-glider app
+//
+
+// Find the top app div by unique ID
 const app_sel = d3.select('#does-it-glider-app')
-if (app_sel.empty()) {
-    err('<div> with id="does-it-glider-app" not found.')
-}
-
 
 // Create the title    
-const touch_target = app_sel.append('span')
-.classed('touch-target', true)
-
 const _title = 'Does it Glider?'
 const _sub_title = 'Tap here to paste Wordle score.'
 // max width ---- '##################################'
 // abbove #'s are max width on smallest mobile (iPhone SE)
-// TODO add speedometer to allow speed control
-// <img src="https://icons.iconarchive.com/icons/pictogrammers/material/48/speedometer-icon.png" width="48" height="48">
 
-touch_target.append('div')
-.attr('class', 'title')
-.html(_title)
-touch_target.append('div')
-.attr('class', 'title sub-title')
-.html(_sub_title)
-touch_target.append('div')
-.attr('class', 'title gen-count')
-.html('-----')
+const touch_target_sel = app_sel.append('span').classed('touch-target', true)
+touch_target_sel.append('div').classed('title', true)
+    .html(_title)
+touch_target_sel.append('div').classed('title sub-title', true)
+    .html(_sub_title)
+
+// Create the stats display
+const stats_sel = app_sel.append('span').classed('stats', true)
+const gen_count_sel = stats_sel.append('div').classed('gen-count', true)
+    .html('----')
+const seed_count_sel = stats_sel.append('div').classed('seed-count', true)
+    .html('Seeds submitted: -')
+const max_gen_count_sel = stats_sel.append('div').classed('max-gen-count', true)
+     .html('Max generations: ----')
 
 // get the width and height of the grid and screen size parameters
-const line_height = Math.max(12, touch_target.select('.sub-title').node().clientHeight)
+const line_height = Math.max(12, touch_target_sel.select('.sub-title').node().clientHeight)
 let {
     GRID_HEIGHT, GRID_WIDTH, CELL_PX,
     NEW_PAUSE_MSEC, MSEC_PER_BEAT, MSEC_PER_GEN,
@@ -55,14 +54,16 @@ const attract_seed = dig.seeds.glider // glider or red_blue
 // TODO move ping pong into game-board modules
 let grid_ping = Array.from({ length: GRID_HEIGHT }, () => Array.from({ length: GRID_WIDTH }, () => '⬛'))
 let grid_pong = Array.from({ length: GRID_HEIGHT }, () => Array.from({ length: GRID_WIDTH }, () => '⬛'))
+let ping_pong = true // ping_pong is true when ping is the current grid, pong is the next grid
 
-let gen_count
+let gen_count = 0
+let prior_max_gen_count = local_stats.get_max_gen_count() || 0
 const msec_per_tick = 1000.0 / 60.0 // 60fps requestAnimationFrame() defacto standard
 let new_pause_countdown = NEW_PAUSE_MSEC
-let ping_pong = true // ping_pong is true when ping is the current grid, pong is the next grid
 let beat_pasted = MSEC_PER_BEAT
 let msec_per_gen = MSEC_PER_GEN
 let msec_to_next_gen = 0
+let seed = [] // TODO do better than using a global for the seed across the paste animations
 
 const event_loop = () => {
     dig.draw(
@@ -75,7 +76,7 @@ const event_loop = () => {
 
     if (msec_to_next_gen <= 0) {
         msec_to_next_gen += msec_per_gen
-        d3.select('.gen-count').html(`${gen_count}`.padStart(5, '0'))
+        draw_gen_count()
         if (new_pause_countdown <= 0 && gen_count < 9999) {
             ping_pong = !ping_pong
             // when ping_pong is true, grid_ping gets the new grid
@@ -85,6 +86,12 @@ const event_loop = () => {
                 dig.apply_rules_old_new(grid_ping, grid_pong)
             }
             gen_count++
+            // Update max_gen_count if needed
+            if (gen_count > prior_max_gen_count) {
+                prior_max_gen_count = gen_count
+                local_stats.set_max_gen_count(gen_count)
+                draw_max_gen_count()
+            }
         }
     }
     new_pause_countdown > 0 ? new_pause_countdown -= msec_per_tick : new_pause_countdown = 0
@@ -110,11 +117,19 @@ const load_new_seed = (new_seed) => {
     gen_count = 0
 }
 
-load_new_seed(attract_seed)
-event_loop() // try triggering the event loop to get the first frame of a new seed to draw
+function draw_gen_count() {
+    gen_count_sel.html(`${gen_count}`.padStart(4, '0'))
+}
 
+function draw_seed_count() {
+    const count = local_stats.get_seed_count()
+    seed_count_sel.html(`Seeds submitted: ${count}`)
+}
 
-let seed = [] // TODO do better than using a global for the seed across the paste animations
+function draw_max_gen_count() {
+    const count = local_stats.get_max_gen_count()
+    max_gen_count_sel.html(`Max generations: ${count}`)
+}    
 
 const parse_clipboard = (pasted_clipboard) => {
     let pasted_lines = []
@@ -135,28 +150,28 @@ const parse_clipboard = (pasted_clipboard) => {
 
     // convert all '🟨'|'🟩' in wordle_guesses to '⬜' and '⬜'|'⬛' to '⬛'
     const text_line_to_seed_line = (line) => {
-        if (!line) return line;
+        if (!line) return line
         // Convert to array of code points for robust emoji handling
         return Array.from(line).map(char => {
             switch (char) {
                 case '⬜': // Wordle white is light mode empty
                 case '⬛': // Wordle black is dark mode empty
                 case 'b':  // 'b' is blank/empty/dead in the $bbobb$ format
-                    return '⬛';
+                    return '⬛'
                 case '🟨': // Wordle yellow is dark mode alive
                 case '🟧': // orange is light mode alive
                 case '🟩': // green is dark mode alive
                 case '🟦': // blue is light mode alive
                 case 'o':  // 'o' is alive in the $bbobb$ format
-                    return '⬜';
+                    return '⬜'
                 case 'R':
-                    return '🟥';
+                    return '🟥'
                 case 'B':
-                    return '🟦';
+                    return '🟦'
                 default:
-                    return char;
+                    return char
             }
-        }).join('');
+        }).join('')
     }
 
     seed = []
@@ -220,6 +235,14 @@ const parse_clipboard = (pasted_clipboard) => {
     draw_clipboard_lines()
     // ??? is there a better method that hooks into the end of the CSS animation instead of D3?
     // ??? if so, then am I using d3 for anything other than zoom transform or a fancier jquery?
+
+    // After parsing, if seed is valid then store it in local storage
+    if (seed && seed.length > 0) {
+        const hash = local_stats.hash_seed(seed)
+        local_stats.add_seed_hash(hash)
+        draw_seed_count()
+    }
+
 } // end parse_clipboard()
 
 const get_clipboard_text = (event) => {
@@ -228,8 +251,15 @@ const get_clipboard_text = (event) => {
     navigator.clipboard.readText()
         .then(parse_clipboard)
         .catch(() => { /* no-op */ })
-    // BUG #2: paste not working on mobile browsers, haven't tested navigator.clipboard.readText() on mobile yet
 }
 
+// First code run after creation of mostly static DOM elements
+// Initial draw of stats from local storage
+draw_gen_count()
+draw_seed_count()
+draw_max_gen_count()
+load_new_seed(attract_seed)
+event_loop() // start the event loop, it will trigger itself continually
+
 // paste from clipboard on click(touch) (ignore paste) event to deal with mobile browsers
-d3.select('.touch-target').on('click', get_clipboard_text)
+touch_target_sel.on('click', get_clipboard_text)

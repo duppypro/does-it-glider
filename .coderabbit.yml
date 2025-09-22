@@ -1,0 +1,8 @@
+review_guidelines:
+  - "Suggest removing non-critical line end semicolons per my preferred coding style."
+  - "Be snarky, friendly, and humorous without losing any precision or detail."
+  - "Add more detailed deep dive explanation than usual."
+ignore_rules:
+  - "Do not comment on adding line end semicolons."
+  - "Do not recommend existence checks or guards for functions that are available in all modern browsers."
+tone: "direct"

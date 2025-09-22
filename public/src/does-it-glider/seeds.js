@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////
-//  (c) 2023, 2024, David 'Duppy' Proctor, Interface Arts
+//  (c) 2023, 2024, 2025 David 'Duppy' Proctor, Interface Arts
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -27,7 +27,7 @@ blue_team[2] = '🟦🟦🟦🟦🟦'
 
 // join red team and blue team into start with red team on left
 // and fight_paces dead cells in between
-const fight_paces = 5;
+const fight_paces = 5
 export const red_blue = red_team.map(
     (red_row, i) => red_row + '⬛'.repeat(fight_paces) + blue_team[i]
 )

@@ -1,12 +1,11 @@
 /* Development debug banner */
-.dev-banner {
+.dev-banner{
     display: none;
     position: fixed;
     left: 0;
     bottom: 0;
     min-width: 100em;
     width: max-content;
-    transform: translate(calc(-50% + 0.707*5*1em),calc(50% - 0.707*5*1em)) rotate(45deg);
     background: #ffeb3b;
     color: #111;
     padding: 0.25em;
@@ -14,11 +13,13 @@
     font-family: sans-serif;
     font-size: 0.667em;
     font-weight: bold;
-    z-index: 9999;
     letter-spacing: 1px;
+    --diag-em: 7.5;
+    transform: translate(calc(-50% + 0.707*var(--diag-em)*1em),calc(50% - 0.707*var(--diag-em)*1em)) rotate(45deg);
 }
 
 /* Version widget */
+.branch-widget,
 .version-widget {
     display: none;
     position: fixed;
@@ -26,13 +27,18 @@
     bottom: 0;
     padding: 0.33em 20em;
     color: #fff;
-    transform: translate(calc(-50% + 0.707*7*1em),calc(50% - 0.707*7*1em)) rotate(45deg);
     background: linear-gradient(0deg, purple 0%, black 100%);
     font-family: sans-serif;
-    font-size: 0.6em;
+    font-size: 0.667em;
     font-weight: normal;
-    z-index: 9990;
-    border-top-right-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     letter-spacing: 1px;
+    transform: translate(calc(-50% + 0.707*var(--diag-em)*1em),calc(50% - 0.707*var(--diag-em)*1em)) rotate(45deg);
+}
+
+.version-widget {
+    --diag-em: 6;
+}
+
+.branch-widget {
+    --diag-em: 9;
 }

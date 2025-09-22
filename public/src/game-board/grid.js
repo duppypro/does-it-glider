@@ -1,11 +1,11 @@
 ////////////////////////////////////////////////////////////////////////////////
-//  (c) 2023, 2024, David 'Duppy' Proctor, Interface Arts
+//  (c) 2023, 2024, 2025 David 'Duppy' Proctor, Interface Arts
 //
 //  conway
 //      grid
 ////////////////////////////////////////////////////////////////////////////////
 
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm"
 import { settings } from '../does-it-glider/settings.js'
 
 const log = console.log
@@ -85,7 +85,7 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     // scaling the stroke width on the zoom event change of transform is something
     // that I think I can do it with D3.js but not CSS
     pattern.append('path').attr('class', 'pattern-line')
-        .attr('d', `M ${cell_px},0 L 0,0 0,${cell_px}`); // draw top and left edges of each cell
+        .attr('d', `M ${cell_px},0 L 0,0 0,${cell_px}`) // draw top and left edges of each cell
 
     grid.append('rect').classed('grid-background', true)
         .attr('width', `${G_WIDTH}px`)
@@ -111,15 +111,12 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     }
 
     zoom = d3.zoom()
-        .scaleExtent([2 / 8, 64 / 8]) // #BUG this 8 should be cell_px
+        .scaleExtent([2 / cell_px, 64 / cell_px])
         .translateExtent([ // Prevent grid from panning completely off screen
             [-G_PAD_LEFT - cx / 4, -G_PAD_TOP - cy / 4],
             [app_w + G_PAD_LEFT + cx / 4, app_h + G_PAD_TOP + cy / 4],
         ])
         .on('zoom', apply_drag_zoom)
-
-    grid
-        .on('pointerdown', (event) => { event.preventDefault() })
 
     svg.call(zoom)
     // Set the initial transform
