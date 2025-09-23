@@ -10,7 +10,7 @@ import { rule_sets } from './rules.js'
 let rule_mode
 let rules
 
-const set_rule_mode = (new_mode) => {
+function set_rule_mode(new_mode) {
     rule_mode = new_mode
     rules = rule_sets[rule_mode]
 }
@@ -23,7 +23,7 @@ set_rule_mode('🟥🟦')
 // TODO LOW PRI accept an optional x,y offset for the seed, default to center
 //    copy (overwriting) seed to the center of the destination grid
 // RETURN nothing, modifies destination array
-export const add_seed = (seed, grid) => {
+export function add_seed(seed, grid) {
     if (!seed?.length)
         return
     const sh = seed.length, sw = seed ? seed[0].length : 0 // WARN assumes seed[0] is same length as all rows
@@ -52,7 +52,7 @@ export const add_seed = (seed, grid) => {
 // INPUT a read-only 2D Array old grid, pre-allocted 2D array for the new grid
 //     run Conway's Game of Life rules on it
 // RETURN true if successful, false if error    
-export const apply_rules = (grid, new_grid) => {
+export function apply_rules(grid, new_grid) {
     // get the height and width of the grid
     const h = grid.length, w = grid[0].length
     // check that the new_grid is the same size as the grid
@@ -100,7 +100,7 @@ export const apply_rules = (grid, new_grid) => {
     return true
 } // end apply_rules()
 
-export const clear_grid = (grid) => {
+export function clear_grid(grid) {
     set_rule_mode('🟥🟦')
     // any use of '⬜' will switch to Conway mode
     for (let row of grid) {

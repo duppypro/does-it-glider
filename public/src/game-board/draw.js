@@ -18,7 +18,7 @@ const COLOR_TO_CLASS = {
     'B': '🟦',
 }
 // modify the DOM from a 2D array of Conway's Game of Life (gol_state)
-export const draw = (g, state, cell_px, opacity = 1) => { // HACK - do better than passing cell_px down, add some class 
+export function draw(g, state, cell_px, opacity = 1) { // HACK - do better than passing cell_px down, add some class 
     // render/draw each live cell in state as a white rect in the svg
     // clear all of the old rects first
     const all = g.selectAll('rect.cell')

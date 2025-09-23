@@ -34,7 +34,7 @@ let zoom = d3.zoom()
 //     centers the grid in the app element with overflow hidden
 //     returns a d3 selection of the grid
 // RETURN a d3 selection of the field that other gol functions can use    
-export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
+export function append_grid(app, cell_px = 20, w = 12, h = false,) {
     // check inputs
     if (!app || app.empty()) {
         return d3.select(null)
@@ -127,7 +127,7 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     return grid
 } // end append_grid()
 
-export const zoom_grid = (x, y, k) => {
+export function zoom_grid(x, y, k) {
     let tx = d3.zoomIdentity.translate(x, y).scale(k)
     grid.transition()
         .duration(settings.NEW_PAUSE_MSEC)

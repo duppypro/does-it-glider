@@ -65,7 +65,7 @@ let msec_per_gen = MSEC_PER_GEN
 let msec_to_next_gen = 0
 let seed = [] // TODO do better than using a global for the seed across the paste animations
 
-const event_loop = () => {
+function event_loop() {
     dig.draw(
         grid_sel,
         ping_pong ? grid_ping : grid_pong,
@@ -99,7 +99,7 @@ const event_loop = () => {
     requestAnimationFrame(event_loop)
 }
 
-const load_new_seed = (new_seed) => {
+function load_new_seed(new_seed) {
     // TODO next: why did I declare this in here? move it to grid.js
     // might require moving ping pong into grid.js
     let grid_now = ping_pong ? grid_ping : grid_pong
@@ -131,7 +131,7 @@ function draw_max_gen_count() {
     max_gen_count_sel.html(`Max generations: ${count}`)
 }    
 
-const parse_clipboard = (pasted_clipboard) => {
+function parse_clipboard(pasted_clipboard) {
     // check for magic command to reset stats
     if (pasted_clipboard.trim() === 'local_stats.reset()') {
         local_stats.reset_stats()
@@ -158,7 +158,7 @@ const parse_clipboard = (pasted_clipboard) => {
     // this is only the lines with exactly 5 wordle squares
 
     // convert all '🟨'|'🟩' in wordle_guesses to '⬜' and '⬜'|'⬛' to '⬛'
-    const text_line_to_seed_line = (line) => {
+    function text_line_to_seed_line(line) {
         if (!line) return line
         // Convert to array of code points for robust emoji handling
         return Array.from(line).map(char => {
@@ -193,7 +193,7 @@ const parse_clipboard = (pasted_clipboard) => {
     seed = seed.slice(0, 6) // limit to 6 lines, the max number of guesses in Wordle
 
     // draw/render pasted_lines in the .paste-line divs
-    const draw_clipboard_lines = () => {
+    function draw_clipboard_lines() {
         const last_line = pasted_lines.length - 1
         const cw = app_sel.node().clientWidth
         const ch = app_sel.node().clientHeight
@@ -254,7 +254,7 @@ const parse_clipboard = (pasted_clipboard) => {
 
 } // end parse_clipboard()
 
-const get_clipboard_text = (event) => {
+function get_clipboard_text(event) {
     event.preventDefault()
     // get clipboard text, ignore event input because it might be a click event not paste
     navigator.clipboard.readText()
