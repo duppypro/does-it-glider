@@ -3,7 +3,10 @@
     "public": "public",
     "ignore": [
       "version.txt",
-      "branch_name.txt"
+      "branch_name.txt",
+      "css/dev-widgets.css",
+      "index-*.html",
+      "src/dev-widgets.js"
     ]
   }
 }
