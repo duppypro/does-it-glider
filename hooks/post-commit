@@ -2,10 +2,11 @@
 set -euo pipefail
 
 # retrieve current branch name
-git rev-parse --abbrev-ref HEAD > public/branch_name.txt
+git rev-parse --abbrev-ref HEAD > public/branch_name.dev.txt
 
-# retrieve current commit short hash and pretty colored stats
-git rev-parse --short HEAD > public/version.txt
+# retrieve current commit short hash
+git rev-parse --short HEAD > public/version.dev.txt
+# and append pretty colored stats
 git diff --shortstat --format='' HEAD \
   | awk '{
           ins=0; del=0;
@@ -15,4 +16,4 @@ git diff --shortstat --format='' HEAD \
           }
           printf("<span class=\"ins\">+%d</span>/<span class=\"del\">-%d</span>", ins, del);
         }' \
-  >> public/version.txt
+  >> public/version.dev.txt

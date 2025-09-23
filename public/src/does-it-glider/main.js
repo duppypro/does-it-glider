@@ -132,6 +132,15 @@ function draw_max_gen_count() {
 }    
 
 const parse_clipboard = (pasted_clipboard) => {
+    // check for magic command to reset stats
+    if (pasted_clipboard.trim() === 'local_stats.reset()') {
+        local_stats.reset_stats()
+        draw_seed_count()
+        draw_max_gen_count()
+        load_new_seed(attract_seed)
+        return
+    }
+    
     let pasted_lines = []
     // for importing RLE patterns
     pasted_lines = pasted_clipboard.replace(/\$|!/ug, '\n') // '$' used as end of line and '!' used as end of seed in RLE format

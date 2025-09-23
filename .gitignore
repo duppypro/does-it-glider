@@ -6,8 +6,7 @@
 .firebase/
 
 # Development file only displayed when local hosting for debug, created by hooks scripts
-public/version.txt
-public/branch_name.txt
+public/*.dev.txt
 
 # Logs
 *.log

@@ -2,10 +2,9 @@
   "hosting": {
     "public": "public",
     "ignore": [
-      "version.txt",
-      "branch_name.txt",
+      "*-dev.html",
+      "*.dev.txt",
       "css/dev-widgets.css",
-      "index-*.html",
       "src/dev-widgets.js"
     ]
   }
