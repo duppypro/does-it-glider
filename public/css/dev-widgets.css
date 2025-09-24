@@ -12,6 +12,7 @@
     font-size: 0.667em;
     font-weight: normal;
     letter-spacing: 1px;
+    white-space: nowrap;
     transform: translate(calc(-50% + 0.707*var(--diag-em)*1em),calc(50% - 0.707*var(--diag-em)*1em)) rotate(45deg);
 }
 

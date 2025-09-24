@@ -64,6 +64,16 @@
     /* pointer-events: none; */
 }
 
+/* Media query for narrow screens to stack stats below title/sub-title */
+/* Breakpoint calculated based on approximate content widths in em units:
+   - Title text (~16.67em at 2em) + sub-title (~16.67em at 1em) + stats (~15em at 0.75em)
+   - Overlap occurs around screen widths < ~46.67em (based on 18px base font-size) */
+@media (max-width: 42em) { /* use 42em because, you know, its 42 */
+    .stats {
+        top: 3.5em; /* Position below title (2em) + sub-title (1em) + padding (~0.5em) */
+    }
+}
+
 .paste-line,
 .title
 {
