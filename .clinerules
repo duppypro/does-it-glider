@@ -1,0 +1,9 @@
+# Rules for AI Agents
+
+- Always read `AGENTS.md` and `ARCHITECTURE.md` before suggesting changes.
+- **Variable Naming:** Use `snake_case` strictly. No `camelCase`.
+- **Environment:** Stick to vanilla JS and ESM. No `npm install` for frontend dependencies without permission.
+- **Rendering:** Use the "Sparse DOM" approach. Only live cells get DOM elements.
+- **State:** When adding new features, add them as methods to a `GameState` class or similar structured object rather than adding more top-level variables to `main.js`.
+- **Headers:** Maintain the `////////////////` header style at the top of files.
+- **Transitions:** Use D3 for animations/transitions but keep the logic decoupled from the D3 code.
