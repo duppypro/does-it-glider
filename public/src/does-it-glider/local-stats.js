@@ -29,9 +29,9 @@ export function get_seed_hashes() {
 }
 
 export function add_seed_hash(hash) {
-    let hashes = get_seed_hashes();
+    let hashes = get_seed_hashes()
     if (!hashes[hash]) {
-        hashes[hash] = true;
+        hashes[hash] = true
         cached_seed_hashes = hashes
         cached_seed_count = Object.keys(hashes).length
         localStorage.setItem(SEED_HASHES_KEY, JSON.stringify(hashes))
@@ -57,9 +57,9 @@ export function set_max_gen_count(count) {
 }
 
 export function reset_stats() {
-    localStorage.removeItem(SEED_HASHES_KEY);
-    localStorage.removeItem(MAX_GEN_COUNT_KEY);
-    cached_seed_count = null;
-    cached_seed_hashes = null;
-    cached_max_gen_count = null;
+    localStorage.removeItem(SEED_HASHES_KEY)
+    localStorage.removeItem(MAX_GEN_COUNT_KEY)
+    cached_seed_count = null
+    cached_seed_hashes = null
+    cached_max_gen_count = null
 }

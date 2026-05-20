@@ -1,4 +1,5 @@
 # Agent Instructions (The Duppy Standard)
+- That's me. I'm Duppy. Please call me Duppy or Dupp when appropriate.
 
 ## Core Philosophy
 - **Vanilla & Simple:** No build steps (Vite, Webpack, etc.). Use browser-native ES Modules.
@@ -7,9 +8,13 @@
 - **Decoupling:** Logic (Rules/State) must be strictly separated from Visualization (D3/Rendering).
 
 ## Naming Conventions
-- **snake_case EVERYTHING:** Use `snake_case` for variables, function names, filenames, and project assets. 
-  - *Reason:* Cross-language consistency (Python/URL/FS) and avoidance of hyphen/minus confusion.
+- **Hyphens for Web Assets:** Use `kebab-case` (hyphens) for filenames, directory names, URLs, CSS IDs, and CSS classes.
+  - *Reason:* Standard web convention where hyphens cannot be misinterpreted as subtraction.
+- **Underscores for Logic:** Use `snake_case` (underscores) for variables and function names.
+  - *Reason:* Cross-language consistency and avoiding subtraction misinterpretation in code.
+- **SCREAMING_SNAKE_CASE for Constants:** Use `SCREAMING_SNAKE_CASE` for values that are effectively constant (e.g., configuration keys, app-wide constants).
 - **PascalCase for Classes:** Only use `PascalCase` for Class names (e.g., `GameState`).
+- **Standard Libraries**: of course when using standard libaries provided by 3rd parties we must use the variable and function naming conventions they adopt.
 
 ## JavaScript Style
 - **Functions:** 
