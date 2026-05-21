@@ -41,6 +41,7 @@ export class GameState {
     }
 
     tick(msec_per_tick, force = false) {
+        if (this.is_stable && !force) return false
         if (this.is_paused && !force) return false
 
         let gen_advanced = false

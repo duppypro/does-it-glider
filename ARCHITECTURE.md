@@ -47,7 +47,14 @@ To ensure performance consistency, use the following patterns and generation cou
 - **Behavior:** Requires a longer observation period to verify performance under sustained load.
 
 ## 7. Performance Gold Standard (May 20, 2026)
-Measured on the `next-feature-glider-detection` branch prior to adding detection logic:
-- **Max Avg Gen Time:** 8.93 ms (Pattern 1750)
-- **Max DOM Churn:** ~42 nodes/generation (Pattern 1750)
-- **Final Rect Count:** 110 (Pattern 1750)
+Measured on the `next-feature-glider-detection` branch with Stability Detection active:
+
+### Baseline 1: Wordle 1,751 (250 Gen Target)
+- **Measured Gen Count:** 258
+- **Avg. Time/Gen:** 4.8000 ms
+- **DOM Created (Total):** 8,062
+
+### Baseline 2: Wordle 1,750 (1250 Gen Target)
+- **Measured Gen Count:** 1,362
+- **Avg. Time/Gen:** 8.3442 ms
+- **DOM Created (Total):** 59,102

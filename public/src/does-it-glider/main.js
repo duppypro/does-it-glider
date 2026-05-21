@@ -31,6 +31,16 @@ touch_target_sel.append('div').classed('title sub-title', true)
 
 // Create the stats display
 const stats_sel = app_sel.append('span').classed('stats', true)
+
+const controls_sel = stats_sel.append('div').classed('controls', true)
+const pause_btn_sel = controls_sel.append('button')
+    .classed('pause-btn', true)
+    .html('PAUSE')
+    .on('click', () => {
+        const is_paused = game_state.toggle_pause()
+        pause_btn_sel.html(is_paused ? 'PLAY' : 'PAUSE')
+    })
+
 const gen_count_sel = stats_sel.append('div').classed('gen-count', true)
     .html('----')
 const seed_count_sel = stats_sel.append('div').classed('seed-count', true)
@@ -62,6 +72,7 @@ let seed = []
 const event_loop = () => {
     draw_frame()
 
+    const was_stable = game_state.is_stable
     const gen_advanced = game_state.tick(msec_per_tick)
 
     if (gen_advanced) {
@@ -73,11 +84,23 @@ const event_loop = () => {
         }
     }
 
+    if (!was_stable && game_state.is_stable) {
+        console.log("🏁 Simulation stabilized.")
+        // Final UI update
+        draw_gen_count()
+    }
+
     requestAnimationFrame(event_loop)
 }
 
 const load_new_seed = (new_seed) => {
     game_state.load_new_seed(new_seed)
+    
+    // Update local stats for every seed load (including attract/injected)
+    const hash = local_stats.hash_seed(new_seed)
+    local_stats.add_seed_hash(hash)
+    draw_seed_count()
+    
     draw_gen_count()
 }
 
@@ -195,13 +218,6 @@ const parse_clipboard = (pasted_clipboard) => {
     }
 
     draw_clipboard_lines()
-
-    if (seed && seed.length > 0) {
-        const hash = local_stats.hash_seed(seed)
-        local_stats.add_seed_hash(hash)
-        draw_seed_count()
-    }
-
 } 
 
 const get_clipboard_text = (event) => {
@@ -256,6 +272,11 @@ window.dig_debug = {
         game_state.new_pause_countdown = 0
     },
     run_official_baselines: async () => {
+        const GOLD_STANDARD = {
+            p1751: { avg_gen_ms: 4.8000, dom_created: 8062 },
+            p1750: { avg_gen_ms: 8.3442, dom_created: 59102 }
+        }
+
         const p1 = `⬛⬛⬛⬛⬛\n⬛🟨⬛🟨⬛\n⬛🟩🟨⬛⬛\n🟩🟩⬛🟩⬛\n🟩🟩⬛🟩🟩\n🟩🟩🟩🟩🟩`
         const p2 = `🟨⬛⬛🟨⬛\n🟩⬛🟨⬛⬛\n🟩🟩🟩🟩🟩`
         
@@ -264,13 +285,35 @@ window.dig_debug = {
         window.dig_debug.inject_text_seed(p1)
         const r1 = await window.dig_debug.run_perf_test(250)
         
+        const delta1 = {
+            time_delta: (r1.avg_gen_ms - GOLD_STANDARD.p1751.avg_gen_ms).toFixed(4),
+            dom_delta: r1.dom_created - GOLD_STANDARD.p1751.dom_created
+        }
+        console.log("Baseline 1751 Delta:", delta1)
+
         // Brief pause between tests
         await new Promise(r => setTimeout(r, 500))
         
         window.dig_debug.inject_text_seed(p2)
         const r2 = await window.dig_debug.run_perf_test(1250)
+
+        const delta2 = {
+            time_delta: (r2.avg_gen_ms - GOLD_STANDARD.p1750.avg_gen_ms).toFixed(4),
+            dom_delta: r2.dom_created - GOLD_STANDARD.p1750.dom_created
+        }
+        console.log("Baseline 1750 Delta:", delta2)
         
-        return { baseline_1751: r1, baseline_1750: r2 }
+        return { 
+            baseline_1751: { ...r1, ...delta1 }, 
+            baseline_1750: { ...r2, ...delta2 } 
+        }
+    },
+    reset_stats: () => {
+        local_stats.reset_stats()
+        prior_max_gen_count = 0
+        draw_seed_count()
+        draw_max_gen_count()
+        console.log("📈 Stats reset successfully.")
     }
 }
 
