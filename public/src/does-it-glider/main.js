@@ -232,8 +232,29 @@ window.dig_debug = {
         draw_frame()
         draw_gen_count()
     },
-    run_perf_test: async (num_gens = 200) => {
+    run_perf_test: async (num_gens = 250) => {
         return await perf_monitor.run_test(game_state, grid_sel, num_gens)
+    },
+    inject_text_seed: (text) => {
+        const lines = text.split('\n').filter(l => l.trim().length > 0)
+        load_new_seed(lines)
+    },
+    run_official_baselines: async () => {
+        const p1 = `⬛⬛⬛⬛⬛\n⬛🟨⬛🟨⬛\n⬛🟩🟨⬛⬛\n🟩🟩⬛🟩⬛\n🟩🟩⬛🟩🟩\n🟩🟩🟩🟩🟩`
+        const p2 = `🟨⬛⬛🟨⬛\n🟩⬛🟨⬛⬛\n🟩🟩🟩🟩🟩`
+        
+        console.log("--- STARTING OFFICIAL BASELINE SUITE ---")
+        
+        window.dig_debug.inject_text_seed(p1)
+        const r1 = await window.dig_debug.run_perf_test(250)
+        
+        // Brief pause between tests
+        await new Promise(r => setTimeout(r, 500))
+        
+        window.dig_debug.inject_text_seed(p2)
+        const r2 = await window.dig_debug.run_perf_test(1250)
+        
+        return { baseline_1751: r1, baseline_1750: r2 }
     }
 }
 

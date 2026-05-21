@@ -20,7 +20,28 @@ To keep the DOM light:
 - **Update:** Move or transition existing live cells.
 - **Exit:** Remove cells that died.
 
-## 5. Grid Boundary Behavior
-- **Non-Toroidal:** The grid does not wrap around.
-- **Dead Boundary:** Coordinates outside the `GRID_WIDTH` or `GRID_HEIGHT` are strictly treated as dead cells (`'⬛'`).
-- **Stabilization:** Moving patterns like gliders will stabilize into static patterns (typically a 2x2 block) when they hit the boundary.
+## 6. Benchmarking Protocol
+To ensure performance consistency, use the following patterns and generation counts as baselines:
+
+### Baseline 1: Wordle 1,751 (Stability Test)
+- **Target:** 250 Generations
+- **Pattern:**
+  ```
+  ⬛⬛⬛⬛⬛
+  ⬛🟨⬛🟨⬛
+  ⬛🟩🟨⬛⬛
+  🟩🟩⬛🟩⬛
+  🟩🟩⬛🟩🟩
+  🟩🟩🟩🟩🟩
+  ```
+- **Behavior:** Stabilizes into a 2-gen oscillating pattern after ~220 generations.
+
+### Baseline 2: Wordle 1,750 (Longevity Test)
+- **Target:** 1250 Generations
+- **Pattern:**
+  ```
+  🟨⬛⬛🟨⬛
+  🟩⬛🟨⬛⬛
+  🟩🟩🟩🟩🟩
+  ```
+- **Behavior:** Requires a longer observation period to verify performance under sustained load.
