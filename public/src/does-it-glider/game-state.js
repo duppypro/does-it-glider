@@ -23,6 +23,8 @@ export class GameState {
         this.msec_per_gen = settings.MSEC_PER_GEN
         this.msec_to_next_gen = 0
         this.is_paused = false
+        this.is_stable = false
+        this.history = [] // Circular buffer of last 8 state hashes
     }
 
     toggle_pause() {
@@ -51,6 +53,7 @@ export class GameState {
                 this.ping_pong = !this.ping_pong
                 this.gen_count++
                 gen_advanced = true
+                this._check_stability()
             }
         }
 
@@ -73,5 +76,47 @@ export class GameState {
         this.new_pause_countdown = this.settings.NEW_PAUSE_MSEC
         this.gen_count = 0
         this.msec_to_next_gen = 0
+        this.is_stable = false
+        this.history = []
+    }
+
+    _get_state_hash() {
+        let hash = ""
+        let live_count = 0
+        for (let y = 0; y < this.grid_height; y++) {
+            for (let x = 0; x < this.grid_width; x++) {
+                if (this.current_grid[y][x] !== '⬛') {
+                    hash += `${x},${y}|`
+                    live_count++
+                }
+            }
+        }
+        return { hash, live_count }
+    }
+
+    _check_stability() {
+        if (this.is_stable) return
+
+        const { hash, live_count } = this._get_state_hash()
+
+        // 1. Check for Extinction
+        if (live_count === 0) {
+            this.is_stable = true
+            console.log(`⏹ STABILIZED: Extinct at Gen ${this.gen_count}`)
+            return
+        }
+
+        // 2. Check for Loops/Static (within 8 generations)
+        if (this.history.includes(hash)) {
+            this.is_stable = true
+            console.log(`⏹ STABILIZED: Loop detected at Gen ${this.gen_count}`)
+            return
+        }
+
+        // 3. Update History
+        this.history.push(hash)
+        if (this.history.length > 8) {
+            this.history.shift()
+        }
     }
 }
