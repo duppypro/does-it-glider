@@ -20,5 +20,7 @@ To keep the DOM light:
 - **Update:** Move or transition existing live cells.
 - **Exit:** Remove cells that died.
 
-## 4. Error Handling UI
-A `NotificationSystem` module should handle `push_error(message)` which injects a temporary DOM element into a reserved overlay area, removing it after a set duration.
+## 5. Grid Boundary Behavior
+- **Non-Toroidal:** The grid does not wrap around.
+- **Dead Boundary:** Coordinates outside the `GRID_WIDTH` or `GRID_HEIGHT` are strictly treated as dead cells (`'⬛'`).
+- **Stabilization:** Moving patterns like gliders will stabilize into static patterns (typically a 2x2 block) when they hit the boundary.

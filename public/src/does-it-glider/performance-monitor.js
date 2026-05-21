@@ -37,8 +37,22 @@ export class PerformanceMonitor {
         this.observer.observe(target_node, { childList: true })
     }
 
+    /**
+     * Processes any pending mutations that haven't been delivered to the callback yet.
+     */
+    _flush() {
+        if (this.observer) {
+            const records = this.observer.takeRecords()
+            for (const mutation of records) {
+                this.dom_stats.created += mutation.addedNodes.length
+                this.dom_stats.removed += mutation.removedNodes.length
+            }
+        }
+    }
+
     stop_dom_observation() {
         if (this.observer) {
+            this._flush()
             this.observer.disconnect()
             this.observer = null
         }
@@ -47,31 +61,31 @@ export class PerformanceMonitor {
     /**
      * Runs a performance test for a fixed number of generations.
      * @param {GameState} game_state 
+     * @param {d3.Selection} grid_sel - The D3 selection of the grid.
      * @param {number} num_gens - Default 200
      * @returns {Promise<Object>} - The test results
      */
-    async run_test(game_state, num_gens = 200) {
+    async run_test(game_state, grid_sel, num_gens = 200) {
+        const start_gen = game_state.gen_count
         console.log(`🚀 Starting performance test for ${num_gens} generations...`)
         
-        // Ensure we are observing the correct node
-        const grid_node = document.querySelector('#does-it-glider-app svg g')
+        const grid_node = grid_sel.node()
         if (!grid_node) throw new Error("Grid node not found")
         
         this.start_dom_observation(grid_node)
+        console.log(`🧐 Monitoring node: <${grid_node.tagName}> with class "${grid_node.className.baseVal || grid_node.className}"`)
 
         const start_time = performance.now()
         
-        // We use a loop to tick the state without waiting for requestAnimationFrame
-        // This measures the pure computational speed of the rules + draw calls
         for (let i = 0; i < num_gens; i++) {
-            // Force a tick regardless of pause/timers
             game_state.tick(game_state.msec_per_gen, true)
-            
-            // Trigger the draw manually for the test
-            // We need to reach back into the global scope or pass dependencies
-            // For now, we'll assume 'window.dig_debug_draw' exists (added in next step)
             if (window.dig_debug_draw) {
                 window.dig_debug_draw()
+            }
+
+            // Yield to the event loop every 10 generations to allow MutationObserver to fire
+            if (i % 10 === 0) {
+                await new Promise(resolve => setTimeout(resolve, 0))
             }
         }
 
@@ -80,7 +94,9 @@ export class PerformanceMonitor {
 
         const total_time = end_time - start_time
         const result = {
-            num_gens,
+            start_gen,
+            end_gen: game_state.gen_count,
+            num_gens: game_state.gen_count - start_gen,
             total_time_ms: total_time.toFixed(2),
             avg_gen_ms: (total_time / num_gens).toFixed(4),
             dom_created: this.dom_stats.created,

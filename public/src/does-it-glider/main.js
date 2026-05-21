@@ -233,7 +233,7 @@ window.dig_debug = {
         draw_gen_count()
     },
     run_perf_test: async (num_gens = 200) => {
-        return await perf_monitor.run_test(game_state, num_gens)
+        return await perf_monitor.run_test(game_state, grid_sel, num_gens)
     }
 }
 
