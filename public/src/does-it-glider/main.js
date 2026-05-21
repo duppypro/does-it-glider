@@ -10,6 +10,7 @@ import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm"
 import * as dig from './imports.js' // dig is short for Does-It-Glider
 import * as local_stats from './local-stats.js'
 import { GameState } from './game-state.js'
+import { PerformanceMonitor } from './performance-monitor.js'
 
 //
 // Create the mostly static DOM elements for does-it-glider app
@@ -49,6 +50,7 @@ const grid_sel = dig.append_grid(app_sel, CELL_PX, GRID_WIDTH, GRID_HEIGHT)
 
 // Initialize Game State
 const game_state = new GameState(GRID_WIDTH, GRID_HEIGHT, dig.settings)
+const perf_monitor = new PerformanceMonitor()
 
 const attract_seed = dig.seeds.glider 
 
@@ -58,12 +60,7 @@ let beat_pasted = MSEC_PER_BEAT
 let seed = [] 
 
 const event_loop = () => {
-    dig.draw(
-        grid_sel,
-        game_state.current_grid,
-        CELL_PX, 
-        d3.easeQuadOut(1.0 - game_state.new_pause_countdown / NEW_PAUSE_MSEC)
-    )
+    draw_frame()
 
     const gen_advanced = game_state.tick(msec_per_tick)
 
@@ -86,6 +83,15 @@ const load_new_seed = (new_seed) => {
 
 function draw_gen_count() {
     gen_count_sel.html(`${game_state.gen_count}`.padStart(4, '0'))
+}
+
+function draw_frame() {
+    dig.draw(
+        grid_sel,
+        game_state.current_grid,
+        CELL_PX, 
+        d3.easeQuadOut(1.0 - game_state.new_pause_countdown / NEW_PAUSE_MSEC)
+    )
 }
 
 function draw_seed_count() {
@@ -211,8 +217,10 @@ draw_max_gen_count()
 load_new_seed(attract_seed)
 
 // Diagnostic Bridge
+window.dig_debug_draw = draw_frame
 window.dig_debug = {
     game_state,
+    perf_monitor,
     get_grid_hash: () => {
         return game_state.current_grid.map(row => row.join('')).join('\n').length
     },
@@ -221,7 +229,11 @@ window.dig_debug = {
     },
     step: () => {
         game_state.tick(game_state.msec_per_gen, true) 
+        draw_frame()
         draw_gen_count()
+    },
+    run_perf_test: async (num_gens = 200) => {
+        return await perf_monitor.run_test(game_state, num_gens)
     }
 }
 
