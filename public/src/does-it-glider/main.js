@@ -214,7 +214,7 @@ const parse_clipboard = (pasted_clipboard) => {
             .transition().delay((_d, i) => (last_line - i) * beat_pasted / 4)
             .on('end', (_d, i) => {
                 if (i == last_line) {
-                    dig.clear_grid(ping_pong ? grid_ping : grid_pong)
+                    dig.clear_grid(game_state.current_grid)
                     dig.zoom_grid(0, 0, 1) // TODO zoom_grid has it's own transition duration.
                     // TODO Improve this so the duration of zoom_grid and the next transition off screen
                     // TODO don't have to be manually synced
@@ -259,7 +259,22 @@ draw_gen_count()
 draw_seed_count()
 draw_max_gen_count()
 load_new_seed(attract_seed)
-event_loop() // start the event loop, it will trigger itself continually
+// Diagnostic Bridge for Agent Testing
+window.dig_debug = {
+    game_state,
+    get_grid_hash: () => {
+        return game_state.current_grid.map(row => row.join('')).join('\n').length
+    },
+    get_rect_count: () => {
+        return document.querySelectorAll('rect.cell').length
+    },
+    step: () => {
+        game_state.tick(game_state.msec_per_gen, true) // force tick
+        draw_gen_count()
+    }
+}
+
+event_loop() // start the event loop
 
 // paste from clipboard on click(touch) (ignore paste) event to deal with mobile browsers
 touch_target_sel.on('click', get_clipboard_text)

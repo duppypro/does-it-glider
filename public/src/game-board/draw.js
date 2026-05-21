@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //  (c) 2023, 2024, 2025 David 'Duppy' Proctor, Interface Arts
 //
-//  does it glider
+//  does-it-glider
 //      draw
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -17,27 +17,50 @@ const COLOR_TO_CLASS = {
     '🟦': '🟦',
     'B': '🟦',
 }
-// modify the DOM from a 2D array of Conway's Game of Life (gol_state)
-export const draw = (g, state, cell_px, opacity = 1) => { // HACK - do better than passing cell_px down, add some class 
-    // render/draw each live cell in state as a white rect in the svg
-    // clear all of the old rects first
-    const all = g.selectAll('rect.cell')
-    all.remove()
-    // loop over 2D array state
+
+/**
+ * Renders the state using a Sparse DOM approach.
+ * Only live cells are represented by DOM elements.
+ * 
+ * @param {d3.Selection} g - The D3 selection of the grid group.
+ * @param {string[][]} state - 2D array of the current Game of Life state.
+ * @param {number} cell_px - Size of each cell in pixels.
+ * @param {number} opacity - Current fade-in opacity.
+ */
+export function draw(g, state, cell_px, opacity = 1) {
+    const live_cells = []
+
+    // 1. Extract sparse data: only live cells
     for (let y = 0; y < state.length; y++) {
-        for (let x = 0; x < state[0].length; x++) {
-            if (COLOR_TO_CLASS[state[y][x]]) {
-                // draw a white rect in the svg
-                g.insert('rect', '.grid-lines') // render this before/below grid-lines but after grid-background
-                    .classed('cell', true)
-                    .classed(COLOR_TO_CLASS[state[y][x]], true)
-                    .style('opacity', opacity)
-                    .attr('x', `${x * cell_px}px`)
-                    .attr('y', `${y * cell_px}px`)
-                    .attr('width', `${cell_px}px`)
-                    .attr('height', `${cell_px}px`)
+        for (let x = 0; x < state[y].length; x++) {
+            const cell_state = state[y][x]
+            const css_class = COLOR_TO_CLASS[cell_state]
+            if (css_class) {
+                live_cells.push({
+                    id: `${x}-${y}`, // Unique key for D3 data join
+                    x,
+                    y,
+                    css_class
+                })
             }
         }
     }
 
+    // 2. D3 Data Join
+    const cells = g.selectAll('rect.cell')
+        .data(live_cells, d => d.id)
+
+    // EXIT: Remove cells that are no longer live
+    cells.exit().remove()
+
+    // ENTER: Create new cells
+    cells.enter().append('rect')
+        .classed('cell', true)
+        .attr('width', `${cell_px}px`)
+        .attr('height', `${cell_px}px`)
+        .merge(cells) // UPDATE + ENTER
+        .attr('class', d => `cell ${d.css_class}`)
+        .style('opacity', opacity)
+        .attr('x', d => `${d.x * cell_px}px`)
+        .attr('y', d => `${d.y * cell_px}px`)
 }
