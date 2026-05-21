@@ -236,8 +236,24 @@ window.dig_debug = {
         return await perf_monitor.run_test(game_state, grid_sel, num_gens)
     },
     inject_text_seed: (text) => {
-        const lines = text.split('\n').filter(l => l.trim().length > 0)
-        load_new_seed(lines)
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0)
+        
+        // Helper to normalize emojis (same logic as parse_clipboard)
+        const normalized = lines.map(line => {
+            return Array.from(line).map(char => {
+                switch (char) {
+                    case '⬜': case '⬛': case 'b': return '⬛'
+                    case '🟨': case '🟧': case '🟩': case '🟦': case 'o': return '⬜'
+                    case 'R': return '🟥'
+                    case 'B': return '🟦'
+                    default: return char
+                }
+            }).join('')
+        })
+
+        load_new_seed(normalized)
+        // Explicitly clear the intro pause for testing/benchmarking
+        game_state.new_pause_countdown = 0
     },
     run_official_baselines: async () => {
         const p1 = `⬛⬛⬛⬛⬛\n⬛🟨⬛🟨⬛\n⬛🟩🟨⬛⬛\n🟩🟩⬛🟩⬛\n🟩🟩⬛🟩🟩\n🟩🟩🟩🟩🟩`

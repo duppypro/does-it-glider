@@ -45,3 +45,9 @@ To ensure performance consistency, use the following patterns and generation cou
   🟩🟩🟩🟩🟩
   ```
 - **Behavior:** Requires a longer observation period to verify performance under sustained load.
+
+## 7. Performance Gold Standard (May 20, 2026)
+Measured on the `next-feature-glider-detection` branch prior to adding detection logic:
+- **Max Avg Gen Time:** 8.93 ms (Pattern 1750)
+- **Max DOM Churn:** ~42 nodes/generation (Pattern 1750)
+- **Final Rect Count:** 110 (Pattern 1750)
