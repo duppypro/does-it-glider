@@ -41,6 +41,12 @@ export function draw(g, live_cells, cell_px, opacity = 1) {
         gen_count: cell.gen_count // Passed in from GameState
     }))
 
+    // Define D3 rainbow interpolator
+    // We can use d3.interpolateRainbow(t) where t is between 0.0 and 1.0
+    // We want a full cycle every N generations
+    const cycle_length_gens = 40; 
+
+
     // 2. D3 Data Join
     const cells = g.selectAll('rect.cell')
         .data(data, d => d.id)
@@ -70,18 +76,20 @@ export function draw(g, live_cells, cell_px, opacity = 1) {
             }
             
             if (d.glider_id) {
-                // The animation is 2s long. If we assume 60fps, 120 frames = 2s.
-                // Let's cycle the rainbow based on generation count so it steps smoothly
-                // even when paused. 1 generation = 1 step in the cycle.
-                // Let's say a full rainbow cycle takes 20 generations.
-                const cycle_length_gens = 20
-                const phase = (d.gen_count % cycle_length_gens) / cycle_length_gens
-                const new_delay = `-${phase * 2}s`
+                // Calculate phase 0.0 to 1.0 based on gen count and glider id.
+                // Subtracting glider_id offset so multiple gliders aren't same color identically.
+                const offset = (d.glider_id * 3) % cycle_length_gens;
+                const phase = ((d.gen_count + offset) % cycle_length_gens) / cycle_length_gens;
                 
-                if (this.style.animationDelay !== new_delay) {
-                    el.style('animation-delay', new_delay)
-                }
+                // d3.interpolateRainbow returns a smoothly interpolated RGB string
+                const color = d3.interpolateRainbow(phase);
+                el.style('fill', color)
+                el.style('animation-delay', null) // clear old approach if present
             } else {
+                // clear explicit inline fill so it falls back to CSS
+                if (this.style.fill) {
+                    el.style('fill', null)
+                }
                 if (this.style.animationDelay) {
                     el.style('animation-delay', null)
                 }
