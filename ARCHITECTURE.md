@@ -46,17 +46,17 @@ To ensure performance consistency, use the following patterns and generation cou
   ```
 - **Behavior:** Requires a longer observation period to verify performance under sustained load.
 
-## 7. Performance Gold Standard (May 20, 2026)
-Measured on the `next-feature-glider-detection` branch with Stability Detection active:
+## 7. Performance Gold Standard (May 22, 2026)
+Measured on the `next-feature-glider-detection` branch with Stability Detection active and dynamic D3 color interpolation:
 
 ### Baseline 1: Wordle 1,751 (250 Gen Target)
-- **Measured Gen Count:** 265
-- **Avg. Time/Gen:** 1.6192 ms
-- **DOM Created (Total):** 7,808
+- **Measured Gen Count:** 269
+- **Avg. Time/Gen:** ~1.75 ms
+- **DOM Created (Total):** 7,859
 - **Gliders Detected:** 0
 
 ### Baseline 2: Wordle 1,750 (1250 Gen Target)
-- **Measured Gen Count:** 1,375
-- **Avg. Time/Gen:** 2.9363 ms
-- **DOM Created (Total):** 56,022
+- **Measured Gen Count:** 1,367
+- **Avg. Time/Gen:** ~2.87 ms
+- **DOM Created (Total):** 55,968
 - **Gliders Detected:** 24
