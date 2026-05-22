@@ -313,8 +313,8 @@ window.dig_debug = {
     },
     run_official_baselines: async () => {
         const GOLD_STANDARD = {
-            p1751: { avg_gen_ms: 1.7556, dom_created: 7859 },
-            p1750: { avg_gen_ms: 2.8781, dom_created: 55968 }
+            p1751: { avg_gen_ms: 1.1644, dom_created: 8145 },
+            p1750: { avg_gen_ms: 1.8679, dom_created: 59348 }
         }
 
         const p1 = `⬛⬛⬛⬛⬛\n⬛🟨⬛🟨⬛\n⬛🟩🟨⬛⬛\n🟩🟩⬛🟩⬛\n🟩🟩⬛🟩🟩\n🟩🟩🟩🟩🟩`
