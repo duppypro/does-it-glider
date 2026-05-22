@@ -208,7 +208,8 @@
 
 .party-glider
 {
-    animation: rainbow-fill 2s linear infinite !important;
+    /* The fill color is calculated per-generation in draw.js using d3.interpolateRainbow */
+    /* animation: rainbow-fill 2s linear infinite !important; */
 }
 
 .cell.glider

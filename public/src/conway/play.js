@@ -118,7 +118,7 @@ export const apply_rules = (grid, new_grid, live_cells, cells_to_clear) => {
             
             if (next_state !== '⬛') {
                 new_grid[y][x] = next_state
-                next_live_cells.push({ x, y, state: next_state })
+                next_live_cells.push({ x, y, state: next_state }) // gen_count injected later in game_state
             }
         }
         return next_live_cells
