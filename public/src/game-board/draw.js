@@ -23,32 +23,21 @@ const COLOR_TO_CLASS = {
  * Only live cells are represented by DOM elements.
  * 
  * @param {d3.Selection} g - The D3 selection of the grid group.
- * @param {string[][]} state - 2D array of the current Game of Life state.
+ * @param {Object[]} live_cells - Array of live cells {x, y, state}.
  * @param {number} cell_px - Size of each cell in pixels.
  * @param {number} opacity - Current fade-in opacity.
  */
-export function draw(g, state, cell_px, opacity = 1) {
-    const live_cells = []
-
-    // 1. Extract sparse data: only live cells
-    for (let y = 0; y < state.length; y++) {
-        for (let x = 0; x < state[y].length; x++) {
-            const cell_state = state[y][x]
-            const css_class = COLOR_TO_CLASS[cell_state]
-            if (css_class) {
-                live_cells.push({
-                    id: `${x}-${y}`, // Unique key for D3 data join
-                    x,
-                    y,
-                    css_class
-                })
-            }
-        }
-    }
+export function draw(g, live_cells, cell_px, opacity = 1) {
+    const data = live_cells.map(cell => ({
+        id: `${cell.x}-${cell.y}`,
+        x: cell.x,
+        y: cell.y,
+        css_class: COLOR_TO_CLASS[cell.state]
+    }))
 
     // 2. D3 Data Join
     const cells = g.selectAll('rect.cell')
-        .data(live_cells, d => d.id)
+        .data(data, d => d.id)
 
     // EXIT: Remove cells that are no longer live
     cells.exit().remove()

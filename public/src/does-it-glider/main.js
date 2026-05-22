@@ -111,7 +111,7 @@ function draw_gen_count() {
 function draw_frame() {
     dig.draw(
         grid_sel,
-        game_state.current_grid,
+        game_state.live_cells,
         CELL_PX, 
         d3.easeQuadOut(1.0 - game_state.new_pause_countdown / NEW_PAUSE_MSEC)
     )

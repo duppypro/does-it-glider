@@ -25,6 +25,8 @@ export class GameState {
         this.is_paused = false
         this.is_stable = false
         this.history = [] // Circular buffer of last 8 state hashes
+        this.live_cells = []
+        this.next_live_cells_to_clear = [] // Tracks live cells in the 'next' buffer for sparse clearing
     }
 
     toggle_pause() {
@@ -50,7 +52,18 @@ export class GameState {
             this.msec_to_next_gen += this.msec_per_gen
             
             if (this.new_pause_countdown <= 0 && this.gen_count < 9999) {
-                dig.apply_rules_old_new(this.current_grid, this.next_grid)
+                const next_live_cells = dig.apply_rules_old_new(
+                    this.current_grid, 
+                    this.next_grid, 
+                    this.live_cells, 
+                    this.next_live_cells_to_clear
+                )
+                
+                if (next_live_cells) {
+                    this.next_live_cells_to_clear = this.live_cells
+                    this.live_cells = next_live_cells
+                }
+                
                 this.ping_pong = !this.ping_pong
                 this.gen_count++
                 gen_advanced = true
@@ -73,7 +86,20 @@ export class GameState {
         const grid_now = this.current_grid
         const formatted_seed = new_seed.map(row => [...row])
         dig.clear_grid(grid_now)
+        dig.clear_grid(this.next_grid) // Ensure both buffers are clean
         dig.add_seed(formatted_seed, grid_now)
+
+        // Re-sync live_cells after loading seed
+        this.live_cells = []
+        for (let y = 0; y < this.grid_height; y++) {
+            for (let x = 0; x < this.grid_width; x++) {
+                if (grid_now[y][x] !== '⬛') {
+                    this.live_cells.push({ x, y, state: grid_now[y][x] })
+                }
+            }
+        }
+        this.next_live_cells_to_clear = []
+
         this.new_pause_countdown = this.settings.NEW_PAUSE_MSEC
         this.gen_count = 0
         this.msec_to_next_gen = 0
@@ -83,14 +109,11 @@ export class GameState {
 
     _get_state_hash() {
         let hash = ""
-        let live_count = 0
-        for (let y = 0; y < this.grid_height; y++) {
-            for (let x = 0; x < this.grid_width; x++) {
-                if (this.current_grid[y][x] !== '⬛') {
-                    hash += `${x},${y}|`
-                    live_count++
-                }
-            }
+        let live_count = this.live_cells.length
+        // Sort live cells to ensure consistent hash regardless of order in list
+        // (Though apply_rules currently returns them in y-then-x order anyway)
+        for (const cell of this.live_cells) {
+            hash += `${cell.x},${cell.y}|`
         }
         return { hash, live_count }
     }
