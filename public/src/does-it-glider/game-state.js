@@ -64,6 +64,10 @@ export class GameState {
                 )
                 
                 if (next_live_cells) {
+                    // Inject gen_count onto the cells so the renderer can sync animations
+                    for (const cell of next_live_cells) {
+                        cell.gen_count = this.gen_count + 1
+                    }
                     this.next_live_cells_to_clear = this.live_cells
                     this.live_cells = next_live_cells
                 }
@@ -99,7 +103,7 @@ export class GameState {
         for (let y = 0; y < this.grid_height; y++) {
             for (let x = 0; x < this.grid_width; x++) {
                 if (grid_now[y][x] !== '⬛') {
-                    this.live_cells.push({ x, y, state: grid_now[y][x] })
+                    this.live_cells.push({ x, y, state: grid_now[y][x], gen_count: this.gen_count })
                 }
             }
         }

@@ -37,7 +37,8 @@ export function draw(g, live_cells, cell_px, opacity = 1) {
         x: cell.x,
         y: cell.y,
         css_class: cell.glider_id ? PARTY_GLIDER_CLASS : COLOR_TO_CLASS[cell.state],
-        glider_id: cell.glider_id
+        glider_id: cell.glider_id,
+        gen_count: cell.gen_count // Passed in from GameState
     }))
 
     // 2. D3 Data Join
@@ -69,9 +70,14 @@ export function draw(g, live_cells, cell_px, opacity = 1) {
             }
             
             if (d.glider_id) {
-                // Set a fixed delay based on the glider ID so it stays in its 
-                // own part of the rainbow cycle without restarting every frame.
-                const new_delay = `${-(d.glider_id * 0.1) % 2}s`
+                // The animation is 2s long. If we assume 60fps, 120 frames = 2s.
+                // Let's cycle the rainbow based on generation count so it steps smoothly
+                // even when paused. 1 generation = 1 step in the cycle.
+                // Let's say a full rainbow cycle takes 20 generations.
+                const cycle_length_gens = 20
+                const phase = (d.gen_count % cycle_length_gens) / cycle_length_gens
+                const new_delay = `-${phase * 2}s`
+                
                 if (this.style.animationDelay !== new_delay) {
                     el.style('animation-delay', new_delay)
                 }
