@@ -92,18 +92,13 @@ const event_loop = () => {
     draw_frame()
 
     const was_stable = game_state.is_stable
+    const prev_glider_count = game_state.glider_id_counter
     const gen_advanced = game_state.tick(msec_per_tick)
 
     if (gen_advanced) {
         draw_gen_count()
         draw_glider_count()
         
-        if (game_state.gen_count > prior_max_gen_count) {
-            prior_max_gen_count = game_state.gen_count
-            local_stats.set_max_gen_count(prior_max_gen_count)
-            draw_max_gen_count()
-        }
-
         const current_glider_count = game_state.glider_id_counter - 1
         if (current_glider_count > prior_max_glider_count) {
             prior_max_glider_count = current_glider_count
@@ -380,6 +375,29 @@ window.dig_debug = {
                 else console.error("❌ Rainbow is stuck!")
             }
         }, 100)
+    },
+    dump_gliders: () => {
+        const gliders = game_state.active_gliders
+        if (gliders.length === 0) return "No active gliders."
+        
+        let out = `Gen ${game_state.gen_count} | Active Gliders: ${gliders.length}\n`
+        gliders.forEach(g => {
+            out += `\nGlider ID ${g.id} at x:${g.x}, y:${g.y} (Phase ${g.phase})\n`
+            // Print a 7x7 grid around the 5x5 detection bounding box
+            for (let y = g.y - 1; y <= g.y + 5; y++) {
+                let row = ""
+                for (let x = g.x - 1; x <= g.x + 5; x++) {
+                    if (y < 0 || y >= game_state.grid_height || x < 0 || x >= game_state.grid_width) {
+                        row += '🧱'
+                    } else {
+                        row += game_state.current_grid[y][x] === '⬛' ? '⬛' : '⬜'
+                    }
+                }
+                out += row + '\n'
+            }
+        })
+        console.log(out)
+        return "Copy the text above and paste it in the chat!"
     }
 }
 

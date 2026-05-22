@@ -59,4 +59,4 @@ Measured on the `next-feature-glider-detection` branch with Stability Detection 
 - **Measured Gen Count:** 1,250
 - **Avg. Time/Gen:** ~1.86 ms
 - **DOM Created (Total):** 59,348
-- **Gliders Detected:** 24
+- **Gliders Detected:** 19
