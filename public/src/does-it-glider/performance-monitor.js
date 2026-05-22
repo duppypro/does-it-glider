@@ -101,7 +101,8 @@ export class PerformanceMonitor {
             avg_gen_ms: (total_time / num_gens).toFixed(4),
             dom_created: this.dom_stats.created,
             dom_removed: this.dom_stats.removed,
-            final_rect_count: document.querySelectorAll('rect.cell').length
+            final_rect_count: document.querySelectorAll('rect.cell').length,
+            gliders_detected: game_state.glider_id_counter - 1
         }
 
         console.table(result)

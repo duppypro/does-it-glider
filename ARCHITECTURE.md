@@ -50,11 +50,13 @@ To ensure performance consistency, use the following patterns and generation cou
 Measured on the `next-feature-glider-detection` branch with Stability Detection active:
 
 ### Baseline 1: Wordle 1,751 (250 Gen Target)
-- **Measured Gen Count:** 258
-- **Avg. Time/Gen:** 4.8000 ms
-- **DOM Created (Total):** 8,062
+- **Measured Gen Count:** 265
+- **Avg. Time/Gen:** 1.6192 ms
+- **DOM Created (Total):** 7,808
+- **Gliders Detected:** 0
 
 ### Baseline 2: Wordle 1,750 (1250 Gen Target)
-- **Measured Gen Count:** 1,362
-- **Avg. Time/Gen:** 8.3442 ms
-- **DOM Created (Total):** 59,102
+- **Measured Gen Count:** 1,375
+- **Avg. Time/Gen:** 2.9363 ms
+- **DOM Created (Total):** 56,022
+- **Gliders Detected:** 24

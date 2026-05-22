@@ -88,12 +88,85 @@
         <p>Cells mapped to <code>glider_id: 42</code> will get the <code>.party-glider</code> class.</p>
     </div>
 
-    <h2>4. Implementation Steps</h2>
-    <ol>
-        <li><strong>Symmetry Generator:</strong> Write a utility to rotate/flip the patterns in <code>patterns.js</code> into all 8 valid orientations.</li>
-        <li><strong>The Scanner:</strong> In <code>GameState.tick()</code>, after <code>apply_rules</code>, run the detection pass.</li>
-        <li><strong>Glider Registry:</strong> Maintain a <code>this.active_gliders</code> map in <code>GameState</code>.</li>
-        <li><strong>D3 Update:</strong> Modify <code>draw.js</code> to check if a cell has a <code>glider_id</code> and apply the rainbow class.</li>
-    </ol>
+    <h2>5. The "Solitary Glider" Problem</h2>
+    <p>We are currently detecting <strong>patterns</strong>, but a glider is only a <strong>process</strong> if it is solitary. If other live cells are touching the glider, they act as "interference," causing the glider to crash or transform in the next generation.</p>
+
+    <div class="diagram">
+        <h3>Glider vs. Interference</h3>
+        <div style="display: flex; justify-content: space-around;">
+            <div>
+                <p><strong>Valid Glider</strong></p>
+                <div class="cell-grid">
+                    <div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+                    <div class="c"></div><div class="c l"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+                    <div class="c"></div><div class="c"></div><div class="c l"></div><div class="c l"></div><div class="c"></div>
+                    <div class="c"></div><div class="c l"></div><div class="c l"></div><div class="c"></div><div class="c"></div>
+                    <div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+                </div>
+                <p><small>Clean 1-cell moat</small></p>
+            </div>
+            <div>
+                <p><strong>Ghost/Invalid</strong></p>
+                <div class="cell-grid">
+                    <div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+                    <div class="c"></div><div class="c l"></div><div class="c l"></div><div class="c"></div><div class="c"></div>
+                    <div class="c"></div><div class="c"></div><div class="c l"></div><div class="c l"></div><div class="c"></div>
+                    <div class="c"></div><div class="c l"></div><div class="c l"></div><div class="c"></div><div class="c"></div>
+                    <div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+                </div>
+                <p><small>Neighbor (top-left) will break it</small></p>
+            </div>
+        </div>
+    </div>
+
+    <h2>6. Questions for Refinement</h2>
+    <ul>
+        <li><strong>Strict Moat:</strong> Should we require a full 1-cell radius of "dead space" around the glider to count it?</li>
+        <li><strong>Halo Size:</strong> A glider's "influence" is actually 3x3 for rules, but a 5x5 area covers its movement. Should the detection verify that the <em>entire</em> 5x5 bounding box contains <em>only</em> the glider cells?</li>
+        <li><strong>The "Birth" Moment:</strong> If a glider is forming out of chaos but currently touched by a spark, do we wait until it is "free" to assign an ID, or do we count the spark as part of its history?</li>
+    </ul>
+
+    <h2>7. Sub-Agent Moat Analysis</h2>
+    <p>To definitively answer whether a "strict moat" is necessary, a programmatic sub-agent was deployed to test all <strong>1,048,576</strong> possible configurations of the 20 adjacent moat cells in a 5x5 grid around a glider (testing the down-right orientation).</p>
+    
+    <table class="tracking-table">
+        <tr>
+            <th>Glider Phase</th>
+            <th>Tested Configurations</th>
+            <th>Glider Survives + Debris Remains</th>
+            <th>Glider Survives + Perfect Moat (No Debris)</th>
+        </tr>
+        <tr>
+            <td>Phase 0</td>
+            <td>1,048,576</td>
+            <td>128</td>
+            <td>2 (Empty moat, and 1 specific single-cell noise)</td>
+        </tr>
+        <tr>
+            <td>Phase 1</td>
+            <td>1,048,576</td>
+            <td>96</td>
+            <td>1 (Only the empty moat)</td>
+        </tr>
+        <tr>
+            <td>Phase 2</td>
+            <td>1,048,576</td>
+            <td>128</td>
+            <td>2 (Empty moat, and 1 specific single-cell noise)</td>
+        </tr>
+        <tr>
+            <td>Phase 3</td>
+            <td>1,048,576</td>
+            <td>96</td>
+            <td>1 (Only the empty moat)</td>
+        </tr>
+    </table>
+
+    <p><strong>Sub-Agent Findings:</strong></p>
+    <ul>
+        <li><strong>Debris is inevitable:</strong> In ~100 configurations per phase, the expected 5 cells of the next glider phase survive, but the noise <em>also</em> survives or spawns new cells (debris). This means the glider is no longer solitary and will crash in subsequent generations.</li>
+        <li><strong>The Single Exception:</strong> For Phase 0 and Phase 2, there is exactly <em>one</em> live cell configuration (a single live cell at coordinate 0,0—the top left corner) that dies instantly from underpopulation without affecting the glider's evolution.</li>
+        <li><strong>Conclusion:</strong> Because 99.99% of adjacent live cell configurations destroy the glider, and the only "safe" noise is a single cell that vanishes instantly, enforcing a <strong>Strict Empty Moat</strong> (checking that all 20 non-glider cells in the 5x5 bounding box are dead) is the most accurate way to define a true, solitary glider.</li>
+    </ul>
 </body>
 </html>

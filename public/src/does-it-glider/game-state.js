@@ -234,8 +234,29 @@ export class GameState {
             if (tx < 0 || tx >= this.grid_width || ty < 0 || ty >= this.grid_height) return false
             if (this.current_grid[ty][tx] === '⬛') return false
         }
-        // Strict check: make sure no OTHER live cells are in the 5x5 bounding box? 
-        // For now, let's keep it simple.
+        
+        // Strict Moat: ensure no OTHER live cells are in the 5x5 bounding box
+        for (let y = 0; y < 5; y++) {
+            const ty = oy + y
+            if (ty < 0 || ty >= this.grid_height) continue
+            for (let x = 0; x < 5; x++) {
+                const tx = ox + x
+                if (tx < 0 || tx >= this.grid_width) continue
+                
+                if (this.current_grid[ty][tx] !== '⬛') {
+                    // Check if this coordinate is part of the required live cells
+                    let is_glider_cell = false
+                    for (const p_cell of phase.live) {
+                        if (p_cell.x === x && p_cell.y === y) {
+                            is_glider_cell = true
+                            break
+                        }
+                    }
+                    if (!is_glider_cell) return false
+                }
+            }
+        }
+        
         return true
     }
 

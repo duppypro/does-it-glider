@@ -327,7 +327,8 @@ window.dig_debug = {
         
         const delta1 = {
             time_delta: (r1.avg_gen_ms - GOLD_STANDARD.p1751.avg_gen_ms).toFixed(4),
-            dom_delta: r1.dom_created - GOLD_STANDARD.p1751.dom_created
+            dom_delta: r1.dom_created - GOLD_STANDARD.p1751.dom_created,
+            gliders_detected: r1.gliders_detected
         }
         console.log("Baseline 1751 Delta:", delta1)
 
@@ -339,7 +340,8 @@ window.dig_debug = {
 
         const delta2 = {
             time_delta: (r2.avg_gen_ms - GOLD_STANDARD.p1750.avg_gen_ms).toFixed(4),
-            dom_delta: r2.dom_created - GOLD_STANDARD.p1750.dom_created
+            dom_delta: r2.dom_created - GOLD_STANDARD.p1750.dom_created,
+            gliders_detected: r2.gliders_detected
         }
         console.log("Baseline 1750 Delta:", delta2)
         
