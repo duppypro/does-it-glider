@@ -148,13 +148,16 @@ export class GameState {
     _parse_steps(steps) {
         return steps.map(step_rows => {
             const live = [], anchor = {x: 0, y: 0}
+            const safe_noise = []
+            
             step_rows.forEach((row, y) => {
                 Array.from(row).forEach((char, x) => {
                     if (char === '⬜') live.push({x, y})
                     if (char === '⚓') anchor.x = x, anchor.y = y
+                    if (char === 'S') safe_noise.push({x, y})
                 })
             })
-            return { live, anchor }
+            return { live, anchor, safe_noise }
         })
     }
 
@@ -239,7 +242,8 @@ export class GameState {
             if (this.current_grid[ty][tx] === '⬛') return false
         }
         
-        // Strict Moat: ensure no OTHER live cells are in the 5x5 bounding box
+        // Moat: ensure no OTHER live cells are in the 5x5 bounding box
+        // Exception: allow noise in designated 'safe_noise' coordinates 
         for (let y = 0; y < 5; y++) {
             const ty = oy + y
             if (ty < 0 || ty >= this.grid_height) continue
@@ -249,14 +253,22 @@ export class GameState {
                 
                 if (this.current_grid[ty][tx] !== '⬛') {
                     // Check if this coordinate is part of the required live cells
-                    let is_glider_cell = false
+                    let is_allowed = false
                     for (const p_cell of phase.live) {
                         if (p_cell.x === x && p_cell.y === y) {
-                            is_glider_cell = true
+                            is_allowed = true
                             break
                         }
                     }
-                    if (!is_glider_cell) return false
+                    if (!is_allowed) {
+                        for (const s_cell of phase.safe_noise) {
+                            if (s_cell.x === x && s_cell.y === y) {
+                                is_allowed = true
+                                break
+                            }
+                        }
+                    }
+                    if (!is_allowed) return false
                 }
             }
         }
