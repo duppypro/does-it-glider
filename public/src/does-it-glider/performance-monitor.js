@@ -97,7 +97,8 @@ export class PerformanceMonitor {
             dom_created: this.dom_stats.created,
             dom_removed: this.dom_stats.removed,
             final_rect_count: document.querySelectorAll('rect.cell').length,
-            gliders_detected: game_state.glider_id_counter - 1
+            adult_gliders_detected: game_state.adult_gliders_count,
+            failed_baby_gliders: game_state.failed_baby_gliders_count
         }
 
         console.table(result)

@@ -120,7 +120,9 @@
 .seed-count,
 .max-gen-count,
 .glider-count,
-.max-glider-count
+.max-glider-count,
+.failed-baby-count,
+.max-failed-baby-count
 {
     font-size: 0.75em;
     color: var(--white);
@@ -146,6 +148,21 @@
     71% {color: indigo;}
     85% {color: violet;}
     100% {color: red;}
+}
+
+@keyframes stat-rainbow {
+    0% {color: #ff0000;}
+    17% {color: #ff8000;}
+    33% {color: #ffff00;}
+    50% {color: #00ff00;}
+    67% {color: #0000ff;}
+    83% {color: #8000ff;}
+    100% {color: #ff0000;}
+}
+
+.stat-rainbow-flash {
+    /* 1s cycle, 2 times = 2 full color cycles */
+    animation: stat-rainbow 1s linear 2;
 }
 
 @keyframes rainbow-fill

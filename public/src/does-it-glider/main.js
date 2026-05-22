@@ -65,6 +65,10 @@ const glider_count_sel = stats_sel.append('div').classed('glider-count', true)
      .html('Gliders detected: --')
 const max_glider_count_sel = stats_sel.append('div').classed('max-glider-count', true)
      .html('Max gliders: --')
+const failed_baby_count_sel = stats_sel.append('div').classed('failed-baby-count', true)
+     .html('Failed baby gliders: --')
+const max_failed_baby_count_sel = stats_sel.append('div').classed('max-failed-baby-count', true)
+     .html('Max failed baby gliders: --')
 
 // get the width and height of the grid and screen size parameters
 const line_height = Math.max(12, touch_target_sel.select('.sub-title').node().clientHeight)
@@ -84,26 +88,59 @@ const attract_seed = dig.seeds.glider
 
 let prior_max_gen_count = local_stats.get_max_gen_count() || 0
 let prior_max_glider_count = local_stats.get_max_glider_count() || 0
+let prior_max_failed_baby_count = local_stats.get_max_failed_baby_count() || 0
 const msec_per_tick = 1000.0 / 60.0 
 let beat_pasted = MSEC_PER_BEAT
 let seed = [] 
+
+function trigger_stat_animation(selection) {
+    selection.classed('stat-rainbow-flash', false)
+    void selection.node().offsetWidth
+    selection.classed('stat-rainbow-flash', true)
+}
 
 const event_loop = () => {
     draw_frame()
 
     const was_stable = game_state.is_stable
-    const prev_glider_count = game_state.glider_id_counter
+    const prev_adults = game_state.adult_gliders_count
+    const prev_failed_babies = game_state.failed_baby_gliders_count
     const gen_advanced = game_state.tick(msec_per_tick)
 
     if (gen_advanced) {
         draw_gen_count()
         draw_glider_count()
+        draw_failed_baby_count()
         
-        const current_glider_count = game_state.glider_id_counter - 1
-        if (current_glider_count > prior_max_glider_count) {
-            prior_max_glider_count = current_glider_count
-            local_stats.set_max_glider_count(prior_max_glider_count)
-            draw_max_glider_count()
+        if (game_state.gen_count > prior_max_gen_count) {
+            prior_max_gen_count = game_state.gen_count
+            local_stats.set_max_gen_count(prior_max_gen_count)
+            draw_max_gen_count()
+            trigger_stat_animation(max_gen_count_sel)
+        }
+
+        if (game_state.adult_gliders_count > prev_adults) {
+            draw_glider_count()
+            trigger_stat_animation(glider_count_sel)
+            
+            if (game_state.adult_gliders_count > prior_max_glider_count) {
+                prior_max_glider_count = game_state.adult_gliders_count
+                local_stats.set_max_glider_count(prior_max_glider_count)
+                draw_max_glider_count()
+                trigger_stat_animation(max_glider_count_sel)
+            }
+        }
+
+        if (game_state.failed_baby_gliders_count > prev_failed_babies) {
+            draw_failed_baby_count()
+            trigger_stat_animation(failed_baby_count_sel)
+            
+            if (game_state.failed_baby_gliders_count > prior_max_failed_baby_count) {
+                prior_max_failed_baby_count = game_state.failed_baby_gliders_count
+                local_stats.set_max_failed_baby_count(prior_max_failed_baby_count)
+                draw_max_failed_baby_count()
+                trigger_stat_animation(max_failed_baby_count_sel)
+            }
         }
     }
 
@@ -126,6 +163,7 @@ const load_new_seed = (new_seed) => {
     
     draw_gen_count()
     draw_glider_count()
+    draw_failed_baby_count()
 }
 
 function draw_gen_count() {
@@ -153,11 +191,20 @@ function draw_max_gen_count() {
 
 function draw_max_glider_count() {
     const count = local_stats.get_max_glider_count()
-    max_glider_count_sel.html(`Max gliders: ${count}`)
+    max_glider_count_sel.html(`Max adult gliders: ${count}`)
 }
 
 function draw_glider_count() {
-    glider_count_sel.html(`Gliders detected: ${game_state.glider_id_counter - 1}`)
+    glider_count_sel.html(`Adult gliders: ${game_state.adult_gliders_count}`)
+}
+
+function draw_failed_baby_count() {
+    failed_baby_count_sel.html(`Failed baby gliders: ${game_state.failed_baby_gliders_count}`)
+}
+
+function draw_max_failed_baby_count() {
+    const count = local_stats.get_max_failed_baby_count()
+    max_failed_baby_count_sel.html(`Max failed baby gliders: ${count}`)
 }
 
 const parse_clipboard = (pasted_clipboard) => {
@@ -265,6 +312,8 @@ draw_seed_count()
 draw_max_gen_count()
 draw_glider_count()
 draw_max_glider_count()
+draw_failed_baby_count()
+draw_max_failed_baby_count()
 load_new_seed(attract_seed)
 
 // Diagnostic Bridge
@@ -323,7 +372,8 @@ window.dig_debug = {
         const delta1 = {
             time_delta: (r1.avg_gen_ms - GOLD_STANDARD.p1751.avg_gen_ms).toFixed(4),
             dom_delta: r1.dom_created - GOLD_STANDARD.p1751.dom_created,
-            gliders_detected: r1.gliders_detected
+            adult_gliders_detected: r1.adult_gliders_detected,
+            failed_baby_gliders: r1.failed_baby_gliders
         }
         console.log("Baseline 1751 Delta:", delta1)
 
@@ -336,7 +386,8 @@ window.dig_debug = {
         const delta2 = {
             time_delta: (r2.avg_gen_ms - GOLD_STANDARD.p1750.avg_gen_ms).toFixed(4),
             dom_delta: r2.dom_created - GOLD_STANDARD.p1750.dom_created,
-            gliders_detected: r2.gliders_detected
+            adult_gliders_detected: r2.adult_gliders_detected,
+            failed_baby_gliders: r2.failed_baby_gliders
         }
         console.log("Baseline 1750 Delta:", delta2)
         
@@ -349,12 +400,17 @@ window.dig_debug = {
         local_stats.reset_stats()
         prior_max_gen_count = 0
         prior_max_glider_count = 0
+        prior_max_failed_baby_count = 0
         game_state.glider_id_counter = 1 
+        game_state.adult_gliders_count = 0
+        game_state.failed_baby_gliders_count = 0
         game_state.active_gliders = []
         draw_seed_count()
         draw_max_gen_count()
         draw_glider_count()
         draw_max_glider_count()
+        draw_failed_baby_count()
+        draw_max_failed_baby_count()
         console.log("📈 Stats reset successfully.")
     },
     // Programmatic test for rainbow animation

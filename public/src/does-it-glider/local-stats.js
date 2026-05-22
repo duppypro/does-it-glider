@@ -9,6 +9,7 @@ const APP_UNIQUE_PREFIX = 'Interface_Arts_does-it-glider_duppy_v1.2025.09.21'
 const SEED_HASHES_KEY = `${APP_UNIQUE_PREFIX}_unique_seed_hashes`
 const MAX_GEN_COUNT_KEY = `${APP_UNIQUE_PREFIX}_max_gen_count`
 const MAX_GLIDER_COUNT_KEY = `${APP_UNIQUE_PREFIX}_max_glider_count`
+const MAX_FAILED_BABY_COUNT_KEY = `${APP_UNIQUE_PREFIX}_max_failed_baby_count`
 
 export function hash_seed(seed_arr) {
     // Use joined string as the key
@@ -19,6 +20,7 @@ let cached_seed_hashes = null
 let cached_seed_count = null
 let cached_max_gen_count = null
 let cached_max_glider_count = null
+let cached_max_failed_baby_count = null
 
 export function get_seed_hashes() {
     if (cached_seed_hashes !== null) return cached_seed_hashes
@@ -69,12 +71,25 @@ export function set_max_glider_count(count) {
     localStorage.setItem(MAX_GLIDER_COUNT_KEY, String(count))
 }
 
+export function get_max_failed_baby_count() {
+    if (cached_max_failed_baby_count !== null) return cached_max_failed_baby_count
+    cached_max_failed_baby_count = Number(localStorage.getItem(MAX_FAILED_BABY_COUNT_KEY) || '0')
+    return cached_max_failed_baby_count
+}
+
+export function set_max_failed_baby_count(count) {
+    cached_max_failed_baby_count = count
+    localStorage.setItem(MAX_FAILED_BABY_COUNT_KEY, String(count))
+}
+
 export function reset_stats() {
     localStorage.removeItem(SEED_HASHES_KEY)
     localStorage.removeItem(MAX_GEN_COUNT_KEY)
     localStorage.removeItem(MAX_GLIDER_COUNT_KEY)
+    localStorage.removeItem(MAX_FAILED_BABY_COUNT_KEY)
     cached_seed_count = null
     cached_seed_hashes = null
     cached_max_gen_count = null
     cached_max_glider_count = null
+    cached_max_failed_baby_count = null
 }

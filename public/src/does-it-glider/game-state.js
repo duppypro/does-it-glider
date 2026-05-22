@@ -29,7 +29,9 @@ export class GameState {
         this.next_live_cells_to_clear = [] // Tracks live cells in the 'next' buffer for sparse clearing
 
         this.glider_id_counter = 1
-        this.active_gliders = [] // [{id, x, y, phase, orientation_idx}]
+        this.adult_gliders_count = 0
+        this.failed_baby_gliders_count = 0
+        this.active_gliders = [] // [{id, x, y, phase, orientation_idx, age, is_adult}]
         this.orientations = this._generate_orientations(dig.glider_templates)
     }
 
@@ -115,6 +117,8 @@ export class GameState {
         this.is_stable = false
         this.history = []
         this.glider_id_counter = 1
+        this.adult_gliders_count = 0
+        this.failed_baby_gliders_count = 0
         this.active_gliders = []
         this._detect_gliders()
     }
@@ -207,8 +211,12 @@ export class GameState {
 
         // 2. Identity Persistence: Match candidates against previously active gliders
         const updated_active_gliders = []
+        const matched_prev_ids = new Set()
+
         for (const candidate of next_glider_candidates) {
             let matched_id = null
+            let age = 0
+            let is_adult = false
             
             // Look for a previous glider that is "close" to this candidate
             // A glider moves max 1 cell per gen, so search in a 3x3 neighborhood of its old top-left
@@ -218,17 +226,37 @@ export class GameState {
                 // Also check if orientation matches (gliders don't turn)
                 if (dx <= 2 && dy <= 2 && candidate.orientation_idx === prev.orientation_idx) {
                     matched_id = prev.id
+                    age = prev.age + 1
+                    is_adult = prev.is_adult
+                    matched_prev_ids.add(prev.id)
                     break
                 }
             }
 
-            const id = matched_id || this.glider_id_counter++
-            updated_active_gliders.push({ ...candidate, id })
+            if (matched_id) {
+                if (age === 4 && !is_adult) {
+                    is_adult = true
+                    this.adult_gliders_count++
+                }
+            } else {
+                matched_id = this.glider_id_counter++
+            }
+
+            updated_active_gliders.push({ ...candidate, id: matched_id, age, is_adult })
             
             // Tag cells for the renderer
             for (const c of candidate.cells) {
                 const live_cell = this.live_cells.find(lc => lc.x === c.x && lc.y === c.y)
-                if (live_cell) live_cell.glider_id = id
+                if (live_cell) live_cell.glider_id = matched_id
+            }
+        }
+
+        // 3. Track deaths (failed baby gliders)
+        for (const prev of this.active_gliders) {
+            if (!matched_prev_ids.has(prev.id)) {
+                if (!prev.is_adult) {
+                    this.failed_baby_gliders_count++
+                }
             }
         }
 
