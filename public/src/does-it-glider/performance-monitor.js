@@ -82,11 +82,6 @@ export class PerformanceMonitor {
             if (window.dig_debug_draw) {
                 window.dig_debug_draw()
             }
-
-            // Yield to the event loop every 10 generations to allow MutationObserver to fire
-            if (i % 10 === 0) {
-                await new Promise(resolve => setTimeout(resolve, 0))
-            }
         }
 
         const end_time = performance.now()
