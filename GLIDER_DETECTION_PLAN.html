@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Glider Detection & Identity Plan</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background: #f4f4f9; }
+        h1, h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .diagram { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }
+        .cell-grid { display: inline-grid; grid-template-columns: repeat(5, 20px); grid-gap: 2px; background: #eee; padding: 5px; border-radius: 4px; }
+        .c { width: 20px; height: 20px; background: #fff; border-radius: 2px; }
+        .l { background: #34495e; } /* Live */
+        .a { background: #e74c3c; box-shadow: 0 0 5px #e74c3c; } /* Anchor */
+        .p { background: #2ecc71; animation: rainbow 2s linear infinite; } /* Party */
+        @keyframes rainbow {
+            0% { background: #ff0000; }
+            17% { background: #ff8000; }
+            33% { background: #ffff00; }
+            50% { background: #00ff00; }
+            67% { background: #0000ff; }
+            83% { background: #8000ff; }
+            100% { background: #ff0000; }
+        }
+        code { background: #e8eaed; padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+        .tracking-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .tracking-table th, .tracking-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .tracking-table th { background: #3498db; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🛸 Glider Detection & Tracking Plan</h1>
+    <p>Detecting a glider isn't just about matching a shape; it's about tracking a <em>process</em> through time. This plan outlines how we will move from a sparse grid to a collection of "identified" gliders.</p>
+
+    <h2>1. The Detection Algorithm (Spatial)</h2>
+    <p>Since we have <code>live_cells</code>, we don't scan the whole grid. Instead, we use each live cell as a potential constituent of a glider.</p>
+    <ul>
+        <li><strong>Step A:</strong> Iterate through <code>live_cells</code>.</li>
+        <li><strong>Step B:</strong> For each cell, test it against the 4 phases (and 8 symmetries) defined in <code>patterns.js</code>.</li>
+        <li><strong>Step C:</strong> If a match is found, tag those cells with a <code>glider_id</code>.</li>
+    </ul>
+
+    <div class="diagram">
+        <h3>Glider Phase 0 Match</h3>
+        <div class="cell-grid">
+            <div class="c"></div><div class="c"></div><div class="c l"></div><div class="c"></div><div class="c"></div>
+            <div class="c a"></div><div class="c"></div><div class="c"></div><div class="c l"></div><div class="c"></div>
+            <div class="c"></div><div class="c l"></div><div class="c l"></div><div class="c l"></div><div class="c"></div>
+            <div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+            <div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+        </div>
+        <p><small>Red = Anchor (0,0), Blue = Match Requirement</small></p>
+    </div>
+
+    <h2>2. Identity Persistence (Temporal)</h2>
+    <p>To avoid "counting" the same glider multiple times as it moves, we use <strong>Spatial Overlap Match</strong>.</p>
+    
+    <table class="tracking-table">
+        <tr>
+            <th>Feature</th>
+            <th>Mechanism</th>
+        </tr>
+        <tr>
+            <td><strong>Unique ID</strong></td>
+            <td>New gliders get an <code>incrementing_id</code>.</td>
+        </tr>
+        <tr>
+            <td><strong>Tracking</strong></td>
+            <td>In Gen <em>N+1</em>, look for a glider whose bounding box overlaps the bounding box of a glider from Gen <em>N</em>.</td>
+        </tr>
+        <tr>
+            <td><strong>Displacement</strong></td>
+            <td>A glider moves at most 1 cell diagonally every 4 generations. We check a 3x3 search area around the previous center.</td>
+        </tr>
+    </table>
+
+    <h2>3. The "Party Parrot" Effect</h2>
+    <p>Once a cell is identified as belonging to a <code>Glider</code> object, we override its CSS class in the renderer.</p>
+    
+    <div class="diagram">
+        <h3>Rainbow Rotation</h3>
+        <div class="cell-grid">
+            <div class="c"></div><div class="c p"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+            <div class="c"></div><div class="c"></div><div class="c p"></div><div class="c"></div><div class="c"></div>
+            <div class="c p"></div><div class="c p"></div><div class="c p"></div><div class="c"></div><div class="c"></div>
+            <div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+            <div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+        </div>
+        <p>Cells mapped to <code>glider_id: 42</code> will get the <code>.party-glider</code> class.</p>
+    </div>
+
+    <h2>4. Implementation Steps</h2>
+    <ol>
+        <li><strong>Symmetry Generator:</strong> Write a utility to rotate/flip the patterns in <code>patterns.js</code> into all 8 valid orientations.</li>
+        <li><strong>The Scanner:</strong> In <code>GameState.tick()</code>, after <code>apply_rules</code>, run the detection pass.</li>
+        <li><strong>Glider Registry:</strong> Maintain a <code>this.active_gliders</code> map in <code>GameState</code>.</li>
+        <li><strong>D3 Update:</strong> Modify <code>draw.js</code> to check if a cell has a <code>glider_id</code> and apply the rainbow class.</li>
+    </ol>
+</body>
+</html>

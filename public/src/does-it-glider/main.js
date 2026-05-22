@@ -41,12 +41,30 @@ const pause_btn_sel = controls_sel.append('button')
         pause_btn_sel.html(is_paused ? 'PLAY' : 'PAUSE')
     })
 
+const step_btn_sel = controls_sel.append('button')
+    .classed('pause-btn', true)
+    .html('STEP')
+    .on('click', () => {
+        if (!game_state.is_paused) {
+            game_state.is_paused = true
+            pause_btn_sel.html('PLAY')
+        }
+        game_state.tick(game_state.msec_per_gen, true)
+        draw_frame()
+        draw_gen_count()
+        draw_glider_count()
+    })
+
 const gen_count_sel = stats_sel.append('div').classed('gen-count', true)
     .html('----')
 const seed_count_sel = stats_sel.append('div').classed('seed-count', true)
     .html('Seeds submitted: -')
 const max_gen_count_sel = stats_sel.append('div').classed('max-gen-count', true)
      .html('Max generations: ----')
+const glider_count_sel = stats_sel.append('div').classed('glider-count', true)
+     .html('Gliders detected: --')
+const max_glider_count_sel = stats_sel.append('div').classed('max-glider-count', true)
+     .html('Max gliders: --')
 
 // get the width and height of the grid and screen size parameters
 const line_height = Math.max(12, touch_target_sel.select('.sub-title').node().clientHeight)
@@ -65,6 +83,7 @@ const perf_monitor = new PerformanceMonitor()
 const attract_seed = dig.seeds.glider 
 
 let prior_max_gen_count = local_stats.get_max_gen_count() || 0
+let prior_max_glider_count = local_stats.get_max_glider_count() || 0
 const msec_per_tick = 1000.0 / 60.0 
 let beat_pasted = MSEC_PER_BEAT
 let seed = [] 
@@ -77,10 +96,19 @@ const event_loop = () => {
 
     if (gen_advanced) {
         draw_gen_count()
+        draw_glider_count()
+        
         if (game_state.gen_count > prior_max_gen_count) {
             prior_max_gen_count = game_state.gen_count
             local_stats.set_max_gen_count(prior_max_gen_count)
             draw_max_gen_count()
+        }
+
+        const current_glider_count = game_state.glider_id_counter - 1
+        if (current_glider_count > prior_max_glider_count) {
+            prior_max_glider_count = current_glider_count
+            local_stats.set_max_glider_count(prior_max_glider_count)
+            draw_max_glider_count()
         }
     }
 
@@ -102,6 +130,7 @@ const load_new_seed = (new_seed) => {
     draw_seed_count()
     
     draw_gen_count()
+    draw_glider_count()
 }
 
 function draw_gen_count() {
@@ -126,6 +155,15 @@ function draw_max_gen_count() {
     const count = local_stats.get_max_gen_count()
     max_gen_count_sel.html(`Max generations: ${count}`)
 }    
+
+function draw_max_glider_count() {
+    const count = local_stats.get_max_glider_count()
+    max_glider_count_sel.html(`Max gliders: ${count}`)
+}
+
+function draw_glider_count() {
+    glider_count_sel.html(`Gliders detected: ${game_state.glider_id_counter - 1}`)
+}
 
 const parse_clipboard = (pasted_clipboard) => {
     let pasted_lines = []
@@ -230,6 +268,8 @@ const get_clipboard_text = (event) => {
 draw_gen_count()
 draw_seed_count()
 draw_max_gen_count()
+draw_glider_count()
+draw_max_glider_count()
 load_new_seed(attract_seed)
 
 // Diagnostic Bridge
@@ -311,9 +351,33 @@ window.dig_debug = {
     reset_stats: () => {
         local_stats.reset_stats()
         prior_max_gen_count = 0
+        prior_max_glider_count = 0
+        game_state.glider_id_counter = 1 
+        game_state.active_gliders = []
         draw_seed_count()
         draw_max_gen_count()
+        draw_glider_count()
+        draw_max_glider_count()
         console.log("📈 Stats reset successfully.")
+    },
+    // Programmatic test for rainbow animation
+    test_rainbow: () => {
+        const glider_cells = document.querySelectorAll('.party-glider')
+        if (glider_cells.length === 0) return "No gliders found to test."
+        
+        const colors = []
+        let samples = 0
+        const interval = setInterval(() => {
+            const color = window.getComputedStyle(glider_cells[0]).fill
+            colors.push(color)
+            if (++samples > 20) {
+                clearInterval(interval)
+                const unique = new Set(colors).size
+                console.log(`Rainbow Test: Sampled ${samples} frames, found ${unique} unique colors.`)
+                if (unique > 1) console.log("✅ Rainbow is cycling!")
+                else console.error("❌ Rainbow is stuck!")
+            }
+        }, 100)
     }
 }
 

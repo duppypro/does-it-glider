@@ -118,7 +118,9 @@
 
 .gen-count,
 .seed-count,
-.max-gen-count
+.max-gen-count,
+.glider-count,
+.max-glider-count
 {
     font-size: 0.75em;
     color: var(--white);
@@ -148,14 +150,13 @@
 
 @keyframes rainbow-fill
 {
-    0% {fill: red;}
-    14% {fill: orange;}
-    28% {fill: yellow;}
-    42% {fill: lime;}
-    57% {fill: blue;}
-    71% {fill: indigo;}
-    85% {fill: violet;}
-    100% {fill: red;}
+    0% {fill: #ff0000;}
+    17% {fill: #ff8000;}
+    33% {fill: #ffff00;}
+    50% {fill: #00ff00;}
+    67% {fill: #0000ff;}
+    83% {fill: #8000ff;}
+    100% {fill: #ff0000;}
 }
 
 .cell,
@@ -205,10 +206,14 @@
     stroke-width: 1;
 }
 
-/* .cell.⬜, */
+.party-glider
+{
+    animation: rainbow-fill 2s linear infinite !important;
+}
+
 .cell.glider
 {
-    animation: rainbow-fill 16ms linear infinite;
+    display: none; /* Remove old redundant class effects */
 }
 
 .arcade-attract-text

@@ -7,6 +7,7 @@
 
 export { settings } from './settings.js'
 export * as seeds from './seeds.js'
+export { glider_templates } from './patterns.js'
 
 // Conway's Game of Life modules
 export {

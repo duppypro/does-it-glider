@@ -5,6 +5,8 @@
 //      draw
 ////////////////////////////////////////////////////////////////////////////////
 
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm"
+
 const COLOR_TO_CLASS = {
     '⬛': false,
     'o': false,
@@ -17,6 +19,8 @@ const COLOR_TO_CLASS = {
     '🟦': '🟦',
     'B': '🟦',
 }
+
+const PARTY_GLIDER_CLASS = 'party-glider'
 
 /**
  * Renders the state using a Sparse DOM approach.
@@ -32,7 +36,8 @@ export function draw(g, live_cells, cell_px, opacity = 1) {
         id: `${cell.x}-${cell.y}`,
         x: cell.x,
         y: cell.y,
-        css_class: COLOR_TO_CLASS[cell.state]
+        css_class: cell.glider_id ? PARTY_GLIDER_CLASS : COLOR_TO_CLASS[cell.state],
+        glider_id: cell.glider_id
     }))
 
     // 2. D3 Data Join
@@ -48,8 +53,32 @@ export function draw(g, live_cells, cell_px, opacity = 1) {
         .attr('width', `${cell_px}px`)
         .attr('height', `${cell_px}px`)
         .merge(cells) // UPDATE + ENTER
-        .attr('class', d => `cell ${d.css_class}`)
         .style('opacity', opacity)
         .attr('x', d => `${d.x * cell_px}px`)
         .attr('y', d => `${d.y * cell_px}px`)
+        .each(function(d) {
+            const el = d3.select(this)
+            const new_class = `cell ${d.css_class}`
+            
+            // Log for debugging if needed (remove after verification)
+            // console.log(`Cell ${d.x},${d.y} glider_id: ${d.glider_id} class: ${new_class}`);
+
+            // Only update class if it changed to avoid restarting animations
+            if (this.getAttribute('class') !== new_class) {
+                el.attr('class', new_class)
+            }
+            
+            if (d.glider_id) {
+                // Set a fixed delay based on the glider ID so it stays in its 
+                // own part of the rainbow cycle without restarting every frame.
+                const new_delay = `${-(d.glider_id * 0.1) % 2}s`
+                if (this.style.animationDelay !== new_delay) {
+                    el.style('animation-delay', new_delay)
+                }
+            } else {
+                if (this.style.animationDelay) {
+                    el.style('animation-delay', null)
+                }
+            }
+        })
 }
