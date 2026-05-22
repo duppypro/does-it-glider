@@ -43,8 +43,10 @@ export function draw(g, live_cells, cell_px, opacity = 1) {
 
     // Define D3 rainbow interpolator
     // We can use d3.interpolateRainbow(t) where t is between 0.0 and 1.0
-    // We want a full cycle every N generations
-    const cycle_length_gens = 40; 
+    // We want a full cycle every N generations. 
+    // `curl parrot.live` cycles extremely fast (10 frames, ~1s total cycle).
+    // The game runs at 24 generations per second, so ~12 generations gives a snappy half-second cycle.
+    const cycle_length_gens = 12; 
 
 
     // 2. D3 Data Join
