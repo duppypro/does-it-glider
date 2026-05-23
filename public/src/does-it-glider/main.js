@@ -117,9 +117,8 @@ let beat_pasted = MSEC_PER_BEAT
 let seed = [] 
 
 function trigger_stat_animation(selection) {
-    selection.classed('stat-rainbow-flash', false)
-    void selection.node().offsetWidth
-    selection.classed('stat-rainbow-flash', true)
+    const flash_duration = 1000 // 1 second
+    selection.node().flash_until = performance.now() + flash_duration
 }
 
 const event_loop = () => {
@@ -224,6 +223,23 @@ function draw_frame() {
         CELL_PX, 
         d3.easeQuadOut(1.0 - game_state.new_pause_countdown / NEW_PAUSE_MSEC)
     )
+
+    // Handle frame-synced D3 rainbow animations for stats
+    const now = performance.now()
+    stats_grid.selectAll('.stat-row').each(function() {
+        const row = d3.select(this)
+        const flash_until = this.flash_until || 0
+        
+        if (now < flash_until) {
+            // Cycle 2 times over 1000ms
+            const phase = ((now % 500) / 500)
+            row.style('color', d3.interpolateRainbow(phase))
+               .style('font-weight', 'bold')
+        } else {
+            row.style('color', null)
+               .style('font-weight', null)
+        }
+    })
 }
 
 function draw_valiant_attempts() {
