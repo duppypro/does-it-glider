@@ -9,6 +9,8 @@ Inspired by good friend @peteyboy, creator of the first Wordle->Life
 ### Copy liberally but please acknowledge where you got it.
 That's why I don't minify or uglify the source code. The code uses vanilla ES Modules and D3.js with no build steps or bundlers. This is intentionally a static web app so curious users can easily read, learn from, and adapt the full code directly from the production site. 
 
+To support this transparency, the `index.html` file is designed to be as minimal as possible. It simply references the stylesheet and provides a single `<div id="does-it-glider-app">` container. Almost the entire DOM is created dynamically from local code (`main.js`), meaning `index.html` should rarely, if ever, need to change.
+
 ## Overview & Flow
 The application is a "mobile-first" interactive toy designed to fit gracefully on the smallest smartphone screens while remaining fully functional on a desktop. The grid is a fixed size, tuned specifically to accommodate the largest patterns that emerge from real Wordle seeds.
 

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Does It Glider: Core Engine Spec</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #d4d4d4;
+            --box-bg: #2d2d2d;
+            --accent-blue: #569cd6;
+            --accent-green: #6a9955;
+            --accent-orange: #ce9178;
+            --accent-yellow: #dcdcaa;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1, h2, h3 { color: var(--accent-blue); }
+        .diagram-container {
+            background-color: var(--box-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+            border: 1px solid #404040;
+        }
+        .flow-box {
+            background: #3c3c3c;
+            border: 2px solid var(--accent-blue);
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+            margin: 1rem;
+            display: inline-block;
+            width: 200px;
+            vertical-align: top;
+        }
+        .flow-arrow {
+            display: inline-block;
+            font-size: 2rem;
+            color: var(--accent-orange);
+            vertical-align: middle;
+            margin: 2rem 0.5rem;
+        }
+        .module {
+            border-left: 4px solid var(--accent-green);
+            background: #2a2d2a;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .tree {
+            font-family: monospace;
+            background: #1e1e1e;
+            padding: 1rem;
+            border-radius: 5px;
+            border: 1px solid #404040;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        .tree .dir { color: var(--accent-blue); font-weight: bold; }
+        .tree .file { color: var(--text-color); }
+        .tree .comment { color: var(--accent-green); font-style: italic; }
+        code {
+            background: #000;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            color: var(--accent-orange);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Core Engine Specification</h1>
+    <p>This document outlines the high-level architecture, module interactions, and the primary User Experience event loop for <strong>Does It Glider</strong>.</p>
+
+    <h2>1. The User Experience Event Loop</h2>
+    <p>The core loop is driven by the browser's native <code>requestAnimationFrame</code>. It ensures smooth 60FPS rendering (when possible) by calculating the Life rules and syncing them to the DOM exactly when the browser is ready to paint.</p>
+
+    <div class="diagram-container" style="text-align: center;">
+        <div class="flow-box">
+            <strong>1. Input / Seed</strong><br>
+            <small>Attract mode loads or user pastes Wordle text</small>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">
+            <strong>2. Compute State</strong><br>
+            <small><code>GameState.next_generation()</code> applies Conway's Rules</small>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">
+            <strong>3. Render (D3.js)</strong><br>
+            <small><code>draw_frame()</code> creates/removes sparse live DOM cells</small>
+        </div>
+        <div class="flow-arrow">↺</div>
+    </div>
+    <p style="text-align: center; color: var(--accent-orange);"><em>Loops indefinitely until pattern stabilizes or user provides new seed.</em></p>
+
+    <h2>2. Full Architecture & Data Flow</h2>
+    <p>The application strictly separates logic from presentation. The DOM should only exist to represent the internal mathematical state of the grid.</p>
+
+    <div class="module">
+        <h3>A. main.js (UI & Orchestration)</h3>
+        <ul>
+            <li>Initializes <code>GameState</code>, <code>PerformanceMonitor</code>, and <code>LocalStats</code>.</li>
+            <li>Handles DOM interactions (Clipboard paste events, pointer events for pan/zoom).</li>
+            <li>Parses raw Wordle clipboard text into a 2D binary grid.</li>
+            <li>Runs the <code>requestAnimationFrame</code> loop.</li>
+            <li>Binds the <code>game_state.grid</code> data to SVG/DIV elements using D3.js selections and transitions.</li>
+        </ul>
+    </div>
+
+    <div class="module">
+        <h3>B. game-state.js (Pure Logic)</h3>
+        <ul>
+            <li>Maintains the 2D grid array representing live/dead cells.</li>
+            <li>Contains the core <code>next_generation()</code> logic representing Conway's rules.</li>
+            <li>Tracks historical grid hashes to detect when the simulation has stabilized (oscillating or frozen).</li>
+            <li>Exposes a clean API for <code>main.js</code> to read active cells, but <strong>never touches the DOM or window object</strong>.</li>
+        </ul>
+    </div>
+
+    <div class="module">
+        <h3>C. local-stats.js (Persistence)</h3>
+        <ul>
+            <li>Interfaces with browser <code>localStorage</code>.</li>
+            <li>Hashes Wordle seeds to prevent double-counting statistics for the exact same pasted game.</li>
+            <li>Tracks high scores across sessions (e.g., longest-lived pattern, max mature gliders).</li>
+        </ul>
+    </div>
+
+    <h2>3. Directory & Component Hierarchy</h2>
+    <p>The codebase is physically structured to separate highly reusable simulation components from app-specific business logic. This allows the generic components to be reused in future cellular automata projects.</p>
+
+    <div class="tree">
+<span class="dir">public/src/</span>
+├── <span class="dir">conway/</span>                 <span class="comment">// Reusable core Game of Life simulation logic</span>
+│   ├── <span class="file">play.js</span>               <span class="comment">// Generic lifecycle orchestration and looping logic</span>
+│   └── <span class="file">rules.js</span>              <span class="comment">// The pure mathematical ruleset for determining cell survival</span>
+│
+├── <span class="dir">game-board/</span>             <span class="comment">// Reusable 2D panable, zoomable UI suitable for any discrete grid</span>
+│   ├── <span class="file">draw.js</span>               <span class="comment">// D3.js rendering routines for mapping generic data to DOM cells</span>
+│   └── <span class="file">grid.js</span>               <span class="comment">// Interaction handlers (pan, zoom, scale) and coordinate mapping</span>
+│
+└── <span class="dir">does-it-glider/</span>         <span class="comment">// App-specific "glue" that binds the reusable engine to the Wordle use-case</span>
+    ├── <span class="file">main.js</span>               <span class="comment">// The central orchestrator handling app startup, pasting UI, and the event loop</span>
+    ├── <span class="file">game-state.js</span>         <span class="comment">// App-specific wrapper linking the core conway logic to our specific grid and detection rules</span>
+    ├── <span class="file">local-stats.js</span>        <span class="comment">// Tracks user high scores and history locally via the browser's localStorage</span>
+    ├── <span class="file">performance-monitor.js</span><span class="comment">// Overlay for tracking and displaying frames-per-second and simulation speed</span>
+    ├── <span class="file">patterns.js</span>           <span class="comment">// Definitions/dictionaries for identifying specific automata (e.g., gliders)</span>
+    ├── <span class="file">seeds.js</span>              <span class="comment">// Built-in initial layouts, including the default "attract mode" and tests</span>
+    ├── <span class="file">settings.js</span>           <span class="comment">// App-wide configuration constants (timing, visual thresholds, colors)</span>
+    └── <span class="file">imports.js</span>            <span class="comment">// Centralized module routing to cleanly import dependencies</span>
+    </div>
+
+</body>
+</html>
