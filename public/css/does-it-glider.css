@@ -8,6 +8,7 @@
 
 #does-it-glider-app
 { /* this is the topmost parent element for the web app */
+    background-color: #1a1a1a;
     height: 100dvh;
     --green: #6aaa64;
     --darkendGreen: #40a030;
@@ -39,15 +40,10 @@
 .touch-target
 {
     left: 0;
+    top: 0;
     width: 100%;
-    touch-action: manipulation; /* Prevent default touch behaviors */
-}
-.touch-target,
-.stats
-{
     opacity: 0.8;
     position: absolute;
-    top: 0;
     min-height: 1em;   /* fallback */
     min-height: 1lh;   /* modern browsers */
     text-align: center;
@@ -55,26 +51,45 @@
     -webkit-user-select: none;  /* Chrome, Safari and Opera */
     -moz-user-select: none;     /* Firefox */
     -ms-user-select: none;      /* IE/Edge */
+    touch-action: manipulation; /* Prevent default touch behaviors */
 }
 .stats
 {
-    width: fit-content;
+    opacity: 0.8;
+    position: absolute;
+    bottom: 16px;
     right: 0;
+    text-align: center;
+    user-select: none;
+    -webkit-user-select: none;  /* Chrome, Safari and Opera */
+    -moz-user-select: none;     /* Firefox */
+    -ms-user-select: none;      /* IE/Edge */
+    width: fit-content;
     font-family: 'Roboto Mono', 'Fira Mono', 'IBM Plex Mono', 'Space Mono', 'JetBrains Mono', monospace;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    pointer-events: none; /* Let touches pass through the empty background */
+}
+
+.controls {
+    pointer-events: auto; /* Re-enable clicks for buttons */
+    margin-right: 0.5em;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 8px;
 }
 
 .pause-btn {
+    pointer-events: auto;
     background: rgba(0, 0, 0, 0.6);
     color: var(--white);
     border: 1px solid var(--gray);
-    padding: 4px 8px;
+    padding: 6px 12px;
     font-family: inherit;
-    font-size: 0.75em;
+    font-size: 0.85em;
+    font-weight: bold;
     cursor: pointer;
-    margin-bottom: 4px;
     border-radius: 4px;
 }
 
@@ -116,26 +131,56 @@
     text-align: left;
 }
 
-.gen-count,
-.seed-count,
-.max-gen-count,
-.glider-count,
-.max-glider-count,
-.failed-baby-count,
-.max-failed-baby-count
-{
+.stats-grid {
+    pointer-events: auto; /* Re-enable clicks inside stats block */
+    display: grid;
+    grid-template-columns: auto max-content max-content;
+    gap: 4px 16px;
+    align-items: center;
+    text-align: right;
+    margin-left: auto;
+    padding-right: 0.5em;
     font-size: 0.75em;
     color: var(--white);
-    box-sizing: border-box;
-    padding-right: 0.5em;
-    text-align: right;
-    display: block;
-    position: relative;
-    margin-left: auto;
-    width: fit-content;
-    min-width: 1em;
+    touch-action: manipulation;
+}
+
+.stat-header {
+    font-size: 0.8em;
+    color: var(--white);
     white-space: nowrap;
-    touch-action: manipulation; /* Prevent default touch behaviors */
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.stat-header-live {
+    grid-column: 2;
+    text-align: right;
+}
+
+.stat-header-max {
+    grid-column: 3;
+    text-align: center;
+}
+
+.stat-row {
+    display: contents;
+}
+
+.stat-row.stat-rainbow-flash > * {
+    animation: stat-rainbow 1s linear 2;
+    font-weight: bold;
+}
+
+.stat-label {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.stat-current,
+.stat-max {
+    text-align: right;
+    white-space: pre;
 }
 
 @keyframes rainbow-color
@@ -158,11 +203,6 @@
     67% {color: #0000ff;}
     83% {color: #8000ff;}
     100% {color: #ff0000;}
-}
-
-.stat-rainbow-flash {
-    /* 1s cycle, 2 times = 2 full color cycles */
-    animation: stat-rainbow 1s linear 2;
 }
 
 @keyframes rainbow-fill

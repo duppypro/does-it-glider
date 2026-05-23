@@ -65,9 +65,9 @@ export class PerformanceMonitor {
      * @param {number} num_gens - Default 200
      * @returns {Promise<Object>} - The test results
      */
-    async run_test(game_state, grid_sel, num_gens = 200) {
+    async run_test(game_state, grid_sel, max_gens = 9999) {
         const start_gen = game_state.gen_count
-        console.log(`🚀 Starting performance test for ${num_gens} generations...`)
+        console.log(`🚀 Starting performance test (Max ${max_gens} gens)...`)
         
         const grid_node = grid_sel.node()
         if (!grid_node) throw new Error("Grid node not found")
@@ -77,7 +77,7 @@ export class PerformanceMonitor {
 
         const start_time = performance.now()
         
-        for (let i = 0; i < num_gens; i++) {
+        while (!game_state.is_stable && game_state.gen_count < max_gens) {
             game_state.tick(game_state.msec_per_gen, true)
             if (window.dig_debug_draw) {
                 window.dig_debug_draw()
@@ -88,17 +88,20 @@ export class PerformanceMonitor {
         this.stop_dom_observation()
 
         const total_time = end_time - start_time
+        const num_gens_run = game_state.gen_count - start_gen
+
         const result = {
             start_gen,
             end_gen: game_state.gen_count,
-            num_gens: game_state.gen_count - start_gen,
+            num_gens: num_gens_run,
             total_time_ms: total_time.toFixed(2),
-            avg_gen_ms: (total_time / num_gens).toFixed(4),
+            avg_gen_ms: (total_time / num_gens_run).toFixed(4),
             dom_created: this.dom_stats.created,
             dom_removed: this.dom_stats.removed,
             final_rect_count: document.querySelectorAll('rect.cell').length,
-            adult_gliders_detected: game_state.adult_gliders_count,
-            failed_baby_gliders: game_state.failed_baby_gliders_count
+            mature_gliders_detected: game_state.mature_gliders_count,
+            tragic_fizzles: game_state.tragic_fizzles_count,
+            stable_cycle_length: game_state.stable_cycle_length
         }
 
         console.table(result)

@@ -55,20 +55,42 @@ const step_btn_sel = controls_sel.append('button')
         draw_glider_count()
     })
 
-const gen_count_sel = stats_sel.append('div').classed('gen-count', true)
-    .html('----')
-const seed_count_sel = stats_sel.append('div').classed('seed-count', true)
-    .html('Seeds submitted: -')
-const max_gen_count_sel = stats_sel.append('div').classed('max-gen-count', true)
-     .html('Max generations: ----')
-const glider_count_sel = stats_sel.append('div').classed('glider-count', true)
-     .html('Gliders detected: --')
-const max_glider_count_sel = stats_sel.append('div').classed('max-glider-count', true)
-     .html('Max gliders: --')
-const failed_baby_count_sel = stats_sel.append('div').classed('failed-baby-count', true)
-     .html('Failed baby gliders: --')
-const max_failed_baby_count_sel = stats_sel.append('div').classed('max-failed-baby-count', true)
-     .html('Max failed baby gliders: --')
+const stats_grid = stats_sel.append('div').classed('stats-grid', true)
+
+// Valiant Attempts (Top Row, No Max)
+const attempts_row = stats_grid.append('div').classed('stat-row', true)
+attempts_row.append('div').classed('stat-label', true).html('Valiant Attempts:')
+const valiant_attempts_sel = attempts_row.append('div').classed('stat-current', true).html('0000')
+attempts_row.append('div').classed('stat-max', true).html('')
+
+// Header
+stats_grid.append('div')
+stats_grid.append('div').classed('stat-header stat-header-live', true).html('LIVE')
+stats_grid.append('div').classed('stat-header stat-header-max', true).html('PERSONAL<br>MAX')
+
+// Longest Lived (Generations)
+const gen_row = stats_grid.append('div').classed('stat-row', true)
+gen_row.append('div').classed('stat-label', true).html('Longest Lived:')
+const gen_count_sel = gen_row.append('div').classed('stat-current', true).html('0000')
+const max_gen_count_sel = gen_row.append('div').classed('stat-max', true).html('0000')
+
+// Stable Cycle Length
+const cycle_row = stats_grid.append('div').classed('stat-row', true)
+cycle_row.append('div').classed('stat-label', true).html('Stable Cycle Length:')
+const cycle_count_sel = cycle_row.append('div').classed('stat-current', true).html('0000')
+const max_cycle_count_sel = cycle_row.append('div').classed('stat-max', true).html('0000')
+
+// Mature Gliders
+const mature_row = stats_grid.append('div').classed('stat-row', true)
+mature_row.append('div').classed('stat-label', true).html('Mature Gliders:')
+const mature_gliders_sel = mature_row.append('div').classed('stat-current', true).html('0000')
+const max_mature_gliders_sel = mature_row.append('div').classed('stat-max', true).html('0000')
+
+// Tragic Fizzles
+const fizzle_row = stats_grid.append('div').classed('stat-row', true)
+fizzle_row.append('div').classed('stat-label', true).html('Tragic Fizzles:')
+const tragic_fizzles_sel = fizzle_row.append('div').classed('stat-current', true).html('0000')
+const max_tragic_fizzles_sel = fizzle_row.append('div').classed('stat-max', true).html('0000')
 
 // get the width and height of the grid and screen size parameters
 const line_height = Math.max(12, touch_target_sel.select('.sub-title').node().clientHeight)
@@ -86,9 +108,10 @@ const perf_monitor = new PerformanceMonitor()
 
 const attract_seed = dig.seeds.glider 
 
-let prior_max_gen_count = local_stats.get_max_gen_count() || 0
-let prior_max_glider_count = local_stats.get_max_glider_count() || 0
-let prior_max_failed_baby_count = local_stats.get_max_failed_baby_count() || 0
+let prior_longest_lived = local_stats.get_longest_lived() || 0
+let prior_max_stable_cycle = local_stats.get_max_stable_cycle() || 0
+let prior_max_mature_gliders = local_stats.get_max_mature_gliders() || 0
+let prior_max_tragic_fizzles = local_stats.get_max_tragic_fizzles() || 0
 const msec_per_tick = 1000.0 / 60.0 
 let beat_pasted = MSEC_PER_BEAT
 let seed = [] 
@@ -103,43 +126,53 @@ const event_loop = () => {
     draw_frame()
 
     const was_stable = game_state.is_stable
-    const prev_adults = game_state.adult_gliders_count
-    const prev_failed_babies = game_state.failed_baby_gliders_count
+    const prev_mature = game_state.mature_gliders_count
+    const prev_fizzles = game_state.tragic_fizzles_count
     const gen_advanced = game_state.tick(msec_per_tick)
 
     if (gen_advanced) {
         draw_gen_count()
-        draw_glider_count()
-        draw_failed_baby_count()
+        draw_mature_gliders()
+        draw_tragic_fizzles()
         
-        if (game_state.gen_count > prior_max_gen_count) {
-            prior_max_gen_count = game_state.gen_count
-            local_stats.set_max_gen_count(prior_max_gen_count)
-            draw_max_gen_count()
-            trigger_stat_animation(max_gen_count_sel)
+        if (game_state.gen_count > prior_longest_lived) {
+            prior_longest_lived = game_state.gen_count
+            local_stats.set_longest_lived(prior_longest_lived)
+            draw_longest_lived()
+            trigger_stat_animation(gen_row)
         }
 
-        if (game_state.adult_gliders_count > prev_adults) {
-            draw_glider_count()
-            trigger_stat_animation(glider_count_sel)
-            
-            if (game_state.adult_gliders_count > prior_max_glider_count) {
-                prior_max_glider_count = game_state.adult_gliders_count
-                local_stats.set_max_glider_count(prior_max_glider_count)
-                draw_max_glider_count()
-                trigger_stat_animation(max_glider_count_sel)
+        if (was_stable === false && game_state.is_stable === true) {
+            draw_stable_cycle()
+            if (game_state.stable_cycle_length > prior_max_stable_cycle) {
+                prior_max_stable_cycle = game_state.stable_cycle_length
+                local_stats.set_max_stable_cycle(prior_max_stable_cycle)
+                draw_max_stable_cycle()
+                trigger_stat_animation(cycle_row)
             }
         }
 
-        if (game_state.failed_baby_gliders_count > prev_failed_babies) {
-            draw_failed_baby_count()
-            trigger_stat_animation(failed_baby_count_sel)
+        if (game_state.mature_gliders_count > prev_mature) {
+            draw_mature_gliders()
+            trigger_stat_animation(mature_row)
             
-            if (game_state.failed_baby_gliders_count > prior_max_failed_baby_count) {
-                prior_max_failed_baby_count = game_state.failed_baby_gliders_count
-                local_stats.set_max_failed_baby_count(prior_max_failed_baby_count)
-                draw_max_failed_baby_count()
-                trigger_stat_animation(max_failed_baby_count_sel)
+            if (game_state.mature_gliders_count > prior_max_mature_gliders) {
+                prior_max_mature_gliders = game_state.mature_gliders_count
+                local_stats.set_max_mature_gliders(prior_max_mature_gliders)
+                draw_max_mature_gliders()
+                trigger_stat_animation(mature_row)
+            }
+        }
+
+        if (game_state.tragic_fizzles_count > prev_fizzles) {
+            draw_tragic_fizzles()
+            trigger_stat_animation(fizzle_row)
+            
+            if (game_state.tragic_fizzles_count > prior_max_tragic_fizzles) {
+                prior_max_tragic_fizzles = game_state.tragic_fizzles_count
+                local_stats.set_max_tragic_fizzles(prior_max_tragic_fizzles)
+                draw_max_tragic_fizzles()
+                trigger_stat_animation(fizzle_row)
             }
         }
     }
@@ -159,15 +192,29 @@ const load_new_seed = (new_seed) => {
     // Update local stats for every seed load (including attract/injected)
     const hash = local_stats.hash_seed(new_seed)
     local_stats.add_seed_hash(hash)
-    draw_seed_count()
+    draw_valiant_attempts()
     
     draw_gen_count()
-    draw_glider_count()
-    draw_failed_baby_count()
+    draw_mature_gliders()
+    draw_tragic_fizzles()
+}
+
+function format_num(num) {
+    if (num === null || num === undefined) return '----'
+    return String(num).padStart(4, ' ')
 }
 
 function draw_gen_count() {
-    gen_count_sel.html(`${game_state.gen_count}`.padStart(4, '0'))
+    gen_count_sel.html(format_num(game_state.gen_count))
+}
+
+function draw_stable_cycle() {
+    cycle_count_sel.html(format_num(game_state.stable_cycle_length))
+}
+
+function draw_max_stable_cycle() {
+    const count = local_stats.get_max_stable_cycle()
+    max_cycle_count_sel.html(format_num(count))
 }
 
 function draw_frame() {
@@ -179,32 +226,32 @@ function draw_frame() {
     )
 }
 
-function draw_seed_count() {
-    const count = local_stats.get_seed_count()
-    seed_count_sel.html(`Seeds submitted: ${count}`)
+function draw_valiant_attempts() {
+    const count = local_stats.get_valiant_attempts()
+    valiant_attempts_sel.html(format_num(count))
 }
 
-function draw_max_gen_count() {
-    const count = local_stats.get_max_gen_count()
-    max_gen_count_sel.html(`Max generations: ${count}`)
+function draw_longest_lived() {
+    const count = local_stats.get_longest_lived()
+    max_gen_count_sel.html(format_num(count))
 }    
 
-function draw_max_glider_count() {
-    const count = local_stats.get_max_glider_count()
-    max_glider_count_sel.html(`Max adult gliders: ${count}`)
+function draw_max_mature_gliders() {
+    const count = local_stats.get_max_mature_gliders()
+    max_mature_gliders_sel.html(format_num(count))
 }
 
-function draw_glider_count() {
-    glider_count_sel.html(`Adult gliders: ${game_state.adult_gliders_count}`)
+function draw_mature_gliders() {
+    mature_gliders_sel.html(format_num(game_state.mature_gliders_count))
 }
 
-function draw_failed_baby_count() {
-    failed_baby_count_sel.html(`Failed baby gliders: ${game_state.failed_baby_gliders_count}`)
+function draw_tragic_fizzles() {
+    tragic_fizzles_sel.html(format_num(game_state.tragic_fizzles_count))
 }
 
-function draw_max_failed_baby_count() {
-    const count = local_stats.get_max_failed_baby_count()
-    max_failed_baby_count_sel.html(`Max failed baby gliders: ${count}`)
+function draw_max_tragic_fizzles() {
+    const count = local_stats.get_max_tragic_fizzles()
+    max_tragic_fizzles_sel.html(format_num(count))
 }
 
 const parse_clipboard = (pasted_clipboard) => {
@@ -307,13 +354,15 @@ const get_clipboard_text = (event) => {
         .catch(() => { /* no-op */ })
 }
 
+draw_valiant_attempts()
 draw_gen_count()
-draw_seed_count()
-draw_max_gen_count()
-draw_glider_count()
-draw_max_glider_count()
-draw_failed_baby_count()
-draw_max_failed_baby_count()
+draw_longest_lived()
+draw_stable_cycle()
+draw_max_stable_cycle()
+draw_mature_gliders()
+draw_max_mature_gliders()
+draw_tragic_fizzles()
+draw_max_tragic_fizzles()
 load_new_seed(attract_seed)
 
 // Diagnostic Bridge
@@ -357,8 +406,8 @@ window.dig_debug = {
     },
     run_official_baselines: async () => {
         const GOLD_STANDARD = {
-            p1751: { avg_gen_ms: 1.1644, dom_created: 8145 },
-            p1750: { avg_gen_ms: 1.8679, dom_created: 59348 }
+            p1751: { expected_gens: 190, expected_mature: 0, expected_fizzles: 0, expected_cycle: 2 },
+            p1750: { expected_gens: 1188, expected_mature: 11, expected_fizzles: 8, expected_cycle: 2 }
         }
 
         const p1 = `⬛⬛⬛⬛⬛\n⬛🟨⬛🟨⬛\n⬛🟩🟨⬛⬛\n🟩🟩⬛🟩⬛\n🟩🟩⬛🟩🟩\n🟩🟩🟩🟩🟩`
@@ -366,51 +415,61 @@ window.dig_debug = {
         
         console.log("--- STARTING OFFICIAL BASELINE SUITE ---")
         
-        window.dig_debug.inject_text_seed(p1)
-        const r1 = await window.dig_debug.run_perf_test(250)
-        
-        const delta1 = {
-            time_delta: (r1.avg_gen_ms - GOLD_STANDARD.p1751.avg_gen_ms).toFixed(4),
-            dom_delta: r1.dom_created - GOLD_STANDARD.p1751.dom_created,
-            adult_gliders_detected: r1.adult_gliders_detected,
-            failed_baby_gliders: r1.failed_baby_gliders
+        const assert_baseline = (name, result, expected) => {
+            let pass = true
+            if (result.num_gens !== expected.expected_gens) {
+                console.error(`❌ ${name} failed: Expected ${expected.expected_gens} gens, got ${result.num_gens}`)
+                pass = false
+            }
+            if (result.mature_gliders_detected !== expected.expected_mature) {
+                console.error(`❌ ${name} failed: Expected ${expected.expected_mature} mature gliders, got ${result.mature_gliders_detected}`)
+                pass = false
+            }
+            if (result.tragic_fizzles !== expected.expected_fizzles) {
+                console.error(`❌ ${name} failed: Expected ${expected.expected_fizzles} fizzles, got ${result.tragic_fizzles}`)
+                pass = false
+            }
+            if (result.stable_cycle_length !== expected.expected_cycle) {
+                console.error(`❌ ${name} failed: Expected cycle length ${expected.expected_cycle}, got ${result.stable_cycle_length}`)
+                pass = false
+            }
+            if (pass) {
+                console.log(`✅ ${name} passed all assertions! (Took ${result.total_time_ms}ms, Avg: ${result.avg_gen_ms}ms/gen)`)
+            }
         }
-        console.log("Baseline 1751 Delta:", delta1)
+
+        window.dig_debug.inject_text_seed(p1)
+        const r1 = await window.dig_debug.run_perf_test(9999)
+        assert_baseline("Baseline 1751", r1, GOLD_STANDARD.p1751)
 
         // Brief pause between tests
         await new Promise(r => setTimeout(r, 500))
         
         window.dig_debug.inject_text_seed(p2)
-        const r2 = await window.dig_debug.run_perf_test(1250)
+        const r2 = await window.dig_debug.run_perf_test(9999)
+        assert_baseline("Baseline 1750", r2, GOLD_STANDARD.p1750)
 
-        const delta2 = {
-            time_delta: (r2.avg_gen_ms - GOLD_STANDARD.p1750.avg_gen_ms).toFixed(4),
-            dom_delta: r2.dom_created - GOLD_STANDARD.p1750.dom_created,
-            adult_gliders_detected: r2.adult_gliders_detected,
-            failed_baby_gliders: r2.failed_baby_gliders
-        }
-        console.log("Baseline 1750 Delta:", delta2)
-        
-        return { 
-            baseline_1751: { ...r1, ...delta1 }, 
-            baseline_1750: { ...r2, ...delta2 } 
-        }
+        return { baseline_1751: r1, baseline_1750: r2 }
     },
     reset_stats: () => {
         local_stats.reset_stats()
-        prior_max_gen_count = 0
-        prior_max_glider_count = 0
-        prior_max_failed_baby_count = 0
+        prior_longest_lived = 0
+        prior_max_stable_cycle = 0
+        prior_max_mature_gliders = 0
+        prior_max_tragic_fizzles = 0
         game_state.glider_id_counter = 1 
-        game_state.adult_gliders_count = 0
-        game_state.failed_baby_gliders_count = 0
+        game_state.mature_gliders_count = 0
+        game_state.tragic_fizzles_count = 0
         game_state.active_gliders = []
-        draw_seed_count()
-        draw_max_gen_count()
-        draw_glider_count()
-        draw_max_glider_count()
-        draw_failed_baby_count()
-        draw_max_failed_baby_count()
+        draw_valiant_attempts()
+        draw_gen_count()
+        draw_longest_lived()
+        draw_stable_cycle()
+        draw_max_stable_cycle()
+        draw_mature_gliders()
+        draw_max_mature_gliders()
+        draw_tragic_fizzles()
+        draw_max_tragic_fizzles()
         console.log("📈 Stats reset successfully.")
     },
     // Programmatic test for rainbow animation

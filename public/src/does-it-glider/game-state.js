@@ -29,9 +29,9 @@ export class GameState {
         this.next_live_cells_to_clear = [] // Tracks live cells in the 'next' buffer for sparse clearing
 
         this.glider_id_counter = 1
-        this.adult_gliders_count = 0
-        this.failed_baby_gliders_count = 0
-        this.active_gliders = [] // [{id, x, y, phase, orientation_idx, age, is_adult}]
+        this.mature_gliders_count = 0
+        this.tragic_fizzles_count = 0
+        this.active_gliders = [] // [{id, x, y, phase, orientation_idx, age, is_mature}]
         this.orientations = this._generate_orientations(dig.glider_templates)
     }
 
@@ -115,10 +115,11 @@ export class GameState {
         this.gen_count = 0
         this.msec_to_next_gen = 0
         this.is_stable = false
+        this.stable_cycle_length = null
         this.history = []
         this.glider_id_counter = 1
-        this.adult_gliders_count = 0
-        this.failed_baby_gliders_count = 0
+        this.mature_gliders_count = 0
+        this.tragic_fizzles_count = 0
         this.active_gliders = []
         this._detect_gliders()
     }
@@ -216,7 +217,7 @@ export class GameState {
         for (const candidate of next_glider_candidates) {
             let matched_id = null
             let age = 0
-            let is_adult = false
+            let is_mature = false
             
             // Look for a previous glider that is "close" to this candidate
             // A glider moves max 1 cell per gen, so search in a 3x3 neighborhood of its old top-left
@@ -227,22 +228,22 @@ export class GameState {
                 if (dx <= 2 && dy <= 2 && candidate.orientation_idx === prev.orientation_idx) {
                     matched_id = prev.id
                     age = prev.age + 1
-                    is_adult = prev.is_adult
+                    is_mature = prev.is_mature
                     matched_prev_ids.add(prev.id)
                     break
                 }
             }
 
             if (matched_id) {
-                if (age === 4 && !is_adult) {
-                    is_adult = true
-                    this.adult_gliders_count++
+                if (age === 4 && !is_mature) {
+                    is_mature = true
+                    this.mature_gliders_count++
                 }
             } else {
                 matched_id = this.glider_id_counter++
             }
 
-            updated_active_gliders.push({ ...candidate, id: matched_id, age, is_adult })
+            updated_active_gliders.push({ ...candidate, id: matched_id, age, is_mature })
             
             // Tag cells for the renderer
             for (const c of candidate.cells) {
@@ -251,11 +252,11 @@ export class GameState {
             }
         }
 
-        // 3. Track deaths (failed baby gliders)
+        // 3. Track deaths (failed proto-gliders)
         for (const prev of this.active_gliders) {
             if (!matched_prev_ids.has(prev.id)) {
-                if (!prev.is_adult) {
-                    this.failed_baby_gliders_count++
+                if (!prev.is_mature) {
+                    this.tragic_fizzles_count++
                 }
             }
         }
@@ -323,14 +324,19 @@ export class GameState {
         // 1. Check for Extinction
         if (live_count === 0) {
             this.is_stable = true
+            this.stable_cycle_length = 0
             console.log(`⏹ STABILIZED: Extinct at Gen ${this.gen_count}`)
             return
         }
 
         // 2. Check for Loops/Static (within 8 generations)
-        if (this.history.includes(hash)) {
+        const loop_idx = this.history.indexOf(hash)
+        if (loop_idx !== -1) {
             this.is_stable = true
-            console.log(`⏹ STABILIZED: Loop detected at Gen ${this.gen_count}`)
+            // The history array appends to the end, so a match at index N
+            // means the cycle length is (current_length - matched_index)
+            this.stable_cycle_length = this.history.length - loop_idx
+            console.log(`⏹ STABILIZED: Loop detected at Gen ${this.gen_count} (Cycle length: ${this.stable_cycle_length})`)
             return
         }
 
