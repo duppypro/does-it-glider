@@ -127,6 +127,33 @@ export const append_grid = (app, cell_px = 20, w = 12, h = false,) => {
     return grid
 } // end append_grid()
 
+// INPUT nothing
+//     updates SVG size and zoom extent to match the current viewport
+//     call this when the app element is resized (rotation, split-screen, window resize)
+//     SIDE EFFECTS: mutates module-level app_w, app_h, G_PAD_LEFT, G_PAD_TOP, cx, cy
+//                   and updates the svg element attributes and zoom translateExtent
+// RETURN void
+export const resize_grid = () => {
+    if (!svg || svg.empty()) return
+
+    const app_node = svg.node().parentElement
+    app_w = app_node.clientWidth
+    app_h = app_node.clientHeight
+    G_PAD_LEFT = (G_WIDTH - app_w) / 2
+    G_PAD_TOP = (G_HEIGHT - app_h) / 2
+    cx = app_w / 2
+    cy = app_h / 2
+
+    svg
+        .attr('width', `${app_w}px`)
+        .attr('height', `${app_h}px`)
+
+    zoom.translateExtent([
+        [-G_PAD_LEFT - cx / 4, -G_PAD_TOP - cy / 4],
+        [app_w + G_PAD_LEFT + cx / 4, app_h + G_PAD_TOP + cy / 4],
+    ])
+}
+
 export const zoom_grid = (x, y, k) => {
     let tx = d3.zoomIdentity.translate(x, y).scale(k)
     grid.transition()

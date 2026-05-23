@@ -76,6 +76,18 @@ let {
 // make a grid in the app DOM element
 const grid_sel = dig.append_grid(app_sel, CELL_PX, GRID_WIDTH, GRID_HEIGHT)
 
+// Update SVG dimensions and zoom extent whenever the viewport changes
+// (phone rotation, split-screen, external display, desktop window resize).
+// Using ResizeObserver on the app element is more reliable than window 'resize'
+// because it fires for all layout-driven size changes, not just window events.
+// Debounced to avoid excessive recalculations during continuous resize drags.
+let _resize_timer = null
+const resize_observer = new ResizeObserver(() => {
+    clearTimeout(_resize_timer)
+    _resize_timer = setTimeout(() => { dig.resize_grid() }, 100)
+})
+resize_observer.observe(app_sel.node())
+
 // Initialize Game State
 const game_state = new GameState(GRID_WIDTH, GRID_HEIGHT, dig.settings)
 const perf_monitor = new PerformanceMonitor()

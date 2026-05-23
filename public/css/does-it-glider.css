@@ -217,6 +217,14 @@
     display: none; /* Remove old redundant class effects */
 }
 
+#does-it-glider-app > svg
+{
+    /* Belt-and-suspenders alongside D3's inline style.
+       touch-action: none is required for D3 zoom/pan pointer events to fire
+       correctly on touch devices without the browser consuming the gestures first. */
+    touch-action: none;
+}
+
 .arcade-attract-text
 {
     animation: rainbow-color 16ms linear infinite;
