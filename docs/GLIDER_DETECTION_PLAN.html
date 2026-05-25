@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- (c) 2023, 2024, 2025, 2026 David 'Duppy' Proctor, Interface Arts -->
     <meta charset="UTF-8">
     <title>Does It Glider: Glider Detection & Identity Plan</title>
     <style>
@@ -86,13 +87,13 @@
 </head>
 <body>
     <h1>🛸 Glider Detection & Tracking Plan</h1>
-    <p>Detecting a glider isn't just about matching a shape; it's about tracking a <em>process</em> through time. This plan outlines how we move from a sparse grid to a collection of "identified" gliders.</p>
+    <p>Detecting a glider isn't just about matching a shape; it's about tracking a <em>process</em> through time. This plan outlines how we move from a sparse grid to a collection of "identified" gliders with persistent identity.</p>
 
     <h2>1. The Detection Algorithm (Spatial)</h2>
     <p>Since we have <code>live_cells</code>, we don't scan the whole grid. Instead, we use each live cell as a potential constituent of a glider.</p>
     <ul>
         <li><strong>Step A:</strong> Iterate through <code>live_cells</code>.</li>
-        <li><strong>Step B:</strong> For each cell, test it against the base glider templates (and anchors) defined in <code><a href="../public/src/does-it-glider/patterns.js" style="color:var(--accent-blue);">patterns.js</a></code>. The code expands these base definitions into all 16 possible states using <code>_generate_orientations()</code> in <code><a href="../public/src/does-it-glider/game-state.js#L173" style="color:var(--accent-blue);">game-state.js</a></code>, which applies 4 rotations and their corresponding horizontal flips.</li>
+        <li><strong>Step B:</strong> For each cell, test it against the base glider templates (and anchors) defined in <code><a href="../public/src/does-it-glider/patterns.js" style="color:var(--accent-blue);">patterns.js</a></code>.</li>
         <li><strong>Step C:</strong> If a match is found and its cells aren't already claimed, tag those cells with a <code>glider_id</code>.</li>
     </ul>
 
@@ -105,7 +106,7 @@
             <div class="c"></div><div class="c l"></div><div class="c l"></div><div class="c l"></div><div class="c"></div>
             <div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
         </div>
-        <p><small>Derived directly from <code>g1</code> in <code>patterns.js</code>.<br><span style="color:var(--anchor-red);">⚓ (Red)</span> = Anchor (Top-Left coordinate x:0, y:0 of the <em>next</em> step)<br><span style="color:var(--accent-blue);">Blue</span> = Required Live Cells (⬜)<br><span style="color:var(--accent-green);">S</span> = Safe Noise (Can be alive without breaking the glider)</small></p>
+        <p><small>Derived directly from <code>g1</code> in <code>patterns.js</code>.<br><span style="color:var(--anchor-red);">⚓ (Red)</span> = Anchor (Top-Left coordinate x:0, y:0 of the <em>next</em> step).<br><span style="color:var(--accent-green);">S (Green)</span> = "Safe Noise" cell that may be occupied without invalidating the glider.</small></p>
     </div>
 
     <h2>2. Identity Persistence (Temporal)</h2>
@@ -122,11 +123,11 @@
         </tr>
         <tr>
             <td><strong>Tracking & Displacement</strong></td>
-            <td>In Gen <em>N+1</em>, we look for a candidate whose top-left anchor coordinate is within a 5x5 area (<code>dx <= 2 && dy <= 2</code>) of a glider's anchor from Gen <em>N</em>, and ensure they share the same orientation.</td>
+            <td>In Gen <em>N+1</em>, we look for a candidate whose top-left anchor coordinate is within a 5x5 area (<code>dx &lt;= 2 && dy &lt;= 2</code>) of a glider's anchor from Gen <em>N</em>, and whose orientation matches.</td>
         </tr>
         <tr>
             <td><strong>Maturation</strong></td>
-            <td>Newly detected gliders (age &lt; 4) are considered <strong>Proto gliders</strong>. If a glider is destroyed or crashes before completing a full 4-generation cycle, it is recorded as a <strong>Fizzle</strong>. Once a glider ID has successfully been tracked for 4 generations, it graduates and is marked as a "mature glider".</td>
+            <td>Newly detected gliders (age &lt; 4) are considered <strong>Proto gliders</strong>. If a glider is destroyed or crashes before completing a full 4-generation cycle, it is recorded as a <strong>Tragic Fizzle</strong>.</td>
         </tr>
     </table>
 
@@ -142,7 +143,7 @@
             <div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
             <div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
         </div>
-        <p>Originally, this was implemented using CSS animations. However, because we use a Sparse DOM approach (where cells are created and destroyed dynamically as they move), the CSS animation would constantly reset to 0%, leaving the gliders stuck on red (<a href="https://github.com/duppypro/does-it-glider/issues/24" style="color:var(--accent-blue);">Issue #24</a>). To fix this, <code><a href="../public/src/game-board/draw.js" style="color:var(--accent-blue);">draw.js</a></code> now utilizes <code>d3.interpolateRainbow(t)</code> synchronized with the simulation's generation count to guarantee colors cycle perfectly and persistently across DOM mutations.</p>
+        <p>Originally, this was implemented using CSS animations. However, because we use a Sparse DOM approach (where cells are created and destroyed dynamically as they move), the CSS animation would restart every time a cell was recreated, causing an unsightly "flash."</p>
         
         <script>
             // Replicate the exact visual effect from public/src/game-board/draw.js
@@ -158,7 +159,7 @@
     </div>
 
     <h2>4. The "Solitary Glider" Problem</h2>
-    <p>We are detecting <strong>processes</strong>, not just shapes. If other live cells are touching the glider, they act as "interference," causing the glider to crash or transform in the next generation.</p>
+    <p>We are detecting <strong>processes</strong>, not just shapes. If other live cells are touching the glider, they act as "interference," causing the glider to crash or transform in the next generation. Therefore, a valid glider must exist in a sufficiently clear local neighborhood.</p>
 
     <div class="diagram">
         <h3 style="margin-top:0;">Glider vs. Interference</h3>
@@ -189,7 +190,7 @@
     </div>
 
     <h2>5. Sub-Agent Moat Analysis</h2>
-    <p>To definitively answer whether a "strict moat" is necessary, a programmatic sub-agent was deployed during development (documented in <code><a href="../moat-test.js" style="color:var(--accent-blue);">moat-test.js</a></code>) to test all <strong>1,048,576</strong> possible configurations of the 20 adjacent moat cells in a 5x5 grid around a glider.</p>
+    <p>To definitively answer whether a "strict moat" is necessary, a programmatic sub-agent was deployed during development (documented in <code><a href="../moat-test.js" style="color:var(--accent-blue);">moat-test.js</a></code>).</p>
     
     <table class="tracking-table">
         <tr>
@@ -226,10 +227,10 @@
 
     <p><strong>Sub-Agent Findings & The Exception Bug:</strong></p>
     <ul>
-        <li><strong>Debris is inevitable:</strong> In ~100 configurations per phase, the expected 5 cells of the next glider phase survive, but the noise <em>also</em> survives or spawns new cells (debris). This means the glider is no longer solitary and will crash in subsequent generations.</li>
-        <li><strong>The Single Exception:</strong> For Phase 0 and Phase 2, there is exactly <em>one</em> live cell configuration (a single live cell at coordinate 0,0—the top left corner) that dies instantly from underpopulation without affecting the glider's evolution.</li>
-        <li><strong>Strict Empty Moat & Bug #25:</strong> Initially, the spec enforced a <strong>Strict Empty Moat</strong> (checking that all 20 non-glider cells in the 5x5 bounding box are dead). However, this strictness caused a bug (<a href="https://github.com/duppypro/does-it-glider/issues/25" style="color:var(--accent-blue);">Issue #25: Overcounting false positives</a>) where legitimate gliders forming from chaos were dropped and assigned new IDs because they were momentarily touched by dying noise.</li>
-        <li><strong>The Fix (Safe Noise):</strong> To resolve this, the code in <code><a href="../public/src/does-it-glider/game-state.js" style="color:var(--accent-blue);">game-state.js</a></code> now allows exceptions based on an <code>S</code> (Safe Noise) marker added directly to the templates in <code>patterns.js</code>. This safely ignores harmless, instantly-dying cells without breaking the strictness required to track a true, solitary process.</li>
+        <li><strong>Debris is inevitable:</strong> In ~100 configurations per phase, the expected 5 cells of the next glider phase survive, but the noise <em>also</em> survives or spawns new cells. This proves that a weak survival check is too permissive.</li>
+        <li><strong>The Single Exception:</strong> For Phase 0 and Phase 2, there is exactly <em>one</em> live cell configuration (a single live cell at coordinate 0,0—the top left corner) that allows the glider to progress cleanly while not being completely empty.</li>
+        <li><strong>Strict Empty Moat & Bug #25:</strong> Initially, the spec enforced a <strong>Strict Empty Moat</strong> (checking that all 20 non-glider cells in the 5x5 bounding box are dead). This caused a false negative on the known valid exception.</li>
+        <li><strong>The Fix (Safe Noise):</strong> To resolve this, the code in <code><a href="../public/src/does-it-glider/game-state.js" style="color:var(--accent-blue);">game-state.js</a></code> now allows a tiny, explicitly whitelisted set of <code>safe_noise</code> coordinates defined in <code><a href="../public/src/does-it-glider/patterns.js" style="color:var(--accent-blue);">patterns.js</a></code>.</li>
     </ul>
 </body>
 </html>
