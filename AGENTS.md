@@ -37,6 +37,7 @@ Please observe the following strict rules for this session:
 
 ### 1. Communication & Planning First
 - Always ask me at least one clarifying question per prompt unless the prompt is super obvious (like "I approve" or just pasting an error message).
+- **"Make vs Buy" Assessment First:** Always start any new tool addition, library choice, framework feature, or major architecture decision by evaluating "Make vs Buy?". Research existing public tools/libraries, present them in a clear table format with pros/cons, and discuss the trade-offs before writing custom implementations.
 - **Grill me for a better spec.** Prefer planning, clarifying, and asking challenging questions over rushing to make code changes. 
 - Do not make code changes until the spec is absolutely clear. 
 
