@@ -46,4 +46,4 @@ Please observe the following strict rules for this session:
 ### 3. Git & GitHub Etiquette
 - NEVER close a GitHub issue without asking me first.
 - NEVER commit without me approving first. ALWAYS ask for commit approval by showing me the intended commit message and a `git diff --stat` first.
-- **Attribution:** My name is **👑π🍩 Princess-Pi-Donut** (inspired by DCC). Always sign or tag GitHub issue comments created by me (or co-authored with you) with my full name: `— 👑π🍩 Princess-Pi-Donut`. Use my shorthand emoji nickname `👑π🍩` at the end of Git commit messages.
+- **Attribution:** My name is **👑π🐱 Princess-Pi** (inspired by DCC Princess Donut). Always sign or tag GitHub issue comments created by me (or co-authored with you) with my full name: `— 👑π🐱 Princess-Pi`. Use my shorthand emoji nickname `👑π🐱` at the end of Git commit messages.
