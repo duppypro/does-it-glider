@@ -20,6 +20,7 @@ export class GameState {
 
         this.gen_count = 0
         this.new_pause_countdown = settings.NEW_PAUSE_MSEC
+        this.speed_multiplier = 1.0
         this.msec_per_gen = settings.MSEC_PER_GEN
         this.msec_to_next_gen = 0
         this.is_paused = false
@@ -38,6 +39,11 @@ export class GameState {
     toggle_pause() {
         this.is_paused = !this.is_paused
         return this.is_paused
+    }
+
+    set_speed_multiplier(multiplier) {
+        this.speed_multiplier = multiplier
+        this.msec_per_gen = this.settings.MSEC_PER_GEN / multiplier
     }
 
     get current_grid() {
@@ -112,6 +118,8 @@ export class GameState {
         this.next_live_cells_to_clear = []
 
         this.new_pause_countdown = this.settings.NEW_PAUSE_MSEC
+        this.speed_multiplier = 1.0
+        this.msec_per_gen = this.settings.MSEC_PER_GEN
         this.gen_count = 0
         this.msec_to_next_gen = 0
         this.is_stable = false

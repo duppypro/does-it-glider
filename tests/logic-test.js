@@ -38,6 +38,31 @@ async function run_test() {
         console.error("FAILED: Gen count did not increment.");
         process.exit(1);
     }
+
+    console.log("Testing speed multiplier logic...");
+    if (state.speed_multiplier !== 1.0) throw new Error("Speed multiplier should default to 1.0");
+
+    state.set_speed_multiplier(2.0);
+    if (state.speed_multiplier !== 2.0) throw new Error("Speed multiplier did not update to 2.0");
+    if (state.msec_per_gen !== settings.MSEC_PER_GEN / 2.0) {
+        throw new Error("msec_per_gen did not scale correctly at 2x");
+    }
+
+    state.set_speed_multiplier(0.5);
+    if (state.speed_multiplier !== 0.5) throw new Error("Speed multiplier did not update to 0.5");
+    if (state.msec_per_gen !== settings.MSEC_PER_GEN / 0.5) {
+        throw new Error("msec_per_gen did not scale correctly at 0.5x");
+    }
+
+    console.log("Testing speed multiplier reset on seed load...");
+    state.load_new_seed(seeds.glider);
+    if (state.speed_multiplier !== 1.0) {
+        throw new Error("Speed multiplier did not reset to 1.0 on new seed load");
+    }
+    if (state.msec_per_gen !== settings.MSEC_PER_GEN) {
+        throw new Error("msec_per_gen did not reset to settings.MSEC_PER_GEN on new seed load");
+    }
+    console.log("PASSED: Speed multiplier logic is fully functional and correct.");
 }
 
 run_test().catch(err => {

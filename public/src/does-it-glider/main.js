@@ -92,6 +92,26 @@ fizzle_row.append('div').classed('stat-label', true).html('Tragic Fizzles:')
 const tragic_fizzles_sel = fizzle_row.append('div').classed('stat-current', true).html('0000')
 const max_tragic_fizzles_sel = fizzle_row.append('div').classed('stat-max', true).html('0000')
 
+// Create Speed Selector in the bottom left
+const speed_sel = app_sel.append('div').classed('speed-selector', true)
+const speeds = [3, 2, 1, 0.5] // Stacking vertically with fastest at the top
+
+const speed_btns = speed_sel.selectAll('.speed-btn')
+    .data(speeds)
+    .enter()
+    .append('button')
+    .classed('speed-btn', true)
+    .html(d => d + 'x')
+    .classed('active', d => d === 1.0)
+    .on('click', (event, d) => {
+        game_state.set_speed_multiplier(d)
+        update_speed_ui(d)
+    })
+
+function update_speed_ui(multiplier) {
+    speed_btns.classed('active', d => d === multiplier)
+}
+
 // get the width and height of the grid and screen size parameters
 const line_height = Math.max(12, touch_target_sel.select('.sub-title').node().clientHeight)
 let {
@@ -199,6 +219,9 @@ const event_loop = () => {
 
 const load_new_seed = (new_seed) => {
     game_state.load_new_seed(new_seed)
+    
+    // Reset speed selector UI to 1x on seed load
+    update_speed_ui(1.0)
     
     // Update local stats for every seed load (including attract/injected)
     const hash = local_stats.hash_seed(new_seed)
