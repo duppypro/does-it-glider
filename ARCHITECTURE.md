@@ -60,3 +60,19 @@ Measured on the `next-feature-glider-detection` branch with Stability Detection 
 - **Avg. Time/Gen:** ~1.86 ms
 - **DOM Created (Total):** 59,348
 - **Gliders Detected:** 19
+
+## 8. Deployment & VPS Security Architecture
+To guarantee absolute deployment security while utilizing both ephemeral cloud environments and stateful remote workspaces, the project enforces a strict separation of privileges.
+
+### Ephemeral Cloud Agents (Oz)
+- **Role:** Production Deployments, CI/CD, Automated Testing.
+- **Security:** Injects full-privilege Warp-managed secrets (e.g. `FIREBASE_TOKEN`) dynamically into single-use, serverless containers. These credentials are wiped immediately upon completion of the deployment.
+
+### Stateful Remote Workspace (Hostinger VPS)
+- **Role:** Interactive sandboxing, persistent agent development (`pi`/`claude`).
+- **Security (Least Privilege):** Restricted to read-only access.
+- **Configuration:**
+  - **IAM Roles:** `Logging Viewer` (`roles/logging.viewer`) and `Firebase Hosting Viewer` (`roles/firebasehosting.viewer`).
+  - **Credentials File:** `~/.pi/agent/firebase-read-only.json` (GCP Service Account JSON key).
+  - **Environment Variable:** `GOOGLE_APPLICATION_CREDENTIALS="/home/princess-pi/.pi/agent/firebase-read-only.json"` (configured in `~/.bashrc`).
+  - **Capability:** Allows the local agent to fetch operational logs and view releases, but strictly blocks any write or deployment capability (`firebase deploy` will result in a 403 Forbidden).
