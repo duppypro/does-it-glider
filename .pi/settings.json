@@ -1,5 +1,6 @@
 {
   "defaultProvider": "google",
   "defaultModel": "gemini-3.5-flash",
-  "defaultThinkingLevel": "high"
+  "defaultThinkingLevel": "high",
+  "hideThinkingBlock": true
 }
