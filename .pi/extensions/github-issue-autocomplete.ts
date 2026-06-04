@@ -141,37 +141,63 @@ export default function (pi: ExtensionAPI): void {
 
 		const getIssues = async (): Promise<GitHubIssue[] | undefined> => {
 			issuesPromise ||= (async () => {
-				const result = await pi.exec(
-					"gh",
-					[
-						"issue",
-						"list",
-						"--repo",
-						repo,
-						"--state",
-						"open",
-						"--limit",
-						String(MAX_ISSUES),
-						"--json",
-						"number,title,state",
-					],
-					{ cwd: ctx.cwd, timeout: 5_000 },
-				);
-				if (result.code !== 0) {
-					if (!loadErrorShown) {
-						loadErrorShown = true;
-						const details = result.stderr.trim() || `exit code ${result.code}`;
-						ctx.ui.notify(`github-issue-autocomplete: failed to load issues: ${details}`, "error");
-					}
-					return undefined;
-				}
-
 				try {
-					return JSON.parse(result.stdout) as GitHubIssue[];
-				} catch {
+					const result = await pi.exec(
+						"gh",
+						[
+							"issue",
+							"list",
+							"--repo",
+							repo,
+							"--state",
+							"open",
+							"--limit",
+							String(MAX_ISSUES),
+							"--json",
+							"number,title,state",
+						],
+						{ cwd: ctx.cwd, timeout: 5_000 },
+					);
+
+					if (result.code !== 0) {
+						if (!loadErrorShown) {
+							loadErrorShown = true;
+							let details = result.stderr.trim();
+							if (result.code === 127 || details.includes("not found") || details.includes("ENOENT")) {
+								ctx.ui.notify(
+									"github-issue-autocomplete: 'gh' CLI tool is not installed or not found in system-wide PATH.\n\n" +
+									"To fix this, please install it globally using your terminal:\n" +
+									"  sudo apt update && sudo apt install gh\n\n" +
+									"Or, if you already have it locally, move it to your system PATH:\n" +
+									"  sudo mv ~/.local/bin/gh /usr/local/bin/",
+									"error"
+								);
+							} else {
+								ctx.ui.notify(`github-issue-autocomplete: failed to load issues: ${details || `exit code ${result.code}`}`, "error");
+							}
+						}
+						return undefined;
+					}
+
+					try {
+						return JSON.parse(result.stdout) as GitHubIssue[];
+					} catch {
+						if (!loadErrorShown) {
+							loadErrorShown = true;
+							ctx.ui.notify("github-issue-autocomplete: failed to parse gh issue list output", "error");
+						}
+						return undefined;
+					}
+				} catch (error: any) {
 					if (!loadErrorShown) {
 						loadErrorShown = true;
-						ctx.ui.notify("github-issue-autocomplete: failed to parse gh issue list output", "error");
+						ctx.ui.notify(
+							"github-issue-autocomplete: failed to execute 'gh' command.\n\n" +
+							"Please ensure GitHub CLI is installed system-wide:\n" +
+							"  sudo apt update && sudo apt install gh\n\n" +
+							`Details: ${error.message || error}`,
+							"error"
+						);
 					}
 					return undefined;
 				}
