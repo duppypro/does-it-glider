@@ -106,7 +106,7 @@ const max_bounding_box_sel = bounding_row.append('div').classed('stat-max', true
 
 // Create Speed Selector in the bottom left
 const speed_sel = app_sel.append('div').classed('speed-selector', true)
-const speeds = [3, 2, 1, 0.5] // Stacking vertically with fastest at the top
+const speeds = [5, 2, 1, 0.5] // Stacking vertically with fastest at the top
 
 const speed_btns = speed_sel.selectAll('.speed-btn')
     .data(speeds)
