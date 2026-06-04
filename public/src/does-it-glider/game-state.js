@@ -370,6 +370,10 @@ export class GameState {
     }
 
     _check_and_expand_grid() {
+        if (this.grid_width >= 1024 || this.grid_height >= 1024) {
+            return
+        }
+
         let breach = false
         for (const cell of this.live_cells) {
             if (cell.x <= 0 || cell.y <= 0 || cell.x >= this.grid_width - 1 || cell.y >= this.grid_height - 1) {

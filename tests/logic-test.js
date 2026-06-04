@@ -106,6 +106,18 @@ async function run_test() {
         throw new Error(`Expected grid size to reset to 128x128 on seed load, got ${resize_state.grid_width}x${resize_state.grid_height}`);
     }
     console.log("PASSED: Grid successfully reset back to 128x128 on seed load.");
+
+    console.log("Testing grid max size ceiling (1024x1024)...");
+    const ceiling_state = new GameState(1024, 1024, settings);
+    ceiling_state.live_cells = [{ x: 0, y: 10, state: '⬜', gen_count: 0 }];
+    ceiling_state.current_grid[10][0] = '⬜';
+    ceiling_state.new_pause_countdown = 0;
+    ceiling_state.tick(settings.MSEC_PER_GEN);
+    
+    if (ceiling_state.grid_width !== 1024 || ceiling_state.grid_height !== 1024) {
+        throw new Error(`Expected grid size to stay at 1024x1024, but it expanded to ${ceiling_state.grid_width}x${ceiling_state.grid_height}`);
+    }
+    console.log("PASSED: Grid size ceiling of 1024x1024 enforced successfully.");
 }
 
 run_test().catch(err => {
