@@ -11,6 +11,7 @@ const LONGEST_LIVED_KEY = `${APP_UNIQUE_PREFIX}_max_gen_count`
 const MAX_MATURE_GLIDERS_KEY = `${APP_UNIQUE_PREFIX}_max_glider_count`
 const MAX_TRAGIC_FIZZLES_KEY = `${APP_UNIQUE_PREFIX}_max_failed_baby_count`
 const MAX_STABLE_CYCLE_KEY = `${APP_UNIQUE_PREFIX}_max_stable_cycle`
+const MAX_BOUNDING_BOX_KEY = `${APP_UNIQUE_PREFIX}_max_bounding_box`
 
 export function hash_seed(seed_arr) {
     // Use joined string as the key
@@ -23,6 +24,7 @@ let cached_longest_lived = null
 let cached_max_mature_gliders = null
 let cached_max_tragic_fizzles = null
 let cached_max_stable_cycle = null
+let cached_max_bounding_box = null
 
 export function get_seed_hashes() {
     if (cached_seed_hashes !== null) return cached_seed_hashes
@@ -94,16 +96,29 @@ export function set_max_tragic_fizzles(count) {
     localStorage.setItem(MAX_TRAGIC_FIZZLES_KEY, String(count))
 }
 
+export function get_max_bounding_box() {
+    if (cached_max_bounding_box !== null) return cached_max_bounding_box
+    cached_max_bounding_box = Number(localStorage.getItem(MAX_BOUNDING_BOX_KEY) || '128')
+    return cached_max_bounding_box
+}
+
+export function set_max_bounding_box(count) {
+    cached_max_bounding_box = count
+    localStorage.setItem(MAX_BOUNDING_BOX_KEY, String(count))
+}
+
 export function reset_stats() {
     localStorage.removeItem(VALIANT_ATTEMPTS_KEY)
     localStorage.removeItem(LONGEST_LIVED_KEY)
     localStorage.removeItem(MAX_MATURE_GLIDERS_KEY)
     localStorage.removeItem(MAX_TRAGIC_FIZZLES_KEY)
     localStorage.removeItem(MAX_STABLE_CYCLE_KEY)
+    localStorage.removeItem(MAX_BOUNDING_BOX_KEY)
     cached_valiant_attempts = null
     cached_seed_hashes = null
     cached_longest_lived = null
     cached_max_mature_gliders = null
     cached_max_tragic_fizzles = null
     cached_max_stable_cycle = null
+    cached_max_bounding_box = null
 }

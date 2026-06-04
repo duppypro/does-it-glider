@@ -10,8 +10,8 @@ export const settings = {
     // game of life configuration
     // at least 1 pattern needs size 192x192, just barely fits.
     // Use an odd number of cells horizontally so that the 5x6 seed centers on the screen
-    GRID_WIDTH: 255, // units of cells
-    GRID_HEIGHT: 256, // units of cells
+    GRID_WIDTH: 128, // units of cells
+    GRID_HEIGHT: 128, // units of cells
 
     // UI preferences
     CELL_PX: 8,

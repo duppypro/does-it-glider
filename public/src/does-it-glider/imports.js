@@ -21,5 +21,6 @@ export {
     append_grid,
     zoom_grid,
     resize_grid,
+    update_grid_dimensions,
 } from '../game-board/grid.js'
 export { draw } from '../game-board/draw.js'

@@ -162,3 +162,23 @@ export const zoom_grid = (x, y, k) => {
         .attr('transform', tx.translate(-G_PAD_LEFT, -G_PAD_TOP))
         .on('end', () => { zoom.transform(svg, tx) })
 }
+
+export const update_grid_dimensions = (w, h) => {
+    // w, h are in cell units
+    G_WIDTH = settings.CELL_PX * w
+    G_HEIGHT = settings.CELL_PX * h
+
+    if (grid && !grid.empty()) {
+        // Update the rect dimensions
+        grid.select('.grid-background')
+            .attr('width', `${G_WIDTH}px`)
+            .attr('height', `${G_HEIGHT}px`)
+
+        grid.select('.grid-fill')
+            .attr('width', `${G_WIDTH}px`)
+            .attr('height', `${G_HEIGHT}px`)
+    }
+
+    // Recalculate G_PAD_LEFT/TOP, and update zoom translateExtent
+    resize_grid()
+}

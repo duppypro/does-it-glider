@@ -92,6 +92,12 @@ fizzle_row.append('div').classed('stat-label', true).html('Tragic Fizzles:')
 const tragic_fizzles_sel = fizzle_row.append('div').classed('stat-current', true).html('0000')
 const max_tragic_fizzles_sel = fizzle_row.append('div').classed('stat-max', true).html('0000')
 
+// Bounding Box
+const bounding_row = stats_grid.append('div').classed('stat-row', true)
+bounding_row.append('div').classed('stat-label', true).html('Bounding Box:')
+const bounding_box_sel = bounding_row.append('div').classed('stat-current', true).html('0000')
+const max_bounding_box_sel = bounding_row.append('div').classed('stat-max', true).html('0000')
+
 // Create Speed Selector in the bottom left
 const speed_sel = app_sel.append('div').classed('speed-selector', true)
 const speeds = [3, 2, 1, 0.5] // Stacking vertically with fastest at the top
@@ -144,6 +150,7 @@ let prior_longest_lived = local_stats.get_longest_lived() || 0
 let prior_max_stable_cycle = local_stats.get_max_stable_cycle() || 0
 let prior_max_mature_gliders = local_stats.get_max_mature_gliders() || 0
 let prior_max_tragic_fizzles = local_stats.get_max_tragic_fizzles() || 0
+let prior_max_bounding_box = local_stats.get_max_bounding_box() || 128
 const msec_per_tick = 1000.0 / 60.0 
 let beat_pasted = MSEC_PER_BEAT
 let seed = [] 
@@ -159,12 +166,25 @@ const event_loop = () => {
     const was_stable = game_state.is_stable
     const prev_mature = game_state.mature_gliders_count
     const prev_fizzles = game_state.tragic_fizzles_count
+    const prev_grid_width = game_state.grid_width
     const gen_advanced = game_state.tick(msec_per_tick)
 
     if (gen_advanced) {
         draw_gen_count()
         draw_mature_gliders()
         draw_tragic_fizzles()
+        
+        if (game_state.grid_width > prev_grid_width) {
+            draw_bounding_box()
+            trigger_stat_animation(bounding_row)
+            
+            if (game_state.grid_width > prior_max_bounding_box) {
+                prior_max_bounding_box = game_state.grid_width
+                local_stats.set_max_bounding_box(prior_max_bounding_box)
+                draw_max_bounding_box()
+                trigger_stat_animation(bounding_row)
+            }
+        }
         
         if (game_state.gen_count > prior_longest_lived) {
             prior_longest_lived = game_state.gen_count
@@ -231,6 +251,8 @@ const load_new_seed = (new_seed) => {
     draw_gen_count()
     draw_mature_gliders()
     draw_tragic_fizzles()
+    draw_bounding_box()
+    draw_max_bounding_box()
 }
 
 function format_num(num) {
@@ -303,6 +325,15 @@ function draw_tragic_fizzles() {
 function draw_max_tragic_fizzles() {
     const count = local_stats.get_max_tragic_fizzles()
     max_tragic_fizzles_sel.html(format_num(count))
+}
+
+function draw_bounding_box() {
+    bounding_box_sel.html(`${game_state.grid_width}x${game_state.grid_height}`)
+}
+
+function draw_max_bounding_box() {
+    const size = local_stats.get_max_bounding_box()
+    max_bounding_box_sel.html(`${size}x${size}`)
 }
 
 const parse_clipboard = (pasted_clipboard) => {
@@ -414,7 +445,12 @@ draw_mature_gliders()
 draw_max_mature_gliders()
 draw_tragic_fizzles()
 draw_max_tragic_fizzles()
+draw_bounding_box()
+draw_max_bounding_box()
 load_new_seed(attract_seed)
+
+window.draw_bounding_box = draw_bounding_box
+window.draw_max_bounding_box = draw_max_bounding_box
 
 // Diagnostic Bridge
 window.dig_debug_draw = draw_frame
@@ -436,11 +472,12 @@ window.dig_debug = {
         return await perf_monitor.run_test(game_state, grid_sel, num_gens)
     },
     inject_text_seed: (text) => {
-        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0)
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0).slice(0, 6)
         
         // Helper to normalize emojis (same logic as parse_clipboard)
         const normalized = lines.map(line => {
-            return Array.from(line).map(char => {
+            const truncated_line = Array.from(line).slice(0, 5).join('')
+            return Array.from(truncated_line).map(char => {
                 switch (char) {
                     case '⬜': case '⬛': case 'b': return '⬛'
                     case '🟨': case '🟧': case '🟩': case '🟦': case 'o': return '⬜'
@@ -508,6 +545,7 @@ window.dig_debug = {
         prior_max_stable_cycle = 0
         prior_max_mature_gliders = 0
         prior_max_tragic_fizzles = 0
+        prior_max_bounding_box = 128
         game_state.glider_id_counter = 1 
         game_state.mature_gliders_count = 0
         game_state.tragic_fizzles_count = 0
@@ -521,6 +559,8 @@ window.dig_debug = {
         draw_max_mature_gliders()
         draw_tragic_fizzles()
         draw_max_tragic_fizzles()
+        draw_bounding_box()
+        draw_max_bounding_box()
         console.log("📈 Stats reset successfully.")
     },
     // Programmatic test for rainbow animation

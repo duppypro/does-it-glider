@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////
 
 import * as dig from './imports.js'
+import * as local_stats from './local-stats.js'
 
 export class GameState {
     constructor(width, height, settings) {
@@ -64,6 +65,7 @@ export class GameState {
             if (!force) this.msec_to_next_gen += this.msec_per_gen
             
             if ((this.new_pause_countdown <= 0 || force) && this.gen_count < 9999) {
+                this._check_and_expand_grid()
                 const next_live_cells = dig.apply_rules_old_new(
                     this.current_grid, 
                     this.next_grid, 
@@ -100,11 +102,23 @@ export class GameState {
     }
 
     load_new_seed(new_seed) {
+        // Reset grid dimensions back to starting size (128x128)
+        this.grid_width = 128
+        this.grid_height = 128
+
+        // Reallocate starting-size grid arrays
+        this.grid_ping = Array.from({ length: 128 }, () => Array.from({ length: 128 }, () => '⬛'))
+        this.grid_pong = Array.from({ length: 128 }, () => Array.from({ length: 128 }, () => '⬛'))
+        this.ping_pong = true // reset to ping being current
+
         const grid_now = this.current_grid
         const formatted_seed = new_seed.map(row => [...row])
         dig.clear_grid(grid_now)
         dig.clear_grid(this.next_grid) // Ensure both buffers are clean
         dig.add_seed(formatted_seed, grid_now)
+
+        // Resync physical grid canvas in DOM/SVG
+        dig.update_grid_dimensions(128, 128)
 
         // Re-sync live_cells after loading seed
         this.live_cells = []
@@ -352,6 +366,81 @@ export class GameState {
         this.history.push(hash)
         if (this.history.length > 8) {
             this.history.shift()
+        }
+    }
+
+    _check_and_expand_grid() {
+        let breach = false
+        for (const cell of this.live_cells) {
+            if (cell.x <= 0 || cell.y <= 0 || cell.x >= this.grid_width - 1 || cell.y >= this.grid_height - 1) {
+                breach = true
+                break
+            }
+        }
+
+        if (breach) {
+            const pad = 64
+            const new_width = this.grid_width + pad + pad
+            const new_height = this.grid_height + pad + pad
+
+            // Allocate new grids
+            const new_ping = Array.from({ length: new_height }, () => Array.from({ length: new_width }, () => '⬛'))
+            const new_pong = Array.from({ length: new_height }, () => Array.from({ length: new_width }, () => '⬛'))
+
+            // Copy current grid data with offset
+            const old_ping = this.grid_ping
+            const old_pong = this.grid_pong
+
+            for (let y = 0; y < this.grid_height; y++) {
+                for (let x = 0; x < this.grid_width; x++) {
+                    new_ping[y + pad][x + pad] = old_ping[y][x]
+                    new_pong[y + pad][x + pad] = old_pong[y][x]
+                }
+            }
+
+            this.grid_ping = new_ping
+            this.grid_pong = new_pong
+
+            // Shift live cells coordinates
+            for (const cell of this.live_cells) {
+                cell.x += pad
+                cell.y += pad
+            }
+
+            // Shift cells to clear coordinates
+            for (const cell of this.next_live_cells_to_clear) {
+                cell.x += pad
+                cell.y += pad
+            }
+
+            // Shift active gliders coordinates
+            for (const glider of this.active_gliders) {
+                glider.x += pad
+                glider.y += pad
+                for (const cell of glider.cells) {
+                    cell.x += pad
+                    cell.y += pad
+                }
+            }
+
+            // Regenerate history hashes to match shifted coordinates
+            this.history = this.history.map(old_hash => {
+                const cells = old_hash.split('|').filter(s => s.length > 0)
+                const shifted_cells = cells.map(c => {
+                    const [cx, cy] = c.split(',').map(Number)
+                    return `${cx + pad},${cy + pad}`
+                })
+                return shifted_cells.join('|') + '|'
+            })
+
+            // Update state dimensions
+            this.grid_width = new_width
+            this.grid_height = new_height
+
+            // Update physical grid size in DOM/SVG
+            dig.update_grid_dimensions(new_width, new_height)
+
+            console.log(`🚀 GRID EXPANDED to ${new_width}x${new_height} due to boundary breach!`)
         }
     }
 }

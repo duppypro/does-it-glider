@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- (c) 2026 David 'Duppy' Proctor, Interface Arts -->
+    <meta charset="UTF-8">
+    <title>Does It Glider: Dynamic Grid Sizing Plan</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #d4d4d4;
+            --box-bg: #2d2d2d;
+            --accent-blue: #569cd6;
+            --accent-green: #6a9955;
+            --accent-orange: #ce9178;
+            --accent-yellow: #dcdcaa;
+            --anchor-red: #e74c3c;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 2rem; 
+        }
+        h1, h2, h3 { color: var(--accent-blue); }
+        h1 { border-bottom: 2px solid var(--accent-blue); padding-bottom: 10px; }
+        h2 { margin-top: 2rem; }
+        .diagram { 
+            background: var(--box-bg); 
+            border: 1px solid #404040; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin: 20px 0; 
+            text-align: center; 
+        }
+        .grid-visualizer {
+            display: inline-flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            margin: 15px 0;
+        }
+        .grid-box {
+            border: 2px dashed #666;
+            padding: 10px;
+            background: #111;
+            display: inline-block;
+            position: relative;
+        }
+        .grid-box.active {
+            border-color: var(--accent-blue);
+        }
+        .grid-label {
+            font-size: 11px;
+            color: #888;
+            margin-top: 5px;
+        }
+        .grid-cells {
+            width: 100px;
+            height: 100px;
+            border: 1px solid #333;
+            background: #222;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .grid-cells-expanded {
+            width: 160px;
+            height: 160px;
+            border: 1px solid #333;
+            background: #222;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .inner-boundary {
+            width: 100px;
+            height: 100px;
+            border: 1px dashed var(--accent-orange);
+            position: absolute;
+            top: 30px;
+            left: 30px;
+        }
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-blue);
+            border-radius: 50%;
+            position: absolute;
+        }
+        code { 
+            background: #000; 
+            padding: 2px 4px; 
+            border-radius: 4px; 
+            font-family: monospace; 
+            color: var(--accent-orange);
+        }
+        .tracking-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 20px 0; 
+            background: var(--box-bg);
+            color: var(--text-color);
+        }
+        .tracking-table th, .tracking-table td { 
+            border: 1px solid #404040; 
+            padding: 10px; 
+            text-align: left; 
+        }
+        .tracking-table th { 
+            background: #111; 
+            color: var(--accent-blue); 
+        }
+        .title-favicon {
+            height: 1.1em;
+            vertical-align: -0.1em;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1><img src="wordle-glider-dark-mode.ico" class="title-favicon" alt="glider in wordle seed colors"> Dynamic Grid Sizing Plan</h1>
+    <p>To support gliders traveling indefinitely without hitting rigid borders, we are introducing a <strong>Dynamic Grid Sizing</strong> engine. It starts with a lightweight <code>128x128</code> layout and scales up by increments of <code>128</code> whenever cells near the boundary, preserving performance and memory for typical runs while supporting unbounded expansion when patterns take flight.</p>
+
+    <h2>1. Make vs. Buy Assessment</h2>
+    <p>Before implementing a custom solution, we evaluate whether to adopt external cellular automata engines or build this behavior directly on top of our existing architecture.</p>
+    
+    <table class="tracking-table">
+        <tr>
+            <th>Approach</th>
+            <th>Pros</th>
+            <th>Cons</th>
+            <th>Recommendation</th>
+        </tr>
+        <tr>
+            <td><strong>Buy (External Infinite Grid GOL Library)</strong><br><small>e.g., <code>hashlife</code>-based JS libraries</small></td>
+            <td>
+                <ul>
+                    <li>Off-the-shelf implementation of theoretically infinite grids.</li>
+                    <li>Highly optimized for very large, repeating structures.</li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li>Extremely difficult to integrate with our custom dual-color rule-sets (🟥🟦 vs ⬜).</li>
+                    <li>Breaks sparse D3.js visualization and persistent glider identification logic.</li>
+                    <li>Adds heavy dependencies.</li>
+                </ul>
+            </td>
+            <td><strong>Not Recommended</strong></td>
+        </tr>
+        <tr>
+            <td><strong>Make (Custom Incremental Padding Engine)</strong><br><small>Grow current grid 2D arrays & shift coordinates</small></td>
+            <td>
+                <ul>
+                    <li>100% compatible with our custom sparse rendering, glider tracking, and moat checks.</li>
+                    <li>Zero extra external dependencies.</li>
+                    <li>Maintains extremely high performance since GOL loops are already sparse-first.</li>
+                    <li>Enables perfect screen stability via symmetric padding math.</li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li>Requires coordinate shifting for existing live cells and tracking states on left/top breaches.</li>
+                </ul>
+            </td>
+            <td><strong>Highly Recommended (MAKE)</strong></td>
+        </tr>
+    </table>
+
+    <h2>2. Architectural Strategy: Symmetric Symmetrical Padding</h2>
+    <p>To grow the grid cleanly while supporting movement in all 4 directions, we propose <strong>Symmetric Symmetrical Padding</strong>. When a live cell breaches the boundary, we pad <code>64</code> dead cells on all four sides (Left, Right, Top, Bottom). This increases both width and height by <code>128</code> (e.g., from 128x128 to 256x256).</p>
+
+    <div class="diagram">
+        <h3>Symmetric Padding Mechanism</h3>
+        <div class="grid-visualizer">
+            <div>
+                <div class="grid-box active">
+                    <div class="grid-cells">
+                        <!-- Simulated cell near edge -->
+                        <div class="live-dot" style="top: 5px; left: 5px;"></div>
+                        <div style="font-size: 10px; color: var(--anchor-red); position: absolute; bottom: 5px;">Breach!</div>
+                    </div>
+                </div>
+                <div class="grid-label">Initial Grid (128x128)<br>Cell at (0, 0) triggers breach</div>
+            </div>
+            <div style="font-size: 24px; color: var(--accent-orange);">➔</div>
+            <div>
+                <div class="grid-box">
+                    <div class="grid-cells-expanded">
+                        <div class="inner-boundary"></div>
+                        <!-- Shifted cell -->
+                        <div class="live-dot" style="top: 35px; left: 35px;"></div>
+                    </div>
+                </div>
+                <div class="grid-label">Expanded Grid (256x256)<br>All cells shifted by +64; old boundary is dashed</div>
+            </div>
+        </div>
+        <p><small><strong>Mathematical Elegance:</strong> Shifting cell coordinates by <code>+64</code> matches the SVG translation offset change <code>+64 * CELL_PX</code> exactly. The cells remain 100% visually stable on screen with zero jitter, without needing to adjust the camera zoom transform!</small></p>
+    </div>
+
+    <h2>3. The Boundary Check</h2>
+    <p>A boundary breach is detected inside the <code>GameState.tick()</code> method <em>before</em> we run the rules. We flag a breach if any live cell is within 1 cell of the edge:</p>
+    <ul>
+        <li><code>cell.x <= 0</code> (Left breach)</li>
+        <li><code>cell.y <= 0</code> (Top breach)</li>
+        <li><code>cell.x >= grid_width - 1</code> (Right breach)</li>
+        <li><code>cell.y >= grid_height - 1</code> (Bottom breach)</li>
+    </ul>
+    <p>Since a glider's neighborhood check looks 2 cells out, or Conway's neighbors look 1 cell out, ensuring a 1-cell safety margin is perfect to trigger resizing before any cell tries to access out-of-bounds indices.</p>
+
+    <h2>4. Implementation Plan</h2>
+    
+    <h3>Step A: Expose Grid Resizing in <code>grid.js</code></h3>
+    <p>Create <code>update_grid_dimensions(w, h)</code> which updates the underlying <code>G_WIDTH</code>, <code>G_HEIGHT</code>, adjusts the D3 background and graph-paper fill rects, and recalculates zoom translation constraints.</p>
+
+    <h3>Step B: Implement Grid Expansion in <code>GameState</code></h3>
+    <p>Add <code>_check_and_expand_grid()</code> to <code>game-state.js</code>, called inside <code>tick()</code> before <code>apply_rules_old_new()</code>. If a breach is found:</p>
+    <ol>
+        <li>Calculate new dimensions (e.g. <code>current_dimensions + 128</code>).</li>
+        <li>Allocate new <code>grid_ping</code> and <code>grid_pong</code> matrices.</li>
+        <li>Copy old cells with an offset of <code>+64</code> to the new matrices.</li>
+        <li>Shift all coordinates in <code>this.live_cells</code>, <code>this.next_live_cells_to_clear</code>, and <code>this.active_gliders</code> by <code>+64</code>.</li>
+        <li>Notify <code>grid.js</code> to resize the SVG canvas.</li>
+        <li>Update the <strong>Bounding Box</strong> local stat to the new size.</li>
+    </ol>
+
+    <h3>Step C: Integrate Local Stats Tracking</h3>
+    <p>Add <code>MAX_BOUNDING_BOX_KEY</code> to <code>local-stats.js</code>. Expose current and max stats in the UI layout inside <code>main.js</code>, aligning with the beautiful table theme.</p>
+
+    <h2>5. Open Questions & Concerns</h2>
+    <ul>
+        <li><strong>Should we reset grid size on new seeds?</strong> Yes. When loading a new seed, the grid should revert back to <code>128x128</code> so that performance remains high and standard seeds are centered properly.</li>
+        <li><strong>What if a custom seed is already larger than 128x128?</strong> If a pasted seed has dimensions exceeding 128x128, we should automatically initialize the grid to the smallest multiple of 128 that accommodates it.</li>
+    </ul>
+</body>
+</html>
