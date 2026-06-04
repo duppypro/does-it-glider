@@ -261,5 +261,21 @@
             <td><strong style="color:var(--accent-blue);">Success:</strong> Gliders fly freely into the expanded grid, simulating for more than double the original lifespan before stabilizing.</td>
         </tr>
     </table>
+
+    <h2>7. Clean Glider Escape (No Border Debris)</h2>
+    <p>Normally, when a glider reaches the grid boundary (or the 1024x1024 ceiling), it breaks apart and leaves an ugly, static <code>2x2 block</code> still-life debris on the border. To allow gliders to escape the universe cleanly without leaving debris, expanding the visible grid, or altering stats, we can implement an <strong>Active Glider Evaporator</strong>.</p>
+    
+    <h3>Proposed Implementation Mechanism:</h3>
+    <ol>
+        <li><strong>Escape Detection:</strong> In <code>_detect_gliders()</code>, we identify if any tracked glider (especially mature gliders) has its top-left anchor or any of its cells within 2 cells of the border:
+            <ul>
+                <li><code>glider.x <= 2 || glider.y <= 2</code></li>
+                <li><code>glider.x >= grid_width - 4 || glider.y >= grid_height - 4</code></li>
+            </ul>
+        </li>
+        <li><strong>Clean Evaporation:</strong> Instead of letting the glider's leading cells get truncated (which destroys the pattern and leaves debris), we cleanly <strong>delete all cells belonging to that glider</strong> from <code>this.live_cells</code>, and clear them in both <code>current_grid</code> and <code>next_grid</code>.</li>
+        <li><strong>Suppressed Expansion:</strong> Because the glider is cleanly evaporated <em>before</em> the next generation tick's boundary breach check occurs, it never triggers a grid expansion or counts towards updating grid size stats!</li>
+        <li><strong>Thematic tracking:</strong> This allows us to track a new stat, e.g., <strong>Escaped Gliders</strong>, rewarding the player for successfully releasing gliders into the wild!</li>
+    </ol>
 </body>
 </html>
