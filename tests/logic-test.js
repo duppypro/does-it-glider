@@ -118,6 +118,43 @@ async function run_test() {
         throw new Error(`Expected grid size to stay at 1024x1024, but it expanded to ${ceiling_state.grid_width}x${ceiling_state.grid_height}`);
     }
     console.log("PASSED: Grid size ceiling of 1024x1024 enforced successfully.");
+
+    console.log("Testing glider escape evaporation...");
+    const escape_state = new GameState(128, 128, settings);
+    // Seed a valid mature glider touching the border (x=1, y=1)
+    escape_state.active_gliders = [{
+        id: 42,
+        x: 1,
+        y: 1,
+        phase: 0,
+        orientation_idx: 0,
+        age: 5,
+        is_mature: true,
+        cells: [{ x: 2, y: 1 }, { x: 3, y: 2 }, { x: 1, y: 3 }, { x: 2, y: 3 }, { x: 3, y: 3 }]
+    }];
+    escape_state.live_cells = [
+        { x: 2, y: 1, state: '⬜', gen_count: 0 },
+        { x: 3, y: 2, state: '⬜', gen_count: 0 },
+        { x: 1, y: 3, state: '⬜', gen_count: 0 },
+        { x: 2, y: 3, state: '⬜', gen_count: 0 },
+        { x: 3, y: 3, state: '⬜', gen_count: 0 }
+    ];
+    escape_state.current_grid[1][2] = '⬜';
+    escape_state.current_grid[2][3] = '⬜';
+    escape_state.current_grid[3][1] = '⬜';
+    escape_state.current_grid[3][2] = '⬜';
+    escape_state.current_grid[3][3] = '⬜';
+    
+    // Call _detect_gliders to evaluate and evaporate this boundary glider
+    escape_state._detect_gliders();
+    
+    if (escape_state.escaped_gliders_count !== 1) {
+        throw new Error(`Expected escaped_gliders_count to be 1, got ${escape_state.escaped_gliders_count}`);
+    }
+    if (escape_state.live_cells.length !== 0) {
+        throw new Error(`Expected live_cells to be empty after glider evaporated, but had ${escape_state.live_cells.length}`);
+    }
+    console.log("PASSED: Glider cleanly escaped and evaporated.");
 }
 
 run_test().catch(err => {

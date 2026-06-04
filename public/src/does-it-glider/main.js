@@ -92,6 +92,12 @@ fizzle_row.append('div').classed('stat-label', true).html('Tragic Fizzles:')
 const tragic_fizzles_sel = fizzle_row.append('div').classed('stat-current', true).html('0000')
 const max_tragic_fizzles_sel = fizzle_row.append('div').classed('stat-max', true).html('0000')
 
+// Escaped Gliders
+const escaped_row = stats_grid.append('div').classed('stat-row', true)
+escaped_row.append('div').classed('stat-label', true).html('Escaped Gliders:')
+const escaped_gliders_sel = escaped_row.append('div').classed('stat-current', true).html('0000')
+const max_escaped_gliders_sel = escaped_row.append('div').classed('stat-max', true).html('0000')
+
 // Bounding Box
 const bounding_row = stats_grid.append('div').classed('stat-row', true)
 bounding_row.append('div').classed('stat-label', true).html('Bounding Box:')
@@ -151,6 +157,7 @@ let prior_max_stable_cycle = local_stats.get_max_stable_cycle() || 0
 let prior_max_mature_gliders = local_stats.get_max_mature_gliders() || 0
 let prior_max_tragic_fizzles = local_stats.get_max_tragic_fizzles() || 0
 let prior_max_bounding_box = local_stats.get_max_bounding_box() || 128
+let prior_max_escaped_gliders = local_stats.get_max_escaped_gliders() || 0
 const msec_per_tick = 1000.0 / 60.0 
 let beat_pasted = MSEC_PER_BEAT
 let seed = [] 
@@ -166,6 +173,7 @@ const event_loop = () => {
     const was_stable = game_state.is_stable
     const prev_mature = game_state.mature_gliders_count
     const prev_fizzles = game_state.tragic_fizzles_count
+    const prev_escaped = game_state.escaped_gliders_count
     const prev_grid_width = game_state.grid_width
     const gen_advanced = game_state.tick(msec_per_tick)
 
@@ -173,6 +181,7 @@ const event_loop = () => {
         draw_gen_count()
         draw_mature_gliders()
         draw_tragic_fizzles()
+        draw_escaped_gliders()
         
         if (game_state.grid_width > prev_grid_width) {
             draw_bounding_box()
@@ -215,6 +224,18 @@ const event_loop = () => {
             }
         }
 
+        if (game_state.escaped_gliders_count > prev_escaped) {
+            draw_escaped_gliders()
+            trigger_stat_animation(escaped_row)
+            
+            if (game_state.escaped_gliders_count > prior_max_escaped_gliders) {
+                prior_max_escaped_gliders = game_state.escaped_gliders_count
+                local_stats.set_max_escaped_gliders(prior_max_escaped_gliders)
+                draw_max_escaped_gliders()
+                trigger_stat_animation(escaped_row)
+            }
+        }
+
         if (game_state.tragic_fizzles_count > prev_fizzles) {
             draw_tragic_fizzles()
             trigger_stat_animation(fizzle_row)
@@ -251,6 +272,8 @@ const load_new_seed = (new_seed) => {
     draw_gen_count()
     draw_mature_gliders()
     draw_tragic_fizzles()
+    draw_escaped_gliders()
+    draw_max_escaped_gliders()
     draw_bounding_box()
     draw_max_bounding_box()
 }
@@ -325,6 +348,15 @@ function draw_tragic_fizzles() {
 function draw_max_tragic_fizzles() {
     const count = local_stats.get_max_tragic_fizzles()
     max_tragic_fizzles_sel.html(format_num(count))
+}
+
+function draw_escaped_gliders() {
+    escaped_gliders_sel.html(format_num(game_state.escaped_gliders_count))
+}
+
+function draw_max_escaped_gliders() {
+    const count = local_stats.get_max_escaped_gliders()
+    max_escaped_gliders_sel.html(format_num(count))
 }
 
 function draw_bounding_box() {
@@ -445,12 +477,16 @@ draw_mature_gliders()
 draw_max_mature_gliders()
 draw_tragic_fizzles()
 draw_max_tragic_fizzles()
+draw_escaped_gliders()
+draw_max_escaped_gliders()
 draw_bounding_box()
 draw_max_bounding_box()
 load_new_seed(attract_seed)
 
 window.draw_bounding_box = draw_bounding_box
 window.draw_max_bounding_box = draw_max_bounding_box
+window.draw_escaped_gliders = draw_escaped_gliders
+window.draw_max_escaped_gliders = draw_max_escaped_gliders
 
 // Diagnostic Bridge
 window.dig_debug_draw = draw_frame
@@ -546,9 +582,11 @@ window.dig_debug = {
         prior_max_mature_gliders = 0
         prior_max_tragic_fizzles = 0
         prior_max_bounding_box = 128
+        prior_max_escaped_gliders = 0
         game_state.glider_id_counter = 1 
         game_state.mature_gliders_count = 0
         game_state.tragic_fizzles_count = 0
+        game_state.escaped_gliders_count = 0
         game_state.active_gliders = []
         draw_valiant_attempts()
         draw_gen_count()
@@ -559,6 +597,8 @@ window.dig_debug = {
         draw_max_mature_gliders()
         draw_tragic_fizzles()
         draw_max_tragic_fizzles()
+        draw_escaped_gliders()
+        draw_max_escaped_gliders()
         draw_bounding_box()
         draw_max_bounding_box()
         console.log("📈 Stats reset successfully.")

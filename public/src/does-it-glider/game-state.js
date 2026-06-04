@@ -33,6 +33,7 @@ export class GameState {
         this.glider_id_counter = 1
         this.mature_gliders_count = 0
         this.tragic_fizzles_count = 0
+        this.escaped_gliders_count = 0
         this.active_gliders = [] // [{id, x, y, phase, orientation_idx, age, is_mature}]
         this.orientations = this._generate_orientations(dig.glider_templates)
     }
@@ -142,6 +143,7 @@ export class GameState {
         this.glider_id_counter = 1
         this.mature_gliders_count = 0
         this.tragic_fizzles_count = 0
+        this.escaped_gliders_count = 0
         this.active_gliders = []
         this._detect_gliders()
     }
@@ -283,7 +285,50 @@ export class GameState {
             }
         }
 
-        this.active_gliders = updated_active_gliders
+        // 4. Evaporate escaping gliders cleanly
+        const remaining_active_gliders = []
+        let escaped_this_tick = 0
+
+        for (const glider of updated_active_gliders) {
+            let touches_boundary = false
+            for (const cell of glider.cells) {
+                if (cell.x <= 2 || cell.y <= 2 || cell.x >= this.grid_width - 3 || cell.y >= this.grid_height - 3) {
+                    touches_boundary = true
+                    break
+                }
+            }
+
+            if (touches_boundary) {
+                escaped_this_tick++
+                
+                // Clear the cells in both current and next grids to prevent border debris
+                const curr = this.current_grid
+                const next = this.next_grid
+                for (const cell of glider.cells) {
+                    curr[cell.y][cell.x] = '⬛'
+                    next[cell.y][cell.x] = '⬛'
+                }
+
+                // Remove from live_cells
+                this.live_cells = this.live_cells.filter(lc => {
+                    return !glider.cells.some(gc => gc.x === lc.x && gc.y === lc.y)
+                })
+
+                // Remove from next_live_cells_to_clear
+                this.next_live_cells_to_clear = this.next_live_cells_to_clear.filter(lc => {
+                    return !glider.cells.some(gc => gc.x === lc.x && gc.y === lc.y)
+                })
+
+                console.log(`✨ GLIDER ESCAPED! Glider ID ${glider.id} released into the wild at x:${glider.x}, y:${glider.y}`)
+            } else {
+                remaining_active_gliders.push(glider)
+            }
+        }
+
+        this.active_gliders = remaining_active_gliders
+        if (escaped_this_tick > 0) {
+            this.escaped_gliders_count += escaped_this_tick
+        }
     }
 
     _check_pattern(ox, oy, phase) {
