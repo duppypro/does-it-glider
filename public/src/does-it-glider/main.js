@@ -187,6 +187,9 @@ const event_loop = () => {
             draw_bounding_box()
             trigger_stat_animation(bounding_row)
             
+            // Zoom and pan to fit the expanded grid symmetrically!
+            dig.zoom_to_fit_grid()
+            
             if (game_state.grid_width > prior_max_bounding_box) {
                 prior_max_bounding_box = game_state.grid_width
                 local_stats.set_max_bounding_box(prior_max_bounding_box)

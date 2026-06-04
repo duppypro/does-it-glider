@@ -182,3 +182,22 @@ export const update_grid_dimensions = (w, h) => {
     // Recalculate G_PAD_LEFT/TOP, and update zoom translateExtent
     resize_grid()
 }
+
+export const zoom_to_fit_grid = () => {
+    if (!svg || svg.empty()) return
+
+    // Calculate scale k to fit G_WIDTH and G_HEIGHT inside app_w and app_h with 10% padding
+    const scale_x = app_w / G_WIDTH
+    const scale_y = app_h / G_HEIGHT
+    let k = Math.min(scale_x, scale_y) * 0.9
+
+    // Clamp k to zoom scale extent
+    const cell_px = settings.CELL_PX
+    k = Math.max(2 / cell_px, Math.min(64 / cell_px, k))
+
+    // Calculate centering translation x and y
+    const x = (app_w / 2) * (1 - k)
+    const y = (app_h / 2) * (1 - k)
+
+    zoom_grid(x, y, k)
+}
