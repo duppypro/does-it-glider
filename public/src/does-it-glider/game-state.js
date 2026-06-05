@@ -257,6 +257,7 @@ export class GameState {
             let matched_id = null
             let age = 0
             let is_mature = false
+            let counted_as_escaped = false
             
             // Look for a previous glider that is "close" to this candidate
             // A glider moves max 1 cell per gen, so search in a 3x3 neighborhood of its old top-left
@@ -268,6 +269,7 @@ export class GameState {
                     matched_id = prev.id
                     age = prev.age + 1
                     is_mature = prev.is_mature
+                    counted_as_escaped = prev.counted_as_escaped || false
                     matched_prev_ids.add(prev.id)
                     break
                 }
@@ -282,7 +284,7 @@ export class GameState {
                 matched_id = this.glider_id_counter++
             }
 
-            updated_active_gliders.push({ ...candidate, id: matched_id, age, is_mature })
+            updated_active_gliders.push({ ...candidate, id: matched_id, age, is_mature, counted_as_escaped })
             
             // Tag cells for the renderer
             for (const c of candidate.cells) {
