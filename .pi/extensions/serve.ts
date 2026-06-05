@@ -1,7 +1,8 @@
 import { type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { spawn, exec } from "node:child_process";
+import * as os from "node:os";
+import { spawn, exec, execSync } from "node:child_process";
 import { isInsideRepo, KilledServerInstance } from "./lib/serve/domain.js";
 import { discoverServers, resolveIp, checkServerStatus, findPidByPort } from "./lib/serve/process.js";
 import { getVisibility } from "./lib/serve/store.js";
@@ -12,6 +13,43 @@ let isWidgetVisible = true;
 
 // Active instance tracking to self-prune leaked event bus listeners across reloads
 let activeInstanceId = "";
+
+/**
+ * Ensures that self-signed SSL/TLS certificates exist in the user's home directory.
+ * If they do not exist, they are generated securely using OpenSSL.
+ */
+function getOrCreateCertificates(ctx: any): { cert: string; key: string } {
+	const certsDir = path.join(os.homedir(), ".pi-certs");
+	const certPath = path.join(certsDir, "cert.pem");
+	const keyPath = path.join(certsDir, "key.pem");
+
+	if (!fs.existsSync(certsDir)) {
+		try {
+			fs.mkdirSync(certsDir, { recursive: true, mode: 0o700 });
+		} catch (err) {
+			ctx.ui.notify(`⚠️ Failed to create directory "${certsDir}": ${err}`, "error");
+		}
+	}
+
+	if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
+		ctx.ui.notify("🔑 Generating persistent self-signed SSL certificates in ~/.pi-certs/...", "info");
+		try {
+			execSync(
+				`openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout "${keyPath}" -out "${certPath}" -subj "/CN=localhost"`,
+				{ stdio: "ignore" }
+			);
+			// Restrict file permissions for security
+			try {
+				fs.chmodSync(keyPath, 0o600);
+				fs.chmodSync(certPath, 0o644);
+			} catch (_) {}
+		} catch (err) {
+			ctx.ui.notify(`⚠️ Failed to generate SSL certificates with openssl: ${err}`, "error");
+		}
+	}
+
+	return { cert: certPath, key: keyPath };
+}
 
 export default function serveExtension(pi: ExtensionAPI) {
 	const myInstanceId = Math.random().toString(36).substring(2, 11);
@@ -265,8 +303,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 				}
 
 				const port = startPort++;
-				const cert = "/tmp/cert.pem";
-				const key = "/tmp/key.pem";
+				const { cert, key } = getOrCreateCertificates(ctx);
 
 				const serverProcess = spawn("npx", [
 					"--",
