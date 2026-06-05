@@ -27,7 +27,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 		updateWidget(ctx, servers, isWidgetVisible);
 
 		// Subscribe to the centralized refresher tick event
-		unsubscribeTick = pi.events.on("tick:4s", async () => {
+		unsubscribeTick = pi.events.on("clock:tick:4s", async () => {
 			if (activeInstanceId !== myInstanceId) {
 				// Self-prune: We are a leaked, stale listener from a previous reload
 				if (unsubscribeTick) unsubscribeTick();
