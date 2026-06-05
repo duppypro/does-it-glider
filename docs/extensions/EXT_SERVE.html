@@ -24,6 +24,13 @@
         <li><strong>Deduplication:</strong> Prevents multiple HTTP servers from spawning on the exact same absolute directory path.</li>
     </ul>
 
+    <h3>Security & Certificates</h3>
+    <ul>
+        <li><strong>Certificate Storage:</strong> SSL certificates (<code>cert.pem</code> and <code>key.pem</code>) are stored persistently in the user's home directory under <code>~/.pi-certs/</code>. This ensures they survive system reboots and prevents browser certificate fingerprint mismatch warnings.</li>
+        <li><strong>Auto-Generation:</strong> If missing, 2048-bit RSA self-signed certificates are automatically generated securely using the host's <code>openssl</code> CLI.</li>
+        <li><strong>Conflict Prevention:</strong> Storing certificates in the user's home directory (with owner-only read/write permissions) avoids the permission conflicts and security risks associated with shared temporary directories.</li>
+    </ul>
+
     <h3>Architectural Layers</h3>
     <div style="background: var(--box-bg); padding: 15px; border-radius: 8px; border: 1px solid #404040;">
         <p><strong>Application:</strong> Command parsing (<code>/serve --hide</code>, <code>--kill</code>).</p>
