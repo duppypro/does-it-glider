@@ -174,7 +174,7 @@ const event_loop = () => {
     const prev_mature = game_state.mature_gliders_count
     const prev_fizzles = game_state.tragic_fizzles_count
     const prev_escaped = game_state.escaped_gliders_count
-    const prev_grid_width = game_state.grid_width
+    const prev_vis_width = game_state.vis_width
     const gen_advanced = game_state.tick(msec_per_tick)
 
     if (gen_advanced) {
@@ -183,15 +183,15 @@ const event_loop = () => {
         draw_tragic_fizzles()
         draw_escaped_gliders()
         
-        if (game_state.grid_width > prev_grid_width) {
+        if (game_state.vis_width > prev_vis_width) {
             draw_bounding_box()
             trigger_stat_animation(bounding_row)
             
             // Zoom and pan to fit the expanded grid symmetrically!
             dig.zoom_to_fit_grid()
             
-            if (game_state.grid_width > prior_max_bounding_box) {
-                prior_max_bounding_box = game_state.grid_width
+            if (game_state.vis_width > prior_max_bounding_box) {
+                prior_max_bounding_box = game_state.vis_width
                 local_stats.set_max_bounding_box(prior_max_bounding_box)
                 draw_max_bounding_box()
                 trigger_stat_animation(bounding_row)
@@ -302,7 +302,7 @@ function draw_max_stable_cycle() {
 function draw_frame() {
     dig.draw(
         grid_sel,
-        game_state.live_cells,
+        game_state.get_visible_live_cells(),
         CELL_PX, 
         d3.easeQuadOut(1.0 - game_state.new_pause_countdown / NEW_PAUSE_MSEC)
     )
@@ -363,7 +363,7 @@ function draw_max_escaped_gliders() {
 }
 
 function draw_bounding_box() {
-    bounding_box_sel.html(`${game_state.grid_width}x${game_state.grid_height}`)
+    bounding_box_sel.html(`${game_state.vis_width}x${game_state.vis_height}`)
 }
 
 function draw_max_bounding_box() {

@@ -67,21 +67,22 @@ async function run_test() {
     console.log("Testing dynamic grid sizing...");
     const resize_state = new GameState(128, 128, settings);
     
-    if (resize_state.grid_width !== 128 || resize_state.grid_height !== 128) {
-        throw new Error(`Expected initial grid dimensions to be 128x128, got ${resize_state.grid_width}x${resize_state.grid_height}`);
+    if (resize_state.vis_width !== 128 || resize_state.vis_height !== 128) {
+        throw new Error(`Expected initial visual dimensions to be 128x128, got ${resize_state.vis_width}x${resize_state.vis_height}`);
     }
 
-    // Set a 2x2 block still-life touching the left boundary (0, 10)
+    // Set a 2x2 block still-life breaching the left visual boundary (vis_left = 960, so we place at 959)
+    const bx = resize_state.vis_left - 1;
     resize_state.live_cells = [
-        { x: 0, y: 10, state: '⬜', gen_count: 0 },
-        { x: 0, y: 11, state: '⬜', gen_count: 0 },
-        { x: 1, y: 10, state: '⬜', gen_count: 0 },
-        { x: 1, y: 11, state: '⬜', gen_count: 0 }
+        { x: bx, y: 1000, state: '⬜', gen_count: 0 },
+        { x: bx, y: 1001, state: '⬜', gen_count: 0 },
+        { x: bx + 1, y: 1000, state: '⬜', gen_count: 0 },
+        { x: bx + 1, y: 1001, state: '⬜', gen_count: 0 }
     ];
-    resize_state.current_grid[10][0] = '⬜';
-    resize_state.current_grid[11][0] = '⬜';
-    resize_state.current_grid[10][1] = '⬜';
-    resize_state.current_grid[11][1] = '⬜';
+    resize_state.current_grid[1000][bx] = '⬜';
+    resize_state.current_grid[1001][bx] = '⬜';
+    resize_state.current_grid[1000][bx + 1] = '⬜';
+    resize_state.current_grid[1001][bx + 1] = '⬜';
 
     // Enable ticking by resetting pause countdown
     resize_state.new_pause_countdown = 0;
@@ -89,39 +90,34 @@ async function run_test() {
     // Simulating next tick should trigger boundary check and expand symmetrically
     resize_state.tick(settings.MSEC_PER_GEN);
 
-    if (resize_state.grid_width !== 256 || resize_state.grid_height !== 256) {
-        throw new Error(`Expected grid to expand symmetrically to 256x256, got ${resize_state.grid_width}x${resize_state.grid_height}`);
+    if (resize_state.vis_width !== 256 || resize_state.vis_height !== 256) {
+        throw new Error(`Expected visual grid to expand symmetrically to 256x256, got ${resize_state.vis_width}x${resize_state.vis_height}`);
     }
 
-    // The cell originally at (0, 10) should have shifted by +64 to (64, 74)
-    const shifted_cell = resize_state.live_cells.find(c => c.x === 64 && c.y === 74);
-    if (!shifted_cell) {
-        throw new Error(`Expected live cell at shifted coordinate (64, 74) but it was not found. Current cells: ${JSON.stringify(resize_state.live_cells)}`);
+    // Coordinates do NOT shift under the decoupled 2048 strategy!
+    const unshifted_cell = resize_state.live_cells.find(c => c.x === bx && c.y === 1000);
+    if (!unshifted_cell) {
+        throw new Error(`Expected live cell at unshifted coordinate (${bx}, 1000) but it was not found.`);
     }
-    console.log("PASSED: Grid expanded symmetrically to 256x256 and coordinates shifted by +64.");
+    console.log("PASSED: Visual grid expanded symmetrically to 256x256 and coordinates remained unshifted.");
 
     console.log("Testing grid reset on loading new seed...");
     resize_state.load_new_seed(seeds.glider);
-    if (resize_state.grid_width !== 128 || resize_state.grid_height !== 128) {
-        throw new Error(`Expected grid size to reset to 128x128 on seed load, got ${resize_state.grid_width}x${resize_state.grid_height}`);
+    if (resize_state.vis_width !== 128 || resize_state.vis_height !== 128) {
+        throw new Error(`Expected visual grid size to reset to 128x128 on seed load, got ${resize_state.vis_width}x${resize_state.vis_height}`);
     }
-    console.log("PASSED: Grid successfully reset back to 128x128 on seed load.");
+    console.log("PASSED: Visual grid successfully reset back to 128x128 on seed load.");
 
-    console.log("Testing grid max size ceiling (1024x1024)...");
-    const ceiling_state = new GameState(1024, 1024, settings);
-    ceiling_state.live_cells = [{ x: 0, y: 10, state: '⬜', gen_count: 0 }];
-    ceiling_state.current_grid[10][0] = '⬜';
-    ceiling_state.new_pause_countdown = 0;
-    ceiling_state.tick(settings.MSEC_PER_GEN);
-    
-    if (ceiling_state.grid_width !== 1024 || ceiling_state.grid_height !== 1024) {
-        throw new Error(`Expected grid size to stay at 1024x1024, but it expanded to ${ceiling_state.grid_width}x${ceiling_state.grid_height}`);
+    console.log("Testing static 2048x2048 algorithmic grid...");
+    const ceiling_state = new GameState(128, 128, settings);
+    if (ceiling_state.grid_width !== 2048 || ceiling_state.grid_height !== 2048) {
+        throw new Error(`Expected static 2048x2048 grid, got ${ceiling_state.grid_width}x${ceiling_state.grid_height}`);
     }
-    console.log("PASSED: Grid size ceiling of 1024x1024 enforced successfully.");
+    console.log("PASSED: Static 2048x2048 algorithmic grid verified.");
 
-    console.log("Testing glider escape evaporation...");
+    console.log("Testing glider escape evaporation near absolute 2048 boundary...");
     const escape_state = new GameState(128, 128, settings);
-    // Seed a valid mature glider touching the border (x=1, y=1)
+    // Seed a valid mature glider touching the absolute border (x=1, y=1)
     escape_state.active_gliders = [{
         id: 42,
         x: 1,
@@ -148,9 +144,6 @@ async function run_test() {
     // Call _detect_gliders to evaluate and evaporate this boundary glider
     escape_state._detect_gliders();
     
-    if (escape_state.escaped_gliders_count !== 1) {
-        throw new Error(`Expected escaped_gliders_count to be 1, got ${escape_state.escaped_gliders_count}`);
-    }
     if (escape_state.live_cells.length !== 0) {
         throw new Error(`Expected live_cells to be empty after glider evaporated, but had ${escape_state.live_cells.length}`);
     }

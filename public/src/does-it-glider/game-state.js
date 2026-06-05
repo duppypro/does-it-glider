@@ -10,13 +10,22 @@ import * as local_stats from './local-stats.js'
 
 export class GameState {
     constructor(width, height, settings) {
-        this.grid_width = width
-        this.grid_height = height
+        // Statically sized algorithmic grid (2048x2048)
+        this.grid_width = 2048
+        this.grid_height = 2048
         this.settings = settings
 
-        // Initialize grids
-        this.grid_ping = Array.from({ length: height }, () => Array.from({ length: width }, () => '⬛'))
-        this.grid_pong = Array.from({ length: height }, () => Array.from({ length: width }, () => '⬛'))
+        // Initialize visual boundary dimensions (starts at 128x128 centered at 1024, 1024)
+        this.vis_width = 128
+        this.vis_height = 128
+        this.vis_left = 1024 - 64   // 960
+        this.vis_top = 1024 - 64    // 960
+        this.vis_right = 1024 + 64  // 1088
+        this.vis_bottom = 1024 + 64 // 1088
+
+        // Initialize grids at absolute 2048x2048 size
+        this.grid_ping = Array.from({ length: 2048 }, () => Array.from({ length: 2048 }, () => '⬛'))
+        this.grid_pong = Array.from({ length: 2048 }, () => Array.from({ length: 2048 }, () => '⬛'))
         this.ping_pong = true // true when ping is current, false when pong is current
 
         this.gen_count = 0
@@ -103,13 +112,19 @@ export class GameState {
     }
 
     load_new_seed(new_seed) {
-        // Reset grid dimensions back to starting size (128x128)
-        this.grid_width = 128
-        this.grid_height = 128
+        // Reset grid dimensions back to absolute size (2048x2048) and visual bounds back to 128x128
+        this.grid_width = 2048
+        this.grid_height = 2048
+        this.vis_width = 128
+        this.vis_height = 128
+        this.vis_left = 1024 - 64   // 960
+        this.vis_top = 1024 - 64    // 960
+        this.vis_right = 1024 + 64  // 1088
+        this.vis_bottom = 1024 + 64 // 1088
 
-        // Reallocate starting-size grid arrays
-        this.grid_ping = Array.from({ length: 128 }, () => Array.from({ length: 128 }, () => '⬛'))
-        this.grid_pong = Array.from({ length: 128 }, () => Array.from({ length: 128 }, () => '⬛'))
+        // Reallocate starting-size grid arrays at 2048x2048
+        this.grid_ping = Array.from({ length: 2048 }, () => Array.from({ length: 2048 }, () => '⬛'))
+        this.grid_pong = Array.from({ length: 2048 }, () => Array.from({ length: 2048 }, () => '⬛'))
         this.ping_pong = true // reset to ping being current
 
         const grid_now = this.current_grid
@@ -118,7 +133,7 @@ export class GameState {
         dig.clear_grid(this.next_grid) // Ensure both buffers are clean
         dig.add_seed(formatted_seed, grid_now)
 
-        // Resync physical grid canvas in DOM/SVG
+        // Resync physical grid canvas in DOM/SVG using the starting 128x128 visual boundary
         dig.update_grid_dimensions(128, 128)
 
         // Re-sync live_cells after loading seed
@@ -285,22 +300,36 @@ export class GameState {
             }
         }
 
-        // 4. Evaporate escaping gliders cleanly
+        // 4. Evaporate escaping gliders cleanly & handle instant visual escape tracking
         const remaining_active_gliders = []
         let escaped_this_tick = 0
 
         for (const glider of updated_active_gliders) {
-            let touches_boundary = false
+            // Stage 1: Instant Visual-Border Escape Tracking
+            let is_fully_outside_vis = true
             for (const cell of glider.cells) {
-                if (cell.x <= 2 || cell.y <= 2 || cell.x >= this.grid_width - 3 || cell.y >= this.grid_height - 3) {
-                    touches_boundary = true
+                if (cell.x >= this.vis_left && cell.x < this.vis_right && cell.y >= this.vis_top && cell.y < this.vis_bottom) {
+                    is_fully_outside_vis = false
                     break
                 }
             }
 
-            if (touches_boundary) {
-                escaped_this_tick++
-                
+            if (is_fully_outside_vis && glider.is_mature && !glider.counted_as_escaped) {
+                glider.counted_as_escaped = true
+                this.escaped_gliders_count++
+                console.log(`✨ GLIDER LAUNCHED! Glider ID ${glider.id} released into the wild at x:${glider.x}, y:${glider.y}`)
+            }
+
+            // Stage 2: Absolute Edge Evaporation (at 2048x2048)
+            let touches_absolute_boundary = false
+            for (const cell of glider.cells) {
+                if (cell.x <= 2 || cell.y <= 2 || cell.x >= this.grid_width - 3 || cell.y >= this.grid_height - 3) {
+                    touches_absolute_boundary = true
+                    break
+                }
+            }
+
+            if (touches_absolute_boundary) {
                 // Clear the cells in both current and next grids to prevent border debris
                 const curr = this.current_grid
                 const next = this.next_grid
@@ -319,7 +348,7 @@ export class GameState {
                     return !glider.cells.some(gc => gc.x === lc.x && gc.y === lc.y)
                 })
 
-                console.log(`✨ GLIDER ESCAPED! Glider ID ${glider.id} released into the wild at x:${glider.x}, y:${glider.y}`)
+                console.log(`✨ GLIDER EVAPORATED! Glider ID ${glider.id} dissolved at absolute boundary x:${glider.x}, y:${glider.y}`)
             } else {
                 remaining_active_gliders.push(glider)
             }
@@ -373,14 +402,26 @@ export class GameState {
     }
 
     _get_state_hash() {
+        // Collect all coordinates currently claimed by active gliders
+        const glider_cell_set = new Set()
+        for (const glider of this.active_gliders) {
+            for (const cell of glider.cells) {
+                glider_cell_set.add(`${cell.x},${cell.y}`)
+            }
+        }
+
+        // Filter: keep cells inside visual boundary OR non-glider cells outside
+        const filtered_cells = this.live_cells.filter(cell => {
+            const is_inside_vis = (cell.x >= this.vis_left && cell.x < this.vis_right && cell.y >= this.vis_top && cell.y < this.vis_bottom)
+            const is_glider = glider_cell_set.has(`${cell.x},${cell.y}`)
+            return is_inside_vis || !is_glider
+        })
+
         let hash = ""
-        let live_count = this.live_cells.length
-        // Sort live cells to ensure consistent hash regardless of order in list
-        // (Though apply_rules currently returns them in y-then-x order anyway)
-        for (const cell of this.live_cells) {
+        for (const cell of filtered_cells) {
             hash += `${cell.x},${cell.y}|`
         }
-        return { hash, live_count }
+        return { hash, live_count: filtered_cells.length }
     }
 
     _check_stability() {
@@ -415,81 +456,57 @@ export class GameState {
     }
 
     _check_and_expand_grid() {
-        if (this.grid_width >= 1024 || this.grid_height >= 1024) {
-            return
+        // Absolute grid calculations are fixed at 2048x2048. 
+        // We only expand the Visual Grid centered in the algorithm grid.
+        let non_glider_breach = false
+
+        // Collect all coordinates currently claimed by active gliders
+        const glider_cell_set = new Set()
+        for (const glider of this.active_gliders) {
+            for (const cell of glider.cells) {
+                glider_cell_set.add(`${cell.x},${cell.y}`)
+            }
         }
 
-        let breach = false
+        // Check if any non-glider cell has breached the current visual bounds
         for (const cell of this.live_cells) {
-            if (cell.x <= 0 || cell.y <= 0 || cell.x >= this.grid_width - 1 || cell.y >= this.grid_height - 1) {
-                breach = true
-                break
+            const is_glider_cell = glider_cell_set.has(`${cell.x},${cell.y}`)
+            if (!is_glider_cell) {
+                if (cell.x < this.vis_left || cell.x >= this.vis_right || cell.y < this.vis_top || cell.y >= this.vis_bottom) {
+                    non_glider_breach = true
+                    break
+                }
             }
         }
 
-        if (breach) {
+        if (non_glider_breach) {
             const pad = 64
-            const new_width = this.grid_width + pad + pad
-            const new_height = this.grid_height + pad + pad
+            this.vis_left -= pad
+            this.vis_right += pad
+            this.vis_top -= pad
+            this.vis_bottom += pad
+            
+            this.vis_width += pad + pad
+            this.vis_height += pad + pad
 
-            // Allocate new grids
-            const new_ping = Array.from({ length: new_height }, () => Array.from({ length: new_width }, () => '⬛'))
-            const new_pong = Array.from({ length: new_height }, () => Array.from({ length: new_width }, () => '⬛'))
+            // Update physical grid size in DOM/SVG to match new visual dimensions
+            dig.update_grid_dimensions(this.vis_width, this.vis_height)
 
-            // Copy current grid data with offset
-            const old_ping = this.grid_ping
-            const old_pong = this.grid_pong
-
-            for (let y = 0; y < this.grid_height; y++) {
-                for (let x = 0; x < this.grid_width; x++) {
-                    new_ping[y + pad][x + pad] = old_ping[y][x]
-                    new_pong[y + pad][x + pad] = old_pong[y][x]
-                }
-            }
-
-            this.grid_ping = new_ping
-            this.grid_pong = new_pong
-
-            // Shift live cells coordinates
-            for (const cell of this.live_cells) {
-                cell.x += pad
-                cell.y += pad
-            }
-
-            // Shift cells to clear coordinates
-            for (const cell of this.next_live_cells_to_clear) {
-                cell.x += pad
-                cell.y += pad
-            }
-
-            // Shift active gliders coordinates
-            for (const glider of this.active_gliders) {
-                glider.x += pad
-                glider.y += pad
-                for (const cell of glider.cells) {
-                    cell.x += pad
-                    cell.y += pad
-                }
-            }
-
-            // Regenerate history hashes to match shifted coordinates
-            this.history = this.history.map(old_hash => {
-                const cells = old_hash.split('|').filter(s => s.length > 0)
-                const shifted_cells = cells.map(c => {
-                    const [cx, cy] = c.split(',').map(Number)
-                    return `${cx + pad},${cy + pad}`
-                })
-                return shifted_cells.join('|') + '|'
-            })
-
-            // Update state dimensions
-            this.grid_width = new_width
-            this.grid_height = new_height
-
-            // Update physical grid size in DOM/SVG
-            dig.update_grid_dimensions(new_width, new_height)
-
-            console.log(`🚀 GRID EXPANDED to ${new_width}x${new_height} due to boundary breach!`)
+            console.log(`🚀 VISUAL GRID EXPANDED to ${this.vis_width}x${this.vis_height} due to non-glider boundary breach!`)
         }
+    }
+
+    get_visible_live_cells() {
+        const visible = []
+        for (const cell of this.live_cells) {
+            if (cell.x >= this.vis_left && cell.x < this.vis_right && cell.y >= this.vis_top && cell.y < this.vis_bottom) {
+                visible.push({
+                    ...cell,
+                    x: cell.x - this.vis_left,
+                    y: cell.y - this.vis_top
+                })
+            }
+        }
+        return visible
     }
 }
