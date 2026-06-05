@@ -213,6 +213,32 @@ is_mature = prev.is_mature
 counted_as_escaped = prev.counted_as_escaped // Must be persisted!
     </pre>
 
+    <h3>5.2 Delaying Stability for Crossing Gliders (Issue #42)</h3>
+    <p style="background: rgba(231, 76, 60, 0.1); border-left: 4px solid var(--anchor-red); padding: 15px; border-radius: 4px; font-size: 13.5px;">
+        <strong>The Premature Stability Bug (Issue #42):</strong> When testing the 2-row seed <code>🟩⬛🟨⬛⬛ \ 🟩🟩🟩🟩🟩</code>, the core non-glider reaction dies off quickly. Because any glider cells outside the visual boundary are excluded from stability state hashing, the filtered cell list becomes static or extinct <em>while the glider is still partially crossing the boundary</em>. This triggers a premature stability detection that freezes the simulation, stopping the glider in mid-crossing before it can be credited as an escape!
+    </p>
+    <p><strong>Refined Spec for Crossing Gliders:</strong> To guarantee that gliders have the physical time to escape completely, standard stability detection must be <strong>bypassed</strong> as long as any mature glider is still actively crossing the visual boundary (i.e. has at least 1 cell inside the visual area):</p>
+    <pre style="background: #000; padding: 10px; border-radius: 4px; color: var(--accent-orange); font-family: monospace; font-size: 12px;">
+// Inside _check_stability():
+let is_any_glider_crossing = false
+for (const glider of this.active_gliders) {
+    if (glider.is_mature) {
+        let has_cell_inside = false
+        for (const cell of glider.cells) {
+            if (cell.x >= this.vis_left && cell.x < this.vis_right && cell.y >= this.vis_top && cell.y < this.vis_bottom) {
+                has_cell_inside = true; break
+            }
+        }
+        if (has_cell_inside) {
+            is_any_glider_crossing = true; break
+        }
+    }
+}
+if (is_any_glider_crossing) {
+    return // Bypass stability; let the glider escape!
+}
+    </pre>
+
     <h2>6. Interactive Study: Cosmic Glider Collisions</h2>
     <p>A fascinating consequence of computing glider physics beyond the visual boundary is the occurrence of <strong>Cosmic Collisions</strong> in the outer void. If a pattern launches multiple gliders with intersecting paths, they will collide in invisible space. We define two distinct behaviors for these collisions:</p>
     
