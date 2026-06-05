@@ -62,7 +62,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 		isWidgetVisible = getVisibility(ctx);
 		const servers = await discoverServers();
 		
-		updateWidget(ctx, servers, isWidgetVisible);
+		updateWidget(ctx, servers, isWidgetVisible, ctx.cwd);
 
 		// Subscribe to the centralized refresher tick event
 		unsubscribeTick = pi.events.on("clock:tick:4s", async () => {
@@ -77,7 +77,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 				return;
 			}
 			const currentServers = await discoverServers();
-			updateWidget(ctx, currentServers, isWidgetVisible);
+			updateWidget(ctx, currentServers, isWidgetVisible, ctx.cwd);
 		});
 	});
 
@@ -90,10 +90,10 @@ export default function serveExtension(pi: ExtensionAPI) {
 		}
 
 		const allServers = await discoverServers();
-		const repoServers = allServers.filter(s => isInsideRepo(s.dir));
+		const repoServers = allServers.filter(s => isInsideRepo(s.dir, ctx.cwd));
 		if (repoServers.length > 0) {
 			const serverLinks = repoServers
-				.map(s => `  • \x1b[36m${shortenPath(s.dir)}\x1b[0m served at \x1b[4m\x1b[34m${s.url}\x1b[0m`)
+				.map(s => `  • \x1b[36m${shortenPath(s.dir, ctx.cwd)}\x1b[0m served at \x1b[4m\x1b[34m${s.url}\x1b[0m`)
 				.join("\n");
 			
 			console.log(
@@ -114,11 +114,11 @@ export default function serveExtension(pi: ExtensionAPI) {
 			// -- LOG OPTION --
 			if (trimmedArgs === "--log") {
 				const activeServers = await discoverServers();
-				const repoServers = activeServers.filter(s => isInsideRepo(s.dir));
+				const repoServers = activeServers.filter(s => isInsideRepo(s.dir, ctx.cwd));
 				if (repoServers.length === 0) {
 					ctx.ui.notify("No servers are currently running in this repository.", "info");
 				} else {
-					const lines = repoServers.map(s => `• \x1b[36m${shortenPath(s.dir)}\x1b[0m served at \x1b[4m\x1b[34m${s.url}\x1b[0m`);
+					const lines = repoServers.map(s => `• \x1b[36m${shortenPath(s.dir, ctx.cwd)}\x1b[0m served at \x1b[4m\x1b[34m${s.url}\x1b[0m`);
 					ctx.ui.notify(`🚀 Servers active in this repository:\n\n${lines.join("\n")}`, "info");
 				}
 				return;
@@ -127,7 +127,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 			// -- HELP OPTION --
 			if (trimmedArgs === "--help" || trimmedArgs === "-h") {
 				try {
-					const manifestPath = path.join(process.cwd(), "docs", "extensions", "manifests", "serve-cmd.json");
+					const manifestPath = path.join(ctx.cwd, "docs", "extensions", "manifests", "serve-cmd.json");
 					const manifestStr = fs.readFileSync(manifestPath, "utf8");
 					const manifest = JSON.parse(manifestStr);
 					
@@ -155,7 +155,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 			if (trimmedArgs === "--hide") {
 				isWidgetVisible = false;
 				pi.appendEntry("serve-visibility", { visible: false });
-				updateWidget(ctx, [], isWidgetVisible);
+				updateWidget(ctx, [], isWidgetVisible, ctx.cwd);
 				ctx.ui.notify("Active server list widget hidden.", "info");
 				return;
 			}
@@ -165,7 +165,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 				isWidgetVisible = true;
 				pi.appendEntry("serve-visibility", { visible: true });
 				const servers = await discoverServers();
-				updateWidget(ctx, servers, isWidgetVisible);
+				updateWidget(ctx, servers, isWidgetVisible, ctx.cwd);
 
 				if (servers.length > 0) {
 					ctx.ui.notify(`Discovered and displaying ${servers.length} active servers.`, "info");
@@ -185,7 +185,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 				const killedList: KilledServerInstance[] = [];
 
 				if (targets.length === 0) {
-					const repoServers = activeServers.filter(s => isInsideRepo(s.dir));
+					const repoServers = activeServers.filter(s => isInsideRepo(s.dir, ctx.cwd));
 					if (repoServers.length === 0) {
 						ctx.ui.notify("No servers are currently running in this repository to kill.", "warning");
 						return;
@@ -219,7 +219,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 							if (isPort) {
 								return s.port === parseInt(target, 10);
 							} else {
-								return s.dir.replace(/\/$/, "") === target.replace(/\/$/, "") || shortenPath(s.dir) === target.replace(/\/$/, "");
+								return s.dir.replace(/\/$/, "") === target.replace(/\/$/, "") || shortenPath(s.dir, ctx.cwd) === target.replace(/\/$/, "");
 							}
 						});
 
@@ -256,9 +256,9 @@ export default function serveExtension(pi: ExtensionAPI) {
 				}
 
 				const remainingServers = await discoverServers();
-				updateWidget(ctx, remainingServers, isWidgetVisible);
+				updateWidget(ctx, remainingServers, isWidgetVisible, ctx.cwd);
 
-				const fullSummary = buildKilledSummary(killedList);
+				const fullSummary = buildKilledSummary(killedList, ctx.cwd);
 				ctx.ui.notify(fullSummary, "info");
 				return;
 			}
@@ -273,7 +273,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 			const ip = await resolveIp();
 
 			for (const rawDir of dirs) {
-				const targetDir = path.resolve(process.cwd(), rawDir);
+				const targetDir = path.resolve(ctx.cwd, rawDir);
 
 				if (!fs.existsSync(targetDir) || !fs.statSync(targetDir).isDirectory()) {
 					ctx.ui.notify(`⚠️ Warning: Directory "${rawDir}" does not exist. Skipping.`, "warning");
@@ -281,7 +281,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 				}
 
 				const activeServers = await discoverServers();
-				if (activeServers.some(s => path.resolve(process.cwd(), s.dir) === targetDir)) {
+				if (activeServers.some(s => path.resolve(ctx.cwd, s.dir) === targetDir)) {
 					ctx.ui.notify(`ℹ️ Note: Directory "${rawDir}" is already being served. Skipping.`, "info");
 					continue;
 				}
@@ -331,9 +331,9 @@ export default function serveExtension(pi: ExtensionAPI) {
 				return;
 			}
 
-			updateWidget(ctx, allActiveServers, isWidgetVisible);
+			updateWidget(ctx, allActiveServers, isWidgetVisible, ctx.cwd);
 
-			const fullSummary = buildDiscoveredSummary(allActiveServers);
+			const fullSummary = buildDiscoveredSummary(allActiveServers, ctx.cwd);
 			ctx.ui.notify(fullSummary, "info");
 		}
 	});

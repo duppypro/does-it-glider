@@ -1,10 +1,10 @@
 import * as path from "node:path";
 import { ServerInstance, KilledServerInstance, isInsideRepo } from "./domain.js";
 
-export function shortenPath(rawPath: string): string {
+export function shortenPath(rawPath: string, cwd: string = process.cwd()): string {
 	let rel = rawPath;
 	if (path.isAbsolute(rawPath)) {
-		rel = path.relative(process.cwd(), rawPath) || rawPath;
+		rel = path.relative(cwd, rawPath) || rawPath;
 	}
 	if (rel.length > 25) {
 		rel = "..." + rel.slice(-22);
@@ -58,7 +58,7 @@ export function padVisual(str: string, targetLen: number): string {
 	return str + " ".repeat(targetLen - currentLen);
 }
 
-export function updateWidget(ctx: any, servers: ServerInstance[], isWidgetVisible: boolean) {
+export function updateWidget(ctx: any, servers: ServerInstance[], isWidgetVisible: boolean, cwd: string = process.cwd()) {
 	if (!isWidgetVisible) {
 		ctx.ui.setWidget("serve-ports", undefined);
 		return;
@@ -67,12 +67,12 @@ export function updateWidget(ctx: any, servers: ServerInstance[], isWidgetVisibl
 	if (servers.length > 0) {
 		const widgetLines: string[] = ["\x1b[1m\x1b[32m🟢 Active HTTPS Servers:\x1b[0m"];
 		
-		// This Repo
-		widgetLines.push(`\x1b[1m\x1b[35m--- This Repo ---\x1b[0m`);
-		const thisRepo = servers.filter(s => isInsideRepo(s.dir));
+		// This Worktree
+		widgetLines.push(`\x1b[1m\x1b[35m--- This Worktree ---\x1b[0m`);
+		const thisRepo = servers.filter(s => isInsideRepo(s.dir, cwd));
 		if (thisRepo.length > 0) {
 			for (const server of thisRepo) {
-				widgetLines.push(`• \x1b[36m${shortenPath(server.dir)}\x1b[0m served at \x1b[4m\x1b[34m${server.url}\x1b[0m`);
+				widgetLines.push(`• \x1b[36m${shortenPath(server.dir, cwd)}\x1b[0m served at \x1b[4m\x1b[34m${server.url}\x1b[0m`);
 			}
 		} else {
 			widgetLines.push(`  \x1b[2m(none)\x1b[0m`);
@@ -80,10 +80,10 @@ export function updateWidget(ctx: any, servers: ServerInstance[], isWidgetVisibl
 		
 		// Other
 		widgetLines.push(`\x1b[1m\x1b[35m--- Other ---\x1b[0m`);
-		const otherRepo = servers.filter(s => !isInsideRepo(s.dir));
+		const otherRepo = servers.filter(s => !isInsideRepo(s.dir, cwd));
 		if (otherRepo.length > 0) {
 			for (const server of otherRepo) {
-				widgetLines.push(`• \x1b[36m${shortenPath(server.dir)}\x1b[0m served at \x1b[4m\x1b[34m${server.url}\x1b[0m`);
+				widgetLines.push(`• \x1b[36m${shortenPath(server.dir, cwd)}\x1b[0m served at \x1b[4m\x1b[34m${server.url}\x1b[0m`);
 			}
 		} else {
 			widgetLines.push(`  \x1b[2m(none)\x1b[0m`);
@@ -95,7 +95,7 @@ export function updateWidget(ctx: any, servers: ServerInstance[], isWidgetVisibl
 	}
 }
 
-export function buildKilledSummary(killedList: KilledServerInstance[]): string {
+export function buildKilledSummary(killedList: KilledServerInstance[], cwd: string = process.cwd()): string {
 	const borderStyle = "\x1b[37m"; 
 	const summaryParts: string[] = [];
 	for (const server of killedList) {
@@ -103,7 +103,7 @@ export function buildKilledSummary(killedList: KilledServerInstance[]): string {
 		const afterPadded = padVisual(server.statusAfter, 48);
 		const urlPadded = padVisual(server.url, 50);
 
-		const labelStr = `${shortenPath(server.dir)} - Port ${server.port}`;
+		const labelStr = `${shortenPath(server.dir, cwd)} - Port ${server.port}`;
 		const headerDashes = "─".repeat(Math.max(1, 53 - labelStr.length));
 
 		summaryParts.push(
@@ -117,7 +117,7 @@ export function buildKilledSummary(killedList: KilledServerInstance[]): string {
 	return `🛑 Terminated ${killedList.length} server(s)!\n\n` + summaryParts.join("\n\n");
 }
 
-export function buildDiscoveredSummary(servers: ServerInstance[]): string {
+export function buildDiscoveredSummary(servers: ServerInstance[], cwd: string = process.cwd()): string {
 	const borderStyle = "\x1b[37m";
 	const summaryParts: string[] = [];
 	for (const server of servers) {
@@ -130,7 +130,7 @@ export function buildDiscoveredSummary(servers: ServerInstance[]): string {
 		const statusTextPadded = padVisual(statusTextPlain, 47);
 		const coloredStatus = isSsl ? `\x1b[32m${statusTextPadded}\x1b[0m` : `\x1b[33m${statusTextPadded}\x1b[0m`;
 
-		const labelStr = `${shortenPath(server.dir)} - Port ${server.port}`;
+		const labelStr = `${shortenPath(server.dir, cwd)} - Port ${server.port}`;
 		const headerDashes = "─".repeat(Math.max(1, 53 - labelStr.length));
 
 		summaryParts.push(

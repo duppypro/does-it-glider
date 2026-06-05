@@ -13,7 +13,7 @@ export interface KilledServerInstance extends ServerInstance {
 }
 
 // Helper to determine if a directory is inside the current repository
-export function isInsideRepo(dir: string): boolean {
-	const rel = path.relative(process.cwd(), dir);
+export function isInsideRepo(dir: string, cwd: string = process.cwd()): boolean {
+	const rel = path.relative(cwd, dir);
 	return !rel.startsWith("..") && !path.isAbsolute(rel);
 }
