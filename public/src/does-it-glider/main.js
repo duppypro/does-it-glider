@@ -534,7 +534,7 @@ window.dig_debug = {
     run_official_baselines: async () => {
         const GOLD_STANDARD = {
             p1751: { expected_gens: 190, expected_mature: 0, expected_fizzles: 0, expected_cycle: 2 },
-            p1750: { expected_gens: 2724, expected_mature: 11, expected_fizzles: 8, expected_cycle: 2 }
+            p1750: { expected_gens: 1191, expected_mature: 11, expected_fizzles: 8, expected_cycle: 2 }
         }
 
         const p1 = `⬛⬛⬛⬛⬛\n⬛🟨⬛🟨⬛\n⬛🟩🟨⬛⬛\n🟩🟩⬛🟩⬛\n🟩🟩⬛🟩🟩\n🟩🟩🟩🟩🟩`

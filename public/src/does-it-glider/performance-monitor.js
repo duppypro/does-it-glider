@@ -73,7 +73,7 @@ export class PerformanceMonitor {
         if (!grid_node) throw new Error("Grid node not found")
         
         this.start_dom_observation(grid_node)
-        console.log(`🧐 Monitoring node: <${grid_node.tagName}> with class "${grid_node.className.baseVal || grid_node.className}"`)
+        console.log(`🧐 Monitoring node: <${grid_node.tagName}> with class "${grid_node.getAttribute('class') || ""}"`)
 
         const start_time = performance.now()
         
