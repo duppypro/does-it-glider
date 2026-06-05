@@ -31,6 +31,29 @@
         <li><strong>Conflict Prevention:</strong> Storing certificates in the user's home directory (with owner-only read/write permissions) avoids the permission conflicts and security risks associated with shared temporary directories.</li>
     </ul>
 
+    <h3>Worktree Resolution & Multi-Serving</h3>
+    <p>By relying on the active session's directory (<code>ctx.cwd</code>) rather than the fixed parent Node process's working directory, the Serve utility dynamically tracks when you navigate across worktrees (using the shell's <code>cd</code> command) and allows you to run multiple development servers simultaneously.</p>
+    
+    <h4>Dynamic Worktree Categorization</h4>
+    <p>The TUI widget dynamically filters and groups all active servers on the system into two distinct categories:</p>
+    <ul>
+        <li><strong>This Worktree:</strong> Active servers whose root directory matches or resides within the active session's directory (<code>ctx.cwd</code>).</li>
+        <li><strong>Other:</strong> All other active servers on the host machine.</li>
+    </ul>
+
+    <h4>Examples of Multi-Worktree Serving</h4>
+    <p>You can serve multiple independent projects simultaneously within a single Pi session:</p>
+    <pre style="background: var(--box-bg); padding: 12px; border-radius: 6px; border: 1px solid #404040; overflow-x: auto; color: #f0f0f0;">
+# 1. Serve the current project (juice-my-extensions)
+/serve
+
+# 2. Navigate to another project/worktree
+cd ../does-it-glider-simple-prompt
+
+# 3. Serve the second project (will automatically choose next available port, e.g., 8082)
+/serve
+    </pre>
+
     <h3>Architectural Layers</h3>
     <div style="background: var(--box-bg); padding: 15px; border-radius: 8px; border: 1px solid #404040;">
         <p><strong>Application:</strong> Command parsing (<code>/serve --hide</code>, <code>--kill</code>).</p>
