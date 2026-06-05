@@ -32,7 +32,7 @@
     </ul>
 
     <h3>Worktree Resolution & Multi-Serving</h3>
-    <p>By relying on the active session's directory (<code>ctx.cwd</code>) rather than the fixed parent Node process's working directory, the Serve utility dynamically tracks when you navigate across worktrees (using the shell's <code>cd</code> command) and allows you to run multiple development servers simultaneously.</p>
+    <p>By relying on the active session's directory (<code>ctx.cwd</code>) rather than a fixed process directory, the Serve utility dynamically tracks your active worktree. Note that Unix process limitations prevent child processes (such as sub-shells spawned via <code>!cd</code>) from modifying the parent Node process's working directory. Therefore, to switch your active session's worktree, you must quit and resume your session from the host terminal.</p>
     
     <h4>Dynamic Worktree Categorization</h4>
     <p>The TUI widget dynamically filters and groups all active servers on the system into two distinct categories:</p>
@@ -41,16 +41,22 @@
         <li><strong>Other:</strong> All other active servers on the host machine.</li>
     </ul>
 
-    <h4>Examples of Multi-Worktree Serving</h4>
-    <p>You can serve multiple independent projects simultaneously within a single Pi session:</p>
+    <h4>Step-by-Step Multi-Worktree Serving Example</h4>
+    <p>To serve multiple independent projects simultaneously:</p>
     <pre style="background: var(--box-bg); padding: 12px; border-radius: 6px; border: 1px solid #404040; overflow-x: auto; color: #f0f0f0;">
-# 1. Serve the current project (juice-my-extensions)
+# 1. Start Pi in your first worktree and serve it:
+$ cd /home/princess-pi/git-projects/does-it-glider-juice-my-extensions
+$ pi
 /serve
 
-# 2. Navigate to another project/worktree
-cd ../does-it-glider-simple-prompt
+# 2. Pause the Pi session:
+/quit
 
-# 3. Serve the second project (will automatically choose next available port, e.g., 8082)
+# 3. Change directory on the host terminal and resume your session in the second worktree:
+$ cd ../does-it-glider-simple-prompt
+$ pi -r
+
+# 4. Serve the second project (will automatically choose next available port, e.g., 8082):
 /serve
     </pre>
 
