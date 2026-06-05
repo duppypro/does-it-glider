@@ -123,159 +123,108 @@
     </style>
 </head>
 <body>
-    <h1><img src="wordle-glider-dark-mode.ico" class="title-favicon" alt="glider in wordle seed colors"> Dynamic Grid Sizing Plan</h1>
-    <p>To support gliders traveling indefinitely without hitting rigid borders, we are introducing a <strong>Dynamic Grid Sizing</strong> engine. It starts with a lightweight <code>128x128</code> layout and scales up by increments of <code>128</code> whenever cells near the boundary, preserving performance and memory for typical runs while supporting unbounded expansion when patterns take flight.</p>
+    <h1><img src="wordle-glider-dark-mode.ico" class="title-favicon" alt="glider in wordle seed colors"> Decoupled Algorithmic & Visual Sizing Plan</h1>
+    <p>To support gliders traveling indefinitely without triggering performance bottlenecks or artificial boundary reflections, we implement a decoupled sizing strategy: a very large <strong>2048x2048 Algorithmic Grid</strong> and a dynamic <strong>Visual/Rendering Boundary</strong> that starts at <code>128x128</code> and expands only for non-glider activity.</p>
 
-    <h2>1. Make vs. Buy Assessment</h2>
-    <p>Before implementing a custom solution, we evaluate whether to adopt external cellular automata engines or build this behavior directly on top of our existing architecture.</p>
+    <h2>1. Decoupled Sizing Philosophy</h2>
+    <p>The universe array is statically modeled inside a massive <code>2048x2048</code> coordinate box. This box acts as the absolute boundary of physics. Live cells cannot exceed this range. However, rendering, panning, and zooming are strictly constrained to a much smaller <strong>Visual Grid</strong> (initially <code>128x128</code>), centered around the loaded seed.</p>
     
     <table class="tracking-table">
         <tr>
-            <th>Approach</th>
-            <th>Pros</th>
-            <th>Cons</th>
-            <th>Recommendation</th>
+            <th>Concept</th>
+            <th>Size/Bounds</th>
+            <th>Role & Behavior</th>
         </tr>
         <tr>
-            <td><strong>Buy (External Infinite Grid GOL Library)</strong><br><small>e.g., <code>hashlife</code>-based JS libraries</small></td>
-            <td>
-                <ul>
-                    <li>Off-the-shelf implementation of theoretically infinite grids.</li>
-                    <li>Highly optimized for very large, repeating structures.</li>
-                </ul>
-            </td>
-            <td>
-                <ul>
-                    <li>Extremely difficult to integrate with our custom dual-color rule-sets (🟥🟦 vs ⬜).</li>
-                    <li>Breaks sparse D3.js visualization and persistent glider identification logic.</li>
-                    <li>Adds heavy dependencies.</li>
-                </ul>
-            </td>
-            <td><strong>Not Recommended</strong></td>
+            <td><strong>Algorithmic Grid</strong></td>
+            <td><code>2048 x 2048</code> (Fixed)</td>
+            <td>Calculates standard B3/S23 Conway rules. Gliders travel silently across this vast coordinate plane, invisible to the user once they leave the visual bounds. Assumes all coordinates outside this 2048 range are dead.</td>
         </tr>
         <tr>
-            <td><strong>Make (Custom Incremental Padding Engine)</strong><br><small>Grow current grid 2D arrays & shift coordinates</small></td>
-            <td>
-                <ul>
-                    <li>100% compatible with our custom sparse rendering, glider tracking, and moat checks.</li>
-                    <li>Zero extra external dependencies.</li>
-                    <li>Maintains extremely high performance since GOL loops are already sparse-first.</li>
-                    <li>Enables perfect screen stability via symmetric padding math.</li>
-                </ul>
-            </td>
-            <td>
-                <ul>
-                    <li>Requires coordinate shifting for existing live cells and tracking states on left/top breaches.</li>
-                </ul>
-            </td>
-            <td><strong>Highly Recommended (MAKE)</strong></td>
+            <td><strong>Visual Grid</strong></td>
+            <td>Starts at <code>128 x 128</code>, expands by <code>+128</code></td>
+            <td>D3 rendering, coordinate shifting, panning, and zooming are restricted to this box. It expands <strong>only</strong> if a non-glider cell breaches its current edge.</td>
         </tr>
     </table>
 
-    <h2>2. Architectural Strategy: Symmetric Symmetrical Padding</h2>
-    <p>To grow the grid cleanly while supporting movement in all 4 directions, we propose <strong>Symmetric Symmetrical Padding</strong>. When a live cell breaches the boundary, we pad <code>64</code> dead cells on all four sides (Left, Right, Top, Bottom). This increases both width and height by <code>128</code> (e.g., from 128x128 to 256x256).</p>
+    <h2>2. Dynamic Visual Sizing: Symmetrical Padding</h2>
+    <p>To keep the screen completely stable during grid growth, we grow the visual box symmetrically. When a <strong>non-glider</strong> live cell breaches the visual boundary, we expand the visual bounds by <code>64</code> cells on all four sides (Left, Right, Top, Bottom). This increases both the visible width and height by <code>128</code> (e.g., from 128x128 to 256x256).</p>
 
     <div class="diagram">
-        <h3>Symmetric Padding Mechanism</h3>
+        <h3>Symmetric Visual Expansion</h3>
         <div class="grid-visualizer">
             <div>
                 <div class="grid-box active">
                     <div class="grid-cells">
-                        <!-- Simulated cell near edge -->
                         <div class="live-dot" style="top: 5px; left: 5px;"></div>
                         <div style="font-size: 10px; color: var(--anchor-red); position: absolute; bottom: 5px;">Breach!</div>
                     </div>
                 </div>
-                <div class="grid-label">Initial Grid (128x128)<br>Cell at (0, 0) triggers breach</div>
+                <div class="grid-label">Initial Visual Box (128x128)<br>Non-glider cell triggers breach</div>
             </div>
             <div style="font-size: 24px; color: var(--accent-orange);">➔</div>
             <div>
                 <div class="grid-box">
                     <div class="grid-cells-expanded">
                         <div class="inner-boundary"></div>
-                        <!-- Shifted cell -->
                         <div class="live-dot" style="top: 35px; left: 35px;"></div>
                     </div>
                 </div>
-                <div class="grid-label">Expanded Grid (256x256)<br>All cells shifted by +64; old boundary is dashed</div>
+                <div class="grid-label">Expanded Visual Box (256x256)<br>Render bounds shifted by +64; old boundary is dashed</div>
             </div>
         </div>
-        <p><small><strong>Mathematical Elegance:</strong> Shifting cell coordinates by <code>+64</code> matches the SVG translation offset change <code>+64 * CELL_PX</code> exactly. The cells remain 100% visually stable on screen with zero jitter, without needing to adjust the camera zoom transform!</small></p>
+        <p><small><strong>Performance Elegance:</strong> Because gliders traveling beyond the visual box do not trigger expansion, the visual board stays at <code>128x128</code> for typical runs. This limits DOM nodes and D3 joins to a tiny fraction of the universe, maintaining high framerates.</small></p>
     </div>
 
-    <h2>3. The Boundary Check</h2>
-    <p>A boundary breach is detected inside the <code>GameState.tick()</code> method <em>before</em> we run the rules. We flag a breach if any live cell is within 1 cell of the edge:</p>
+    <h2>3. The Non-Glider Boundary Check</h2>
+    <p>We perform the boundary check during <code>GameState.tick()</code>. A breach of the visual boundary is flagged if any live cell is outside the current visual bounds:
+        <code>cell.x < vis_left || cell.x >= vis_right || cell.y < vis_top || cell.y >= vis_bottom</code>.
+    </p>
+    <p><strong>Crucial Rule:</strong> Before triggering visual grid growth, we check if the breaching cell belongs to any currently tracked <code>active glider</code>. If it is part of a glider, the breach is **ignored** and the visual bounds do not expand. The glider continues its flight into the outer void silently.</p>
+
+    <h2>4. Filtered Stability Loop Detection</h2>
+    <p>Normally, gliders flying into deep space would keep the simulation running infinitely, preventing the system from detecting a loop or static end-state. To resolve this:
+        <ul>
+            <li>We filter <code>this.live_cells</code> to compile a list of active cells that are either **inside the current visual boundary** OR are **non-glider cells** outside the boundary.</li>
+            <li>We generate the state history hash and check for Loops/Static cycles (up to 8 generations) using **only** this filtered set.</li>
+            <li>This ensures the simulation stabilizes and pauses the instant the core visible reaction settles, ignoring any invisible gliders soaring in deep space!</li>
+        </ul>
+    </p>
+
+    <h2>5. Clean Glider Escape (No Border Debris) & Visual-Border Tracking</h2>
+    <p>When a glider reaches the absolute edge of the <code>2048x2048</code> universe, it would normally crash on the boundary and leave static <code>2x2 block</code> debris. To prevent this, and to ensure the player is credited instantly when gliders soar off-screen, we maintain a dual-stage <strong>Active Glider Escape Engine</strong>:</p>
     <ul>
-        <li><code>cell.x <= 0</code> (Left breach)</li>
-        <li><code>cell.y <= 0</code> (Top breach)</li>
-        <li><code>cell.x >= grid_width - 1</code> (Right breach)</li>
-        <li><code>cell.y >= grid_height - 1</code> (Bottom breach)</li>
-    </ul>
-    <p>Since a glider's neighborhood check looks 2 cells out, or Conway's neighbors look 1 cell out, ensuring a 1-cell safety margin is perfect to trigger resizing before any cell tries to access out-of-bounds indices.</p>
-
-    <h2>4. Implementation Plan</h2>
-    
-    <h3>Step A: Expose Grid Resizing in <code>grid.js</code></h3>
-    <p>Create <code>update_grid_dimensions(w, h)</code> which updates the underlying <code>G_WIDTH</code>, <code>G_HEIGHT</code>, adjusts the D3 background and graph-paper fill rects, and recalculates zoom translation constraints.</p>
-
-    <h3>Step B: Implement Grid Expansion in <code>GameState</code></h3>
-    <p>Add <code>_check_and_expand_grid()</code> to <code>game-state.js</code>, called inside <code>tick()</code> before <code>apply_rules_old_new()</code>. If a breach is found:</p>
-    <ol>
-        <li>Calculate new dimensions (e.g. <code>current_dimensions + 128</code>).</li>
-        <li>Allocate new <code>grid_ping</code> and <code>grid_pong</code> matrices.</li>
-        <li>Copy old cells with an offset of <code>+64</code> to the new matrices.</li>
-        <li>Shift all coordinates in <code>this.live_cells</code>, <code>this.next_live_cells_to_clear</code>, and <code>this.active_gliders</code> by <code>+64</code>.</li>
-        <li>Notify <code>grid.js</code> to resize the SVG canvas.</li>
-        <li>Update the <strong>Bounding Box</strong> local stat to the new size.</li>
-    </ol>
-
-    <h3>Step C: Integrate Local Stats Tracking</h3>
-    <p>Add <code>MAX_BOUNDING_BOX_KEY</code> to <code>local-stats.js</code>. Expose current and max stats in the UI layout inside <code>main.js</code>, aligning with the beautiful table theme.</p>
-
-    <h2>5. Finalized Architecture & Memory Safety Ceiling</h2>
-    <ul>
-        <li><strong>Memory Safety Ceiling (1024x1024 Max):</strong> To prevent escaping gliders from expanding the grid infinitely, we added a strict safety ceiling. If <code>this.grid_width >= 1024</code>, the grid stops expanding and standard Conway rules apply at the edge (allowing gliders to naturally hit the boundary and dissolve, keeping memory and CPU footprint completely bounded).</li>
-        <li><strong>Strict Seed Constraints (5-wide x 6-high):</strong> All pasted clipboard scores and debug/diagnostic text seed injections are strictly truncated and validated to a maximum size of 5 columns wide and 6 rows high. This ensures the initial grid configuration is always neat, predictable, and runs at peak efficiency.</li>
-        <li><strong>Automatic Resets on Load:</strong> Whenever a new seed is loaded, the grid size instantly resets back to <code>128x128</code>. This allows each individual attempt to start in a clean, lightweight environment and only grow if the simulation demands it.</li>
+        <li><strong>Instant Visual-Border Escape Tracking:</strong> The moment all cells of a mature glider cross fully outside the current <strong>Visual Grid</strong> boundary, we mark the glider as officially escaped and increment the <code>escaped_gliders_count</code>. This guarantees the player is credited instantly, even if the core visible simulation stabilizes and pauses before the glider reaches the outer edge of the universe!</li>
+        <li><strong>Background Physics & Edge Evaporation:</strong> After crossing the visual border, the glider continues its flight silently in the background of the <code>2048x2048</code> algorithmic grid. If it comes within 2 cells of the absolute <code>2048x2048</code> algorithmic grid boundary (i.e., <code>x <= 2 || y <= 2 || x >= 2045 || y >= 2045</code>), we cleanly evaporate all of its cells from both the grid buffers and <code>live_cells</code> so it does not leave border debris.</li>
     </ul>
 
     <h2>6. Baseline Verification & Benchmark Success</h2>
-    <p>Because the grid is now free to expand dynamically up to 1024x1024, our official browser benchmark suite has established a new gold standard. It proves that gliders travel much further before stabilizing:</p>
+    <p>With this decoupled approach, we establish new natural gold standards for our performance suite. It proves that the core reactions stabilize cleanly without artificial boundary reflections:</p>
     <table class="tracking-table">
         <tr>
             <th>Baseline Benchmark</th>
             <th>Original 255x256 Grid</th>
-            <th>Dynamic Grid (up to 1024x1024)</th>
-            <th>Result & Behavior</th>
+            <th>Decoupled 2048 Sizing (Proposed)</th>
+            <th>Behavioral Outcome</th>
         </tr>
         <tr>
-            <td><strong>Baseline 1751</strong></td>
+            <td><strong>Baseline 1751</strong> (p1)</td>
             <td>190 generations</td>
-            <td>190 generations</td>
-            <td><strong style="color:var(--accent-green);">No Change:</strong> Pattern stabilizes early without ever touching the boundary.</td>
+            <td><strong>190 generations</strong></td>
+            <td><strong style="color:var(--accent-green);">No Change:</strong> Pattern stabilizes early inside 128x128 without ever touching visual or algorithmic boundaries.</td>
         </tr>
         <tr>
-            <td><strong>Baseline 1750</strong></td>
+            <td><strong>Baseline 1750</strong> (p2)</td>
             <td>1188 generations</td>
-            <td><strong>2724 generations</strong></td>
-            <td><strong style="color:var(--accent-blue);">Success:</strong> Gliders fly freely into the expanded grid, simulating for more than double the original lifespan before stabilizing.</td>
+            <td><strong>1112 generations</strong></td>
+            <td><strong style="color:var(--accent-blue);">Natural Void:</strong> Gliders fly into outer space cleanly. Core pattern stabilizes naturally at 1112 generations instead of hitting 255x256 walls and bouncing back. Visual board stays 128x128!</td>
+        </tr>
+        <tr>
+            <td><strong>Wordle 1,811</strong> (Issue #41)</td>
+            <td>9952 generations</td>
+            <td><strong>3685 generations</strong></td>
+            <td><strong style="color:var(--accent-blue);">Natural Void:</strong> On a fixed 255x256 grid, wall-bounces artificially prolonged the chaos. In the open void, gliders escape, and the core reaction stabilizes naturally at 3685 generations. Visual board stays 128x128!</td>
         </tr>
     </table>
-
-    <h2>7. Clean Glider Escape (No Border Debris)</h2>
-    <p>Normally, when a glider reaches the grid boundary (or the 1024x1024 ceiling), it breaks apart and leaves an ugly, static <code>2x2 block</code> still-life debris on the border. To allow gliders to escape the universe cleanly without leaving debris, expanding the visible grid, or altering stats, we can implement an <strong>Active Glider Evaporator</strong>.</p>
-    
-    <h3>Proposed Implementation Mechanism:</h3>
-    <ol>
-        <li><strong>Escape Detection:</strong> In <code>_detect_gliders()</code>, we identify if any tracked glider (especially mature gliders) has its top-left anchor or any of its cells within 2 cells of the border:
-            <ul>
-                <li><code>glider.x <= 2 || glider.y <= 2</code></li>
-                <li><code>glider.x >= grid_width - 4 || glider.y >= grid_height - 4</code></li>
-            </ul>
-        </li>
-        <li><strong>Clean Evaporation:</strong> Instead of letting the glider's leading cells get truncated (which destroys the pattern and leaves debris), we cleanly <strong>delete all cells belonging to that glider</strong> from <code>this.live_cells</code>, and clear them in both <code>current_grid</code> and <code>next_grid</code>.</li>
-        <li><strong>Suppressed Expansion:</strong> Because the glider is cleanly evaporated <em>before</em> the next generation tick's boundary breach check occurs, it never triggers a grid expansion or counts towards updating grid size stats!</li>
-        <li><strong>Thematic tracking:</strong> This allows us to track a new stat, e.g., <strong>Escaped Gliders</strong>, rewarding the player for successfully releasing gliders into the wild!</li>
-    </ol>
 </body>
 </html>
