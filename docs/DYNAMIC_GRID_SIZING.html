@@ -198,6 +198,21 @@
         <li><strong>Background Physics & Edge Evaporation:</strong> After crossing the visual border, the glider continues its flight silently in the background of the <code>2048x2048</code> algorithmic grid. If it comes within 2 cells of the absolute <code>2048x2048</code> algorithmic grid boundary (i.e., <code>x <= 2 || y <= 2 || x >= 2045 || y >= 2045</code>), we cleanly evaporate all of its cells from both the grid buffers and <code>live_cells</code> so it does not leave border debris.</li>
     </ul>
 
+    <h3>5.1 State Persistence and the Glider Overcounting Bug</h3>
+    <p style="background: rgba(231, 76, 60, 0.1); border-left: 4px solid var(--anchor-red); padding: 15px; border-radius: 4px; font-size: 13.5px;">
+        <strong>The Overcounting Bug:</strong> During zero-shot testing of the <code>Wordle 1,811</code> seed, a severe overcounting bug was discovered where a single run reported over 13,000 escaped gliders! 
+        <br><br>
+        <strong>Root Cause:</strong> The glider detection engine (<code>_detect_gliders()</code>) reconstructs the list of active gliders from scratch on every generation tick. It matches candidates against previous gliders to carry over properties like <code>id</code>, <code>age</code>, and <code>is_mature</code>. However, the custom state flag <code>counted_as_escaped</code> was <strong>not persisted or copied over</strong> during this matching step. As a result, the glider's escaped status was forgotten on every tick, causing it to increment the <code>escaped_gliders_count</code> on *every single generation* it traveled outside the visual boundary!
+    </p>
+    <p><strong>Refined Spec for State Persistence:</strong> To ensure stats are recorded with absolute mathematical precision for achievements, the glider identity matching loop must explicitly copy over all persistent state flags:</p>
+    <pre style="background: #000; padding: 10px; border-radius: 4px; color: var(--accent-orange); font-family: monospace; font-size: 12px;">
+// Ensure all custom persistent tracking properties are carried over to the updated glider:
+matched_id = prev.id
+age = prev.age + 1
+is_mature = prev.is_mature
+counted_as_escaped = prev.counted_as_escaped // Must be persisted!
+    </pre>
+
     <h2>6. Interactive Study: Cosmic Glider Collisions</h2>
     <p>A fascinating consequence of computing glider physics beyond the visual boundary is the occurrence of <strong>Cosmic Collisions</strong> in the outer void. If a pattern launches multiple gliders with intersecting paths, they will collide in invisible space. We define two distinct behaviors for these collisions:</p>
     
