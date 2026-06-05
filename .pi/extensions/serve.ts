@@ -177,7 +177,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 			}
 
 			// -- KILL OPTION --
-			if (trimmedArgs.startsWith("--kill") || trimmedArgs.startsWith("--cancel") || trimmedArgs.startsWith("--off") || trimmedArgs === "-k") {
+			if (/^(--kill|--cancel|--off|-k)(\s|$)/.test(trimmedArgs)) {
 				const killArgs = trimmedArgs.replace(/^(--kill|--cancel|--off|-k)/, "").trim();
 				const targets = killArgs.split(/\s+/).map(t => t.trim()).filter(t => t.length > 0);
 

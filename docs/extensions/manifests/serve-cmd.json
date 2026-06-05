@@ -6,14 +6,14 @@
     { "flags": "[dirs...]", "desc": "Serve specified directories (default: public, docs) on HTTPS ports." },
     { "flags": "--show", "desc": "Discover and display the active servers list." },
     { "flags": "--hide", "desc": "Hide the active servers list from the screen." },
-    { "flags": "--log", "desc": "List all active servers serving directories within this repository." },
-    { "flags": "-k, --kill", "desc": "Kill all servers serving directories within this repository." },
-    { "flags": "--kill [port|dir...]", "desc": "Kill specific servers by port number or directory name (even external ones)." },
+    { "flags": "--log", "desc": "List all active servers serving directories within this worktree." },
+    { "flags": "-k, --kill", "desc": "Kill all servers serving directories within this active worktree." },
+    { "flags": "-k, --kill [port|dir...]", "desc": "Kill specific servers by port number or directory name (even external ones)." },
     { "flags": "--help", "desc": "Display this help information." }
   ],
   "examples": [
     { "cmd": "/serve", "desc": "Serves public/ on 8080 and docs/ on 8081." },
     { "cmd": "/serve src/ assets/", "desc": "Serves src/ on 8080 and assets/ on 8081." },
-    { "cmd": "/serve --kill 8080 docs/", "desc": "Kills server on port 8080 and server serving docs/." }
+    { "cmd": "/serve -k 8080 docs/", "desc": "Kills server on port 8080 and server serving docs/." }
   ]
 }
