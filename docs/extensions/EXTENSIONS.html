@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- (c) 2026 David 'Duppy' Proctor, Interface Arts -->
+    <meta charset="UTF-8">
+    <title>Pi Extensions: Architecture Manifesto</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #d4d4d4;
+            --box-bg: #2d2d2d;
+            --accent-blue: #569cd6;
+            --accent-green: #6a9955;
+            --accent-orange: #ce9178;
+            --accent-yellow: #dcdcaa;
+            --anchor-red: #e74c3c;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 2rem; 
+        }
+        h1, h2, h3 { color: var(--accent-blue); }
+        h1 { border-bottom: 2px solid var(--accent-blue); padding-bottom: 10px; }
+        h2 { margin-top: 2rem; }
+        a { color: var(--accent-blue); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        
+        .diagram { 
+            background: var(--box-bg); 
+            border: 1px solid #404040; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin: 20px 0; 
+        }
+
+        /* Expandable Details Styling */
+        details {
+            background: var(--box-bg);
+            border: 1px solid #404040;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        summary {
+            padding: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #252526;
+            list-style: none; /* Hide default arrow */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+        summary::-webkit-details-marker {
+            display: none;
+        }
+        summary::after {
+            content: "►";
+            color: var(--accent-blue);
+            font-size: 0.8em;
+            transition: transform 0.2s;
+        }
+        details[open] summary::after {
+            transform: rotate(90deg);
+        }
+        .sub-spec-content {
+            padding: 20px;
+            border-top: 1px solid #404040;
+        }
+        .sub-spec-content h2 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pi Extensions: Architecture Manifesto</h1>
+    
+    <div class="diagram">
+        <p>This document serves as the high-level overview for Princess-Pi's agent extensions. As we iterate, the architectural philosophy defined here remains constant, while individual extension sub-specs may evolve independently.</p>
+    </div>
+
+    <h2>Light Domain Driven Design (DDD) Strategy</h2>
+    <p>Pi extensions are structured using a lightweight Domain-Driven Design approach to prevent "God Modules" and ensure code reusability. Extensions must be cleanly decoupled into the following layers:</p>
+    
+    <ul>
+        <li><strong style="color: var(--accent-orange)">Application Layer:</strong> The orchestrator. Parses CLI commands (e.g., <code>/serve</code>), routes intents, and registers capabilities with Pi.</li>
+        <li><strong style="color: var(--accent-green)">Domain Layer:</strong> Business logic. Defines core entities (e.g., <code>ServerInstance</code>) and determines rules like bounding contexts to Git repositories.</li>
+        <li><strong style="color: var(--accent-blue)">Infrastructure Layer:</strong> System boundaries. Handles OS-level execution (<code>ps aux</code>), file system access, network requests, and Pi session persistence logs.</li>
+        <li><strong style="color: var(--accent-yellow)">Presentation Layer:</strong> Formatting. Pure functions that handle ANSI escape sequences, padding, and UI widget string construction without mutating state.</li>
+    </ul>
+
+    <h2>Extension Registry</h2>
+    <p>Click on any extension below to load and view its detailed sub-spec inline.</p>
+
+    <details>
+        <summary>System Bus Registry</summary>
+        <div class="sub-spec-content" data-src="EXT_SYSTEM_BUS.html">
+            <em style="color: #666;">Loading sub-spec...</em>
+        </div>
+    </details>
+
+    <details>
+        <summary>System Clock Service</summary>
+        <div class="sub-spec-content" data-src="EXT_SYSTEM_CLOCK.html">
+            <em style="color: #666;">Loading sub-spec...</em>
+        </div>
+    </details>
+
+    <details>
+        <summary>Serve Utility</summary>
+        <div class="sub-spec-content" data-src="EXT_SERVE.html">
+            <em style="color: #666;">Loading sub-spec...</em>
+        </div>
+    </details>
+
+    <script>
+        // Vanilla JS to fetch and inject sub-specs inline upon expansion
+        document.querySelectorAll('details').forEach(detail => {
+            detail.addEventListener('toggle', function() {
+                if (this.open) {
+                    const container = this.querySelector('.sub-spec-content');
+                    if (container && !container.dataset.loaded) {
+                        fetch(container.dataset.src)
+                            .then(response => {
+                                if (!response.ok) throw new Error('Network response was not ok');
+                                return response.text();
+                            })
+                            .then(html => {
+                                // Extract only the <body> content to avoid duplicate <style> or <head> tags
+                                const parser = new DOMParser();
+                                const doc = parser.parseFromString(html, 'text/html');
+                                
+                                // Remove the duplicated H2 from the sub-spec since the summary acts as the header
+                                const header = doc.querySelector('h2');
+                                if (header) header.remove();
+
+                                container.innerHTML = doc.body.innerHTML;
+                                
+                                // Execute scripts that were injected via innerHTML
+                                container.querySelectorAll('script').forEach(oldScript => {
+                                    const newScript = document.createElement('script');
+                                    newScript.textContent = oldScript.textContent;
+                                    document.body.appendChild(newScript).parentNode.removeChild(newScript);
+                                });
+                                
+                                container.dataset.loaded = 'true';
+                            })
+                            .catch(err => {
+                                container.innerHTML = `<p style="color:var(--anchor-red)">Error loading spec: <a href="${container.dataset.src}">${container.dataset.src}</a> could not be fetched locally.</p>`;
+                            });
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

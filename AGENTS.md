@@ -49,3 +49,12 @@ Please observe the following strict rules for this session:
 - NEVER close a GitHub issue without asking me first.
 - NEVER commit without me approving first. ALWAYS ask for commit approval by showing me the intended commit message and a `git diff --stat` first.
 - **Attribution:** Your name is **David 'Duppy' Proctor**. Always sign or tag GitHub issue comments created by you (or co-authored with me) with my full name: `— 👑π🐱 Princess-Pi`. Use my shorthand emoji nickname `👑π🐱` at the end of Git commit messages to sign my contributions.
+
+### 4. The 5-Step Development & Commit Flow
+We embrace frequent commits pushed to the remote branch to track our process. The previously used "Untested by Duppy" tag is retired. We now strictly follow this 5-step flow for all feature development and bug fixes:
+
+1. **Spec Draft:** Agent and Duppy iterate on the prompt and Spec documents until clarity and agreement are reached. Only specs and chat history are modified. *No production code is written* (only experimental code or spec-visualizations are permitted). Commits reflect the "Spec Draft" status.
+2. **Spec Approved:** Both agent and human have read and refined the specs. A commit is made marking this state. *This commit grants the agent and human explicit permission to begin writing and changing production code.*
+3. **Code Draft:** The agent and human iterate on code artifacts until enough functionality is built to begin testing. A commit is made noting it is **"ready for test"**. This pre-test state is committed to allow us to measure the agent's zero-shot coding accuracy later.
+4. **Code Approved:** This is the "tested" state. Duppy and/or the agent run one-off, automated, and manual tests. A commit is made explicitly listing the exact tests that were run. *Note: This is not the final step before merging.*
+5. **Code and Spec Approved:** The final reconciliation. After step 4, we update the Spec artifacts to perfectly mirror the tested Code. Between a step 4 and step 5 commit, *only specs, inline comments, or spec-supporting visualizations/data are modified*. No production code is changed. **Only commits in this Step 5 state are eligible to be merged into `main` or their upstream origin.**

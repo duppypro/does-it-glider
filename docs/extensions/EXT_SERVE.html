@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- (c) 2026 David 'Duppy' Proctor, Interface Arts -->
+    <meta charset="UTF-8">
+    <title>Pi Extensions: Serve Utility</title>
+</head>
+<body>
+    <h2>Serve Utility (<code>serve.ts</code>)</h2>
+    <p><strong>Domain:</strong> Local Development & Process Management</p>
+
+    <h3>Overview</h3>
+    <p>The Serve utility provides a secure, HTTPS-enabled local development server with real-time TUI monitoring. It relies strictly on stateless OS-level data (<code>ps aux</code>) rather than conversational history.</p>
+
+    <h3>Command Reference</h3>
+    <div id="serve-cmd-reference" style="background: var(--box-bg); padding: 15px; border-radius: 8px; border: 1px solid #404040;">
+        <em style="color: #666;">Loading command manifest...</em>
+    </div>
+
+    <h3>Bounded Context & Rules</h3>
+    <ul>
+        <li><strong>Stateless Tracking:</strong> Servers are identified dynamically by scanning the host OS. A server belongs to the active context if its served directory resides within <code>process.cwd()</code>.</li>
+        <li><strong>Security:</strong> Scans target directories for <code>.env</code> files and prompts for confirmation before exposing them over the network.</li>
+        <li><strong>Deduplication:</strong> Prevents multiple HTTP servers from spawning on the exact same absolute directory path.</li>
+    </ul>
+
+    <h3>Architectural Layers</h3>
+    <div style="background: var(--box-bg); padding: 15px; border-radius: 8px; border: 1px solid #404040;">
+        <p><strong>Application:</strong> Command parsing (<code>/serve --hide</code>, <code>--kill</code>).</p>
+        <p><strong>Infrastructure:</strong> Sub-process spawning, <code>lsof</code> PID lookups, and session log visibility polling.</p>
+        <p><strong>Presentation:</strong> ANSI-safe string padding and TUI widget rendering.</p>
+    </div>
+
+    <script>
+        fetch('manifests/serve-cmd.json')
+            .then(r => r.json())
+            .then(data => {
+                const container = document.getElementById('serve-cmd-reference');
+                if (!container) return;
+                
+                let html = `<p><strong><code>${data.name}</code></strong> - ${data.tagline}</p>`;
+                html += `<p>${data.description}</p>`;
+                
+                html += `<h4 style="margin-bottom: 5px; color: var(--accent-yellow)">Usage</h4><ul style="margin-top: 0; padding-left: 20px;">`;
+                data.usage.forEach(u => {
+                    html += `<li style="margin-bottom: 5px; list-style-type: none;"><code>${data.name} ${u.flags}</code><br><span style="color: #aaa">${u.desc}</span></li>`;
+                });
+                html += `</ul>`;
+                
+                html += `<h4 style="margin-bottom: 5px; color: var(--accent-yellow)">Examples</h4><ul style="margin-top: 0; padding-left: 20px;">`;
+                data.examples.forEach(e => {
+                    html += `<li style="margin-bottom: 5px; list-style-type: none;"><code>${e.cmd}</code><br><span style="color: #aaa">${e.desc}</span></li>`;
+                });
+                html += `</ul>`;
+                
+                container.innerHTML = html;
+            })
+            .catch(err => {
+                const container = document.getElementById('serve-cmd-reference');
+                if (container) container.innerHTML = `<p style="color:var(--anchor-red)">Failed to load command manifest: ${err}</p>`;
+            });
+    </script>
+</body>
+</html>
