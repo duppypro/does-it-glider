@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- (c) 2026 David 'Duppy' Proctor, Interface Arts -->
+    <meta charset="UTF-8">
+    <title>Pi Extensions: Live Serve Utility Spec</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #d4d4d4;
+            --box-bg: #2d2d2d;
+            --accent-blue: #569cd6;
+            --accent-green: #6a9955;
+            --accent-orange: #ce9178;
+            --accent-yellow: #dcdcaa;
+            --anchor-red: #e74c3c;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 2rem; 
+        }
+        h1, h2, h3 { color: var(--accent-blue); }
+        h1 { border-bottom: 2px solid var(--accent-blue); padding-bottom: 10px; }
+        h2 { margin-top: 2rem; }
+        a { color: var(--accent-blue); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        
+        .diagram { 
+            background: var(--box-bg); 
+            border: 1px solid #404040; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin: 20px 0; 
+        }
+    </style>
+</head>
+<body>
+    <h2>Live Serve Utility (<code>EXT_LIVE_SERVE.html</code>)</h2>
+    <p><strong>Domain:</strong> Local Development, Dev Server & Hot-Reloading</p>
+
+    <h3>Overview</h3>
+    <p>The Live Serve utility upgrades the default <code>/serve</code> command by replacing the spawned <code>npx http-server</code> child process with a custom, native, zero-dependency Node.js development server. It implements instant Server-Sent Events (SSE) live-reloading, automatic cache-busting, and a dynamic HTML/JS/CSS dependency-tracing engine.</p>
+
+    <h3>Core Architecture</h3>
+    <div style="background: var(--box-bg); padding: 15px; border-radius: 8px; border: 1px solid #404040; margin-bottom: 20px;">
+        <h4>1. Native HTTPS File Server</h4>
+        <ul>
+            <li><strong>Zero Dependencies:</strong> Built strictly using Node.js standard library modules (<code>node:https</code>, <code>node:fs</code>, <code>node:path</code>, <code>node:mime</code>/custom mappings).</li>
+            <li><strong>Cache Control:</strong> Sets headers to strictly bypass browser caches (<code>Cache-Control: no-store, no-cache, must-revalidate</code>) to prevent sticky dev states.</li>
+            <li><strong>Client Script Injection:</strong> Automatically intercepts outgoing <code>.html</code> file read streams to inject a tiny (~15 lines) native SSE listener script before the closing <code>&lt;/body&gt;</code> tag.</li>
+        </ul>
+
+        <h4>2. Lightweight Live-Reload Protocol (SSE)</h4>
+        <ul>
+            <li><strong>Server-Sent Events:</strong> Avoids the overhead of external WebSockets packages (like <code>ws</code>). Exposes a special endpoint (<code>/__live-reload</code>) using standard HTTP/HTTPS protocols.</li>
+            <li><strong>Auto-Reconnections:</strong> Browsers natively support reconnecting to SSE event streams out-of-the-box via the built-in <code>EventSource</code> API.</li>
+        </ul>
+
+        <h4>3. FS Watcher & Debounce Queue</h4>
+        <ul>
+            <li><strong>Native Watching:</strong> Uses Node's native <code>fs.watch</code> (recursive) to monitor directory modifications.</li>
+            <li><strong>Debounce Window:</strong> Groups multiple rapid file changes (such as auto-formatter writes or multi-file saves) into a single batched event, delaying broadcasts by a configurable cooldown window (default: <code>150ms</code>).</li>
+        </ul>
+
+        <h4>4. Dynamic Dependency-Tracing Engine</h4>
+        <p>To keep reloads highly efficient and prevent unnecessary cycles, the server builds an internal in-memory Dependency Graph on startup and updates it dynamically on file saves:</p>
+        <ul>
+            <li><strong>HTML Scans:</strong> Scans `.html` files for <code>&lt;link rel="stylesheet"&gt;</code>, <code>&lt;script src="..."&gt;</code>, and <code>fetch(...)</code> endpoints to map stylesheets, scripts, and JSON configs to their HTML pages.</li>
+            <li><strong>JS Scans:</strong> Scans native ES modules for static and dynamic <code>import</code> statements (<code>import ... from '...'</code>).</li>
+            <li><strong>Graph Lookup & Hot-Swapping:</strong>
+                <ul>
+                    <li>If a <strong>CSS</strong> file changes, the server triggers a targeted <code>{ type: 'css', path: '/css/style.css' }</code> payload. The injected client script updates the DOM link reference with a cache-busting timestamp on-the-fly, giving <strong>instant visual updates with zero page reloads</strong>.</li>
+                    <li>If a <strong>JS or HTML</strong> file changes, the server traces up the dependency graph. If the file is imported by the currently viewed page, it triggers a page reload (<code>{ type: 'reload' }</code>); if the changed file is unused, it suppresses the reload entirely.</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <h3>Step-by-Step Data Flow</h3>
+    <ol>
+        <li>User executes <code>/serve</code>.</li>
+        <li>Server reads persistent keys from <code>~/.pi-certs/</code> and spins up the native HTTPS Server.</li>
+        <li>Server traverses the target workspace directory to build the dependency map.</li>
+        <li>Browser requests <code>does-it-glider.html</code>.</li>
+        <li>Server reads the file, injects the SSE Client Script, and streams it to the browser.</li>
+        <li>Browser establishes connection with <code>/__live-reload</code>.</li>
+        <li>Developer modifies <code>game-state.js</code>.</li>
+        <li>FS Watcher detects the write, debounces it, checks the dependency map to confirm it is imported by the active document, and pushes a <code>{ type: 'reload' }</code> payload down the SSE connection.</li>
+        <li>Browser refreshes instantly.</li>
+    </ol>
+
+    <h3>The Injected SSE Client Script</h3>
+    <p>A minimal, vanilla injection script appended to outgoing HTML streams:</p>
+    <pre style="background: var(--box-bg); padding: 12px; border-radius: 6px; border: 1px solid #404040; overflow-x: auto; color: #f0f0f0;">
+&lt;script&gt;
+  (function() {
+    const es = new EventSource('/__live-reload');
+    es.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      if (data.type === 'css') {
+        const links = document.querySelectorAll('link[rel="stylesheet"]');
+        for (const link of links) {
+          const url = new URL(link.href, window.location.href);
+          if (url.pathname === data.path || url.pathname.endsWith(data.path)) {
+            link.href = url.pathname + '?t=' + Date.now();
+            break;
+          }
+        }
+      } else if (data.type === 'reload') {
+        location.reload();
+      }
+    };
+  })();
+&lt;/script&gt;
+    </pre>
+
+    <h3>Proposed Verification Plan</h3>
+    <p>We will verify this design using three distinct states:</p>
+    <ul>
+        <li><strong>Verification 1 (Instant CSS):</strong> Make a minor color modification in a CSS file. Confirm that the browser updates the layout styles instantly and that the console shows no full page reload occurred.</li>
+        <li><strong>Verification 2 (Trace & Reload):</strong> Modify an active JavaScript dependency module. Verify the page reloads automatically.</li>
+        <li><strong>Verification 3 (Unused File Suppression):</strong> Modify an unrelated test file or unlinked module. Verify the browser remains completely undisturbed.</li>
+    </ul>
+</body>
+</html>
