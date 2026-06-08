@@ -5,6 +5,7 @@ export interface ServerInstance {
 	dir: string;
 	url: string;
 	title: string;
+	isLive?: boolean;
 }
 
 export interface KilledServerInstance extends ServerInstance {

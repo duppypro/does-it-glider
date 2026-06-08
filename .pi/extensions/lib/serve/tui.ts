@@ -72,7 +72,8 @@ export function updateWidget(ctx: any, servers: ServerInstance[], isWidgetVisibl
 		const thisRepo = servers.filter(s => isInsideRepo(s.dir, cwd));
 		if (thisRepo.length > 0) {
 			for (const server of thisRepo) {
-				widgetLines.push(`• \x1b[36m${shortenPath(server.dir, cwd)}\x1b[0m served at \x1b[4m\x1b[34m${server.url}\x1b[0m`);
+				const typeLabel = server.isLive ? "\x1b[32m(Live)\x1b[0m" : "\x1b[33m(Static)\x1b[0m";
+				widgetLines.push(`• \x1b[36m${shortenPath(server.dir, cwd)}\x1b[0m ${typeLabel} served at \x1b[4m\x1b[34m${server.url}\x1b[0m`);
 			}
 		} else {
 			widgetLines.push(`  \x1b[2m(none)\x1b[0m`);
@@ -83,7 +84,8 @@ export function updateWidget(ctx: any, servers: ServerInstance[], isWidgetVisibl
 		const otherRepo = servers.filter(s => !isInsideRepo(s.dir, cwd));
 		if (otherRepo.length > 0) {
 			for (const server of otherRepo) {
-				widgetLines.push(`• \x1b[36m${shortenPath(server.dir, cwd)}\x1b[0m served at \x1b[4m\x1b[34m${server.url}\x1b[0m`);
+				const typeLabel = server.isLive ? "\x1b[32m(Live)\x1b[0m" : "\x1b[33m(Static)\x1b[0m";
+				widgetLines.push(`• \x1b[36m${shortenPath(server.dir, cwd)}\x1b[0m ${typeLabel} served at \x1b[4m\x1b[34m${server.url}\x1b[0m`);
 			}
 		} else {
 			widgetLines.push(`  \x1b[2m(none)\x1b[0m`);

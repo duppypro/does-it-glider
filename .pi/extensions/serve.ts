@@ -285,8 +285,14 @@ export default function serveExtension(pi: ExtensionAPI) {
 				}
 
 				const activeServers = await discoverServers();
-				if (activeServers.some(s => path.resolve(ctx.cwd, s.dir) === targetDir)) {
-					ctx.ui.notify(`ℹ️ Note: Directory "${rawDir}" is already being served. Skipping.`, "info");
+				const hasMatchingTypeServer = activeServers.some(s => 
+					path.resolve(ctx.cwd, s.dir) === targetDir && 
+					!!s.isLive === !isStatic
+				);
+
+				if (hasMatchingTypeServer) {
+					const typeLabel = isStatic ? "statically" : "live-reloading";
+					ctx.ui.notify(`ℹ️ Note: Directory "${rawDir}" is already being served ${typeLabel}. Skipping.`, "info");
 					continue;
 				}
 

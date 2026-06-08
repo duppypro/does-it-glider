@@ -74,6 +74,7 @@ export function discoverServers(): Promise<ServerInstance[]> {
 				}
 
 				const isSsl = line.includes(" -S") || line.includes(" --ssl");
+				const isLive = line.includes("run-live-server");
 				const protocol = isSsl ? "https" : "http";
 				const url = `${protocol}://${ip}:${port}`;
 
@@ -84,7 +85,7 @@ export function discoverServers(): Promise<ServerInstance[]> {
 					// ignore
 				}
 
-				servers.push({ port, dir, url, title });
+				servers.push({ port, dir, url, title, isLive });
 			}
 
 			resolve(servers);
