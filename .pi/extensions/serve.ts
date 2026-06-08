@@ -2,6 +2,7 @@ import { type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
+import { fileURLToPath } from "node:url";
 import { spawn, exec, execSync } from "node:child_process";
 import { isInsideRepo, KilledServerInstance } from "./lib/serve/domain.js";
 import { discoverServers, resolveIp, checkServerStatus, findPidByPort } from "./lib/serve/process.js";
@@ -265,6 +266,9 @@ export default function serveExtension(pi: ExtensionAPI) {
 
 			// -- START SERVERS MODE (Default) --
 			let dirs = trimmedArgs.split(/\s+/).map(d => d.trim()).filter(d => d.length > 0);
+			const isStatic = dirs.includes("--static") || dirs.includes("-s");
+			dirs = dirs.filter(d => d !== "--static" && d !== "-s");
+
 			if (dirs.length === 0) {
 				dirs = ["public", "docs"];
 			}
@@ -305,7 +309,12 @@ export default function serveExtension(pi: ExtensionAPI) {
 				const port = startPort++;
 				const { cert, key } = getOrCreateCertificates(ctx);
 
-				const serverProcess = spawn("npx", [
+				const __filename = fileURLToPath(import.meta.url);
+				const __dirname = path.dirname(__filename);
+				const runnerPath = path.resolve(__dirname, "lib/serve/run-live-server.js");
+
+				const spawnCmd = isStatic ? "npx" : "node";
+				const spawnArgs = isStatic ? [
 					"--",
 					"http-server",
 					targetDir,
@@ -314,7 +323,17 @@ export default function serveExtension(pi: ExtensionAPI) {
 					"-K", key,
 					"-p", String(port),
 					"-a", "0.0.0.0"
-				], {
+				] : [
+					runnerPath,
+					targetDir,
+					"-S",
+					"-C", cert,
+					"-K", key,
+					"-p", String(port),
+					"-a", "0.0.0.0"
+				];
+
+				const serverProcess = spawn(spawnCmd, spawnArgs, {
 					detached: true,
 					stdio: "ignore"
 				});

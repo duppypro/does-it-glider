@@ -37,7 +37,7 @@ function getPublicIp(): Promise<string> {
 
 export function discoverServers(): Promise<ServerInstance[]> {
 	return new Promise((resolve) => {
-		exec("ps aux | grep -E 'http-server' | grep -v grep", async (error, stdout) => {
+		exec("ps aux | grep -E 'http-server|run-live-server' | grep -v grep", async (error, stdout) => {
 			if (error || !stdout) {
 				resolve([]);
 				return;
@@ -55,7 +55,7 @@ export function discoverServers(): Promise<ServerInstance[]> {
 				if (servers.some(s => s.port === port)) continue;
 
 				const parts = line.split(/\s+/);
-				const httpServerIdx = parts.findIndex(p => p.includes("http-server"));
+				const httpServerIdx = parts.findIndex(p => p.includes("http-server") || p.includes("run-live-server"));
 				if (httpServerIdx === -1) continue;
 
 				let dir = "current";

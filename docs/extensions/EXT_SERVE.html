@@ -56,6 +56,7 @@
         <li><strong>Stateless Tracking:</strong> Servers are identified dynamically by scanning the host OS. A server belongs to the active context if its served directory resides within <code>process.cwd()</code>.</li>
         <li><strong>Security:</strong> Scans target directories for <code>.env</code> files and prompts for confirmation before exposing them over the network.</li>
         <li><strong>Deduplication:</strong> Prevents multiple HTTP servers from spawning on the exact same absolute directory path.</li>
+        <li><strong>Dual Dev Modes:</strong> Runs as a native, live-reloading server with hot CSS injections by default. Passing the <code>--static</code> or <code>-s</code> flag falls back to a standard static HTTP/HTTPS file server (spawning <code>http-server</code>) with no code injections or watchers.</li>
     </ul>
 
     <h3>Security & Certificates</h3>
