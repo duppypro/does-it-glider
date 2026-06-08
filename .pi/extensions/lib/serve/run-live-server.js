@@ -215,6 +215,87 @@ const INJECTION_SCRIPT = `
 </script>
 `;
 
+/**
+ * Generates a styled HTML directory listing.
+ */
+function generateDirectoryIndex(dirPath, requestPath) {
+	let html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Index of ${requestPath}</title>
+	<style>
+		:root {
+			--bg-color: #1e1e1e;
+			--text-color: #d4d4d4;
+			--box-bg: #2d2d2d;
+			--accent-blue: #569cd6;
+			--accent-green: #6a9955;
+			--accent-yellow: #dcdcaa;
+		}
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+			background-color: var(--bg-color);
+			color: var(--text-color);
+			max-width: 800px;
+			margin: 40px auto;
+			padding: 0 20px;
+			line-height: 1.6;
+		}
+		h1 { color: var(--accent-blue); border-bottom: 2px solid var(--accent-blue); padding-bottom: 10px; margin-bottom: 20px; }
+		.list { background: var(--box-bg); border: 1px solid #404040; border-radius: 8px; overflow: hidden; }
+		a { color: var(--accent-blue); text-decoration: none; display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #333; }
+		a:last-child { border-bottom: none; }
+		a:hover { background: #333; text-decoration: underline; }
+		.parent-dir { color: var(--accent-green); font-weight: bold; }
+		.icon { margin-right: 12px; font-size: 1.2em; }
+	</style>
+</head>
+<body>
+	<h1>Index of ${requestPath}</h1>
+	<div class="list">`;
+
+	if (requestPath !== "/" && requestPath !== "") {
+		const parentPath = path.dirname(requestPath);
+		html += `<a class="parent-dir" href="${parentPath === "." ? "/" : parentPath}"><span class="icon">📁</span>.. (Parent Directory)</a>`;
+	}
+
+	try {
+		const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+		
+		// Sort: directories first, then files alphabetically
+		entries.sort((a, b) => {
+			if (a.isDirectory() && !b.isDirectory()) return -1;
+			if (!a.isDirectory() && b.isDirectory()) return 1;
+			return a.name.localeCompare(b.name);
+		});
+
+		for (const entry of entries) {
+			if (entry.name.startsWith(".") || entry.name === "node_modules") {
+				continue;
+			}
+			const relativeHref = path.join(requestPath, entry.name).replace(/\\/g, "/");
+			if (entry.isDirectory()) {
+				html += `<a href="${relativeHref}/"><span class="icon">📁</span>${entry.name}/</a>`;
+			} else {
+				html += `<a href="${relativeHref}"><span class="icon">📄</span>${entry.name}</a>`;
+			}
+		}
+	} catch (err) {
+		html += `<p style="padding: 16px; color: var(--anchor-red)">Error reading directory: ${err.message}</p>`;
+	}
+
+	html += `</div></body></html>`;
+	
+	if (html.includes("</body>")) {
+		html = html.replace("</body>", `${INJECTION_SCRIPT}</body>`);
+	} else {
+		html += INJECTION_SCRIPT;
+	}
+
+	return html;
+}
+
 // --- Server Lifecycle Setup ---
 scanDirectoryForDependencies(targetDir);
 
@@ -256,7 +337,15 @@ const server = https.createServer(credentials, (req, res) => {
 	}
 
 	if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
-		filePath = path.join(filePath, "index.html");
+		const indexPath = path.join(filePath, "index.html");
+		if (fs.existsSync(indexPath)) {
+			filePath = indexPath;
+		} else {
+			const html = generateDirectoryIndex(filePath, safePath);
+			res.writeHead(200, { "Content-Type": "text/html" });
+			res.end(html);
+			return;
+		}
 	}
 
 	if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
