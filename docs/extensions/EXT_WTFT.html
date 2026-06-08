@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- (c) 2026 David 'Duppy' Proctor, Interface Arts -->
+    <meta charset="UTF-8">
+    <title>Pi Extensions: Where The F***ing Tokens?! (WTFT) Spec</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #d4d4d4;
+            --box-bg: #2d2d2d;
+            --accent-blue: #569cd6;
+            --accent-green: #6a9955;
+            --accent-orange: #ce9178;
+            --accent-yellow: #dcdcaa;
+            --anchor-red: #e74c3c;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 2rem; 
+        }
+        h1, h2, h3 { color: var(--accent-blue); }
+        h1 { border-bottom: 2px solid var(--accent-blue); padding-bottom: 10px; }
+        h2 { margin-top: 2rem; }
+        a { color: var(--accent-blue); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        
+        .diagram { 
+            background: var(--box-bg); 
+            border: 1px solid #404040; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin: 20px 0; 
+        }
+    </style>
+</head>
+<body>
+    <h2>Where The F***ing Tokens?! Utility (<code>wtft.ts</code>)</h2>
+    <p><strong>Domain:</strong> Cost Audit, Telemetry & Token Accounting</p>
+
+    <h3>Overview</h3>
+    <p>The WTFT (Where The F***ing Tokens?!) utility provides visual, granular accounting of your session's token consumption and associated monetary cost ($ USD). It parses the active session's append-only <code>.jsonl</code> log, classifies each historical interaction into one of three work types, and renders a stacked, color-coded ASCII bar graph over configurable time intervals.</p>
+
+    <h3>Command Reference</h3>
+    <div style="background: var(--box-bg); padding: 15px; border-radius: 8px; border: 1px solid #404040; margin-bottom: 20px;">
+        <p><strong><code>/wtft</code></strong> [options]</p>
+        <p>Analyze and display the session cost breakdown.</p>
+        <h4 style="color: var(--accent-yellow); margin-bottom: 5px;">Options</h4>
+        <ul>
+            <li><code>-i, --interval &lt;6m|1h|1d|1w&gt;</code> - Group cost data into 6-minute, 1-hour, 1-day, or 1-week bins (default: <code>1h</code>).</li>
+            <li><code>-l, --limit &lt;number&gt;</code> - Limit the number of interval bars displayed (default: <code>10</code>).</li>
+        </ul>
+    </div>
+
+    <h3>Classification Taxonomy</h3>
+    <p>To avoid guessing or misrepresenting untraced exchanges, interactions are strictly bucketed into three mutually exclusive categories:</p>
+    <table border="1" cellpadding="8" style="border-collapse: collapse; border-color: #404040; width: 100%; margin-bottom: 20px; background: var(--box-bg);">
+        <thead>
+            <tr style="background: #252526;">
+                <th>Classification</th>
+                <th>Color Code</th>
+                <th>Trigger Criteria</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="color: var(--accent-orange); font-weight: bold;">Spec Work (spec)</td>
+                <td>ANSI Orange (<code>\x1b[38;5;208m</code>)</td>
+                <td>Touches files under <code>docs/</code> or matching <code>AGENTS.md</code>, <code>ARCHITECTURE.md</code>, <code>README.md</code>, or contains prominent spec planning keywords.</td>
+            </tr>
+            <tr>
+                <td style="color: var(--accent-green); font-weight: bold;">Code Work (code)</td>
+                <td>ANSI Green (<code>\x1b[32m</code>)</td>
+                <td>Touches files under <code>.pi/extensions/</code>, <code>src/</code>, <code>tests/</code>, <code>public/</code>, or executes test/compilation terminal commands via `bash`.</td>
+            </tr>
+            <tr>
+                <td style="color: var(--accent-blue); font-weight: bold;">Other Work (other)</td>
+                <td>ANSI Blue (<code>\x1b[34m</code>)</td>
+                <td>General conversation, session initialization, model system prompts, or untraced exchanges that do not cleanly match the other two categories.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>TUI Visualization Style</h3>
+    <p>The TUI outputs a stacked, horizontal ASCII bar graph using standard block-drawing characters (<code>█</code>) to represent relative cost, scaled to the maximum interval cost. Each interval shows the timestamp and cost breakdown:</p>
+    
+    <pre style="background: var(--box-bg); padding: 12px; border-radius: 6px; border: 1px solid #404040; overflow-x: auto; color: #f0f0f0; font-family: monospace;">
+📊 Where The F***ing Tokens?! (Total Session Cost: $0.1245)
+
+Interval (1h bins)             Cost ($)    Stacked Bar Breakdown
+────────────────────────────────────────────────────────────────────────────────
+16:00 - 17:00 (06-05)          $0.0240     ████████░░░░░░░░░░░░  [S: 40% | C: 40% | O: 20%]
+17:00 - 18:00 (06-05)          $0.0450     ████████████████░░░░  [S: 10% | C: 70% | O: 20%]
+18:00 - 19:00 (06-05)          $0.0555     ████████████████████  [S:  0% | C: 90% | O: 10%]
+
+Legend:  █ Spec (Orange)   █ Code (Green)   ░ Other (Blue)
+    </pre>
+
+    <h3>Architectural Design</h3>
+    <div style="background: var(--box-bg); padding: 15px; border-radius: 8px; border: 1px solid #404040; margin-bottom: 20px;">
+        <p><strong>1. Log Parser:</strong> Reads <code>ctx.sessionManager.getEntries()</code> (which includes raw historical messages, tool calls, and exact usage/costs) or reads the `.jsonl` session file directly if more raw history is needed.</p>
+        <p><strong>2. Binning Engine:</strong> Groups entries by their <code>timestamp</code> into chronological bins based on the requested interval (e.g., 6-minute windows for granular auditing, or 1-day windows for multi-day tracks).</p>
+        <p><strong>3. Scaling & Layout:</strong> Normalizes the length of the ASCII bar based on the maximum cost in any single interval (typically capped at 30-40 characters wide to fit standard terminal outputs gracefully).</p>
+    </div>
+
+    <h3>Proposed Verification Plan</h3>
+    <ul>
+        <li><strong>Step 1 (Mock Log Generation):</strong> Create a dummy session log with predefined entries explicitly classified into Spec (touches `docs/`), Code (touches `src/`), and Other (general chit-chat).</li>
+        <li><strong>Step 2 (Interval Binning Test):</strong> Verify that setting <code>-i 6m</code> groupings binned the events correctly across tight time gaps.</li>
+        <li><strong>Step 3 (Color rendering check):</strong> Run `/wtft` and verify that ANSI codes map correctly to your terminal theme without leaving raw escape characters.</li>
+    </ul>
+</body>
+</html>
