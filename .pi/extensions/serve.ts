@@ -113,7 +113,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 			const trimmedArgs = args.trim();
 
 			// -- LOG OPTION --
-			if (trimmedArgs === "--log") {
+			if (trimmedArgs === "--log" || trimmedArgs === "-L") {
 				const activeServers = await discoverServers();
 				const repoServers = activeServers.filter(s => isInsideRepo(s.dir, ctx.cwd));
 				if (repoServers.length === 0) {
@@ -153,7 +153,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 			}
 
 			// -- HIDE OPTION --
-			if (trimmedArgs === "--hide") {
+			if (trimmedArgs === "--hide" || trimmedArgs === "-H") {
 				isWidgetVisible = false;
 				pi.appendEntry("serve-visibility", { visible: false });
 				updateWidget(ctx, [], isWidgetVisible, ctx.cwd);
@@ -162,7 +162,7 @@ export default function serveExtension(pi: ExtensionAPI) {
 			}
 
 			// -- SHOW OPTION --
-			if (trimmedArgs === "--show") {
+			if (trimmedArgs === "--show" || trimmedArgs === "-S") {
 				isWidgetVisible = true;
 				pi.appendEntry("serve-visibility", { visible: true });
 				const servers = await discoverServers();
