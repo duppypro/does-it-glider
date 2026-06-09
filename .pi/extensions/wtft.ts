@@ -23,9 +23,30 @@ interface Bin {
 	total_cost: number;
 }
 
+interface IntervalConfig {
+	size: number;
+	unit: "m" | "h" | "d" | "w";
+}
+
 // ---
 // ARGUMENT PARSING
 // ---
+
+/**
+ * Parses a raw interval string like "7m", "4h", "3d", "2w" into structured numeric size and unit.
+ * Defaults to size: 1, unit: "h" if invalid.
+ */
+function parseInterval(val: string): IntervalConfig {
+	const match = /^(\d+)([mhdw])$/.exec(val);
+	if (match) {
+		const size = parseInt(match[1], 10);
+		const unit = match[2] as "m" | "h" | "d" | "w";
+		if (size > 0) {
+			return { size, unit };
+		}
+	}
+	return { size: 1, unit: "h" }; // Default 1h
+}
 
 /**
  * Parses raw command argument string into typed options.
@@ -34,7 +55,7 @@ interface Bin {
 function parseArgs(argsStr: string = "") {
 	const str = argsStr || "";
 	const args = str.trim().split(/\s+/).filter(Boolean);
-	let interval: "1m" | "1h" | "1d" | "1w" = "1h";
+	let interval = "1h";
 	let limit = 10;
 	let width = 80;
 	let hideWidget = false;
@@ -71,7 +92,7 @@ function parseArgs(argsStr: string = "") {
 			hasMode = true;
 		} else if (arg === "-i" || arg === "--interval") {
 			const val = args[i + 1];
-			if (val === "1m" || val === "1h" || val === "1d" || val === "1w") {
+			if (val && /^(\d+)([mhdw])$/.test(val)) {
 				interval = val;
 				hasInterval = true;
 				i++;
@@ -94,7 +115,7 @@ function parseArgs(argsStr: string = "") {
 			}
 		} else if (arg.startsWith("--interval=")) {
 			const val = arg.split("=")[1];
-			if (val === "1m" || val === "1h" || val === "1d" || val === "1w") {
+			if (val && /^(\d+)([mhdw])$/.test(val)) {
 				interval = val;
 				hasInterval = true;
 			}
@@ -232,36 +253,63 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
 
 /**
  * Maps a timestamp to an interval key, a shortened formatted display label,
- * and a standardized date string. Evaluates entirely in local time.
+ * and a standardized date string. Evaluates entirely in local time and supports arbitrary integer-sized buckets.
  */
-function getBinInfo(timestamp: number, interval: "1m" | "1h" | "1d" | "1w"): { key: string; label: string; dateStr: string } {
+function getBinInfo(timestamp: number, config: IntervalConfig): { key: string; label: string; dateStr: string } {
 	const d = new Date(timestamp);
 	const pad = (n: number) => String(n).padStart(2, "0");
-	const monthDay = `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 	const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+	const { size, unit } = config;
 
-	if (interval === "1m" || interval === "1h") {
-		const m = interval === "1m" ? d.getMinutes() : 0;
-		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), m, 0, 0);
-		const startStr = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
+	if (unit === "m") {
+		const totalMins = d.getHours() * 60 + d.getMinutes();
+		const binnedMins = Math.floor(totalMins / size) * size;
+		const startHours = Math.floor(binnedMins / 60);
+		const startMins = binnedMins % 60;
+		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), startHours, startMins, 0, 0);
+		
+		const label = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
 		return {
 			key: start.toISOString(),
-			label: startStr, // Just "hh:mm" (no date part, to maximize row space)
+			label, // Just "hh:mm" (no date part, to maximize row space)
 			dateStr
 		};
-	} else if (interval === "1d") {
-		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+	} else if (unit === "h") {
+		const startHours = Math.floor(d.getHours() / size) * size;
+		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), startHours, 0, 0, 0);
+		
+		const label = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
 		return {
 			key: start.toISOString(),
-			label: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+			label, // Just "hh:mm" (no date part, to maximize row space)
+			dateStr
+		};
+	} else if (unit === "d") {
+		// Align days within the month (1-indexed, so we subtract 1 first)
+		const binnedDays = Math.floor((d.getDate() - 1) / size) * size;
+		const start = new Date(d.getFullYear(), d.getMonth(), binnedDays + 1, 0, 0, 0, 0);
+		
+		const label = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
+		return {
+			key: start.toISOString(),
+			label,
 			dateStr
 		};
 	} else {
-		// 1w (Weeks starting on Sunday)
-		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay(), 0, 0, 0, 0);
+		// unit === "w"
+		// Find Sunday of the current week in local time
+		const sunday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay(), 0, 0, 0, 0);
+		const epochMilli = sunday.getTime();
+		const weekMilli = 7 * 24 * 60 * 60 * 1000;
+		
+		// Align weeks absolute
+		const binnedMilli = Math.floor(epochMilli / (size * weekMilli)) * (size * weekMilli);
+		const start = new Date(binnedMilli);
+		
+		const label = `W-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
 		return {
 			key: start.toISOString(),
-			label: `W-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`,
+			label,
 			dateStr
 		};
 	}
@@ -396,7 +444,7 @@ function buildTickLines(maxCost: number, barWidth: number): { labelsLine: string
  * Defaults mode to "cumulative" for cohesive cost progression tracks.
  */
 function getSettings(ctx: any) {
-	let interval: "1m" | "1h" | "1d" | "1w" = "1h";
+	let interval = "1h";
 	let limit = 10;
 	let width = 80;
 	let visible = false; // Default invisible on fresh session
@@ -449,7 +497,7 @@ function updateWtftWidget(
 	ctx: any,
 	pi: ExtensionAPI,
 	opts?: {
-		interval?: "1m" | "1h" | "1d" | "1w";
+		interval?: string;
 		limit?: number;
 		width?: number;
 		visible?: boolean;
@@ -458,7 +506,7 @@ function updateWtftWidget(
 	}
 ) {
 	const current = getSettings(ctx);
-	const interval = opts?.interval ?? current.interval;
+	const intervalStr = opts?.interval ?? current.interval;
 	const limit = opts?.limit ?? current.limit;
 	const width = opts?.width ?? current.width;
 	const visible = opts?.visible ?? current.visible;
@@ -470,6 +518,7 @@ function updateWtftWidget(
 		return;
 	}
 
+	const intervalConfig = parseInterval(intervalStr);
 	const branch = ctx.sessionManager.getBranch();
 	const interactions: Interaction[] = [];
 
@@ -565,7 +614,7 @@ function updateWtftWidget(
 
 	for (const interaction of interactions) {
 		const classification = classifyInteraction(interaction);
-		const { key, label, dateStr } = getBinInfo(interaction.timestamp, interval);
+		const { key, label, dateStr } = getBinInfo(interaction.timestamp, intervalConfig);
 		totalSessionCost += interaction.cost;
 
 		let bin = binMap.get(key);
