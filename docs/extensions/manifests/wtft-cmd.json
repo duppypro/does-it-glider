@@ -1,15 +1,18 @@
 {
   "name": "/wtft",
-  "tagline": "Where The F***ing Tokens?! (WTFT) - Cost Auditing Utility",
-  "description": "Parses and classifies session token consumption and associated monetary cost into Spec, Code, and Other work types.",
+  "tagline": "Where The F***ing Tokens?! (WTFT) - Cost Auditing Widget",
+  "description": "Displays a horizontal, stacked TUI bar chart widget of your session's token costs classified into Spec, Code, and Other work types.",
   "usage": [
     { "flags": "-i, --interval <6m|1h|1d|1w>", "desc": "Group cost data into 6-minute, 1-hour, 1-day, or 1-week bins (default: 1h)." },
     { "flags": "-l, --limit <number>", "desc": "Limit the number of interval bars displayed (default: 10)." },
+    { "flags": "-w, --width <number>", "desc": "Set the maximum character width of the TUI widget (default: 80)." },
+    { "flags": "-H, --hide", "desc": "Hide the WTFT cost-auditing widget." },
     { "flags": "--help, -h", "desc": "Display this help information." }
   ],
   "examples": [
-    { "cmd": "/wtft", "desc": "Analyze session cost breakdown binned by 1-hour intervals (shows up to 10 intervals)." },
-    { "cmd": "/wtft -i 6m", "desc": "Granularly audit recent token usage binned by 6-minute intervals." },
-    { "cmd": "/wtft -i 1d -l 30", "desc": "Show daily cost breakdown for the last 30 days." }
+    { "cmd": "/wtft", "desc": "Analyze session cost breakdown in a widget below the editor (80 chars wide)." },
+    { "cmd": "/wtft -w 60", "desc": "Render the cost audit widget with a narrower 60 character width limit." },
+    { "cmd": "/wtft -i 6m -l 15", "desc": "Show 15 granular 6-minute interval bars of recent token costs." },
+    { "cmd": "/wtft --hide", "desc": "Hide the cost audit widget from the display." }
   ]
 }

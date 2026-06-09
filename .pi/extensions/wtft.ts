@@ -28,18 +28,22 @@ interface Bin {
 
 /**
  * Parses raw command argument string into typed options.
- * Supports standard flags (-i, --interval, -l, --limit, -h, --help) with space or equals.
+ * Supports standard flags (-i, --interval, -l, --limit, -w, --width, -H, --hide, -h, --help).
  */
 function parseArgs(argsStr: string) {
 	const args = argsStr.trim().split(/\s+/).filter(Boolean);
 	let interval: "6m" | "1h" | "1d" | "1w" = "1h";
 	let limit = 10;
+	let width = 80;
+	let hideWidget = false;
 	let showHelp = false;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
 		if (arg === "--help" || arg === "-h") {
 			showHelp = true;
+		} else if (arg === "--hide" || arg === "-H") {
+			hideWidget = true;
 		} else if (arg === "-i" || arg === "--interval") {
 			const val = args[i + 1];
 			if (val === "6m" || val === "1h" || val === "1d" || val === "1w") {
@@ -53,6 +57,13 @@ function parseArgs(argsStr: string) {
 				limit = num;
 				i++;
 			}
+		} else if (arg === "-w" || arg === "--width") {
+			const val = args[i + 1];
+			const num = parseInt(val, 10);
+			if (!isNaN(num) && num > 0) {
+				width = num;
+				i++;
+			}
 		} else if (arg.startsWith("--interval=")) {
 			const val = arg.split("=")[1];
 			if (val === "6m" || val === "1h" || val === "1d" || val === "1w") {
@@ -64,10 +75,16 @@ function parseArgs(argsStr: string) {
 			if (!isNaN(num) && num > 0) {
 				limit = num;
 			}
+		} else if (arg.startsWith("--width=")) {
+			const val = arg.split("=")[1];
+			const num = parseInt(val, 10);
+			if (!isNaN(num) && num > 0) {
+				width = num;
+			}
 		}
 	}
 
-	return { interval, limit, showHelp };
+	return { interval, limit, width, hideWidget, showHelp };
 }
 
 // ---
@@ -167,47 +184,34 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
 // ---
 
 /**
- * Maps a timestamp to an interval key and formatted UI display label.
+ * Maps a timestamp to an interval key and a shortened formatted display label
+ * down to the absolute necessary characters to save row space.
  */
 function getBinInfo(timestamp: number, interval: "6m" | "1h" | "1d" | "1w"): { key: string; label: string } {
 	const d = new Date(timestamp);
 	const pad = (n: number) => String(n).padStart(2, "0");
 	const monthDay = `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-	if (interval === "6m") {
-		const m = Math.floor(d.getMinutes() / 6) * 6;
+	if (interval === "6m" || interval === "1h") {
+		const m = interval === "6m" ? Math.floor(d.getMinutes() / 6) * 6 : 0;
 		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), m, 0, 0);
-		const end = new Date(start.getTime() + 6 * 60 * 1000);
-		
 		const startStr = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
-		const endStr = `${pad(end.getHours())}:${pad(end.getMinutes())}`;
 		return {
 			key: start.toISOString(),
-			label: `${startStr} - ${endStr} (${monthDay})`
-		};
-	} else if (interval === "1h") {
-		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), 0, 0, 0);
-		const end = new Date(start.getTime() + 60 * 60 * 1000);
-		
-		const startStr = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
-		const endStr = `${pad(end.getHours())}:${pad(end.getMinutes())}`;
-		return {
-			key: start.toISOString(),
-			label: `${startStr} - ${endStr} (${monthDay})`
+			label: `${startStr} ${monthDay}` // e.g. "16:24 06-08" (11 chars)
 		};
 	} else if (interval === "1d") {
 		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
-		const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 		return {
 			key: start.toISOString(),
-			label: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} (${days[start.getDay()]})`
+			label: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` // e.g. "2026-06-08" (10 chars)
 		};
 	} else {
 		// 1w (Weeks starting on Sunday)
 		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay(), 0, 0, 0, 0);
 		return {
 			key: start.toISOString(),
-			label: `Week of ${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`
+			label: `W-${pad(start.getMonth() + 1)}-${pad(start.getDate())}` // e.g. "W-06-07" (7 chars)
 		};
 	}
 }
@@ -257,6 +261,82 @@ function distributeChars(
 }
 
 // ---
+// COST SCALE TICK MARKS GENERATION
+// ---
+
+/**
+ * Generates cost scale labels and heavy aligned markers to fit perfectly above
+ * the stacked horizontal bars. Performs overlap detection to scale labels dynamically.
+ */
+function buildTickLines(maxCost: number, barWidth: number): { labelsLine: string; markersLine: string } {
+	if (barWidth <= 0) {
+		return { labelsLine: "", markersLine: "" };
+	}
+
+	// Markers row (heavy vertical cross and heavy horizontal bar characters)
+	const markerArr = Array(barWidth).fill("━");
+	markerArr[0] = "┿";
+	markerArr[barWidth - 1] = "┿";
+
+	const midIdx = Math.floor((barWidth - 1) / 2);
+	const q1Idx = Math.floor((barWidth - 1) / 4);
+	const q3Idx = Math.floor(((barWidth - 1) * 3) / 4);
+
+	if (q1Idx > 0 && q1Idx < barWidth - 1) markerArr[q1Idx] = "┿";
+	if (midIdx > 0 && midIdx < barWidth - 1) markerArr[midIdx] = "┿";
+	if (q3Idx > 0 && q3Idx < barWidth - 1) markerArr[q3Idx] = "┿";
+
+	const markersLine = markerArr.join("");
+
+	// Labels row (allocates label text and avoids overlaps by tracking occupied slots)
+	const labelArr = Array(barWidth).fill(" ");
+	const occupied = Array(barWidth).fill(false);
+
+	const tryPlaceLabel = (text: string, centerIdx: number) => {
+		const len = text.length;
+		let startIdx = centerIdx - Math.floor(len / 2);
+		
+		if (startIdx < 0) startIdx = 0;
+		if (startIdx + len > barWidth) startIdx = barWidth - len;
+
+		for (let i = startIdx; i < startIdx + len; i++) {
+			if (occupied[i]) return false;
+		}
+
+		for (let i = 0; i < len; i++) {
+			labelArr[startIdx + i] = text[i];
+			occupied[startIdx + i] = true;
+		}
+
+		// Prevent adjacent labels from grouping too tightly
+		const padStart = Math.max(0, startIdx - 1);
+		const padEnd = Math.min(barWidth - 1, startIdx + len);
+		for (let i = padStart; i <= padEnd; i++) {
+			occupied[i] = true;
+		}
+		return true;
+	};
+
+	// Priority 1: Left/Right boundaries ($0.00 and maxCost)
+	tryPlaceLabel("$0.00", 0);
+	tryPlaceLabel(`$${maxCost.toFixed(2)}`, barWidth - 1);
+
+	// Priority 2: Midpoint (1/2)
+	if (maxCost > 0) {
+		tryPlaceLabel(`$${(maxCost / 2).toFixed(2)}`, midIdx);
+	}
+
+	// Priority 3: Quarter (1/4) and Three-Quarter (3/4) points
+	if (maxCost > 0) {
+		tryPlaceLabel(`$${(maxCost / 4).toFixed(2)}`, q1Idx);
+		tryPlaceLabel(`$${((maxCost * 3) / 4).toFixed(2)}`, q3Idx);
+	}
+
+	const labelsLine = labelArr.join("");
+	return { labelsLine, markersLine };
+}
+
+// ---
 // FORMATTING HELPERS
 // ---
 
@@ -265,11 +345,7 @@ function padString(str: string, len: number): string {
 }
 
 function formatCost(cost: number): string {
-	if (cost === 0) return "$0.0000";
-	if (cost < 0.0001) {
-		return `$${cost.toFixed(6)}`;
-	}
-	return `$${cost.toFixed(4)}`;
+	return `$${cost.toFixed(2)}`;
 }
 
 // ---
@@ -278,9 +354,9 @@ function formatCost(cost: number): string {
 
 export default function wtftExtension(pi: ExtensionAPI) {
 	pi.registerCommand("wtft", {
-		description: "Where The F***ing Tokens?! (WTFT) - Cost Auditing Utility",
+		description: "Where The F***ing Tokens?! (WTFT) - Cost Auditing Widget",
 		handler: async (args, ctx) => {
-			const { interval, limit, showHelp } = parseArgs(args);
+			const { interval, limit, width, hideWidget, showHelp } = parseArgs(args);
 
 			// Render manifest help menu if requested
 			if (showHelp) {
@@ -306,6 +382,13 @@ export default function wtftExtension(pi: ExtensionAPI) {
 				} catch (err) {
 					ctx.ui.notify(`⚠️ Failed to load WTFT command manifest: ${err}`, "error");
 				}
+				return;
+			}
+
+			// Handle widget hiding command
+			if (hideWidget) {
+				ctx.ui.setWidget("wtft", undefined);
+				ctx.ui.notify("Token cost audit widget hidden.", "info");
 				return;
 			}
 
@@ -398,7 +481,7 @@ export default function wtftExtension(pi: ExtensionAPI) {
 			}
 
 			if (interactions.length === 0) {
-				console.log("📊 No assistant interactions recorded in this session yet.");
+				ctx.ui.notify("📊 No assistant interactions recorded in this session yet.", "warning");
 				return;
 			}
 
@@ -435,17 +518,30 @@ export default function wtftExtension(pi: ExtensionAPI) {
 			const displayedBins = sortedBins.slice(-limit);
 			const maxCostInDisplayed = Math.max(...displayedBins.map(b => b.total_cost), 0);
 
-			// Render standard horizontal TUI ASCII stacked bar chart
-			const intervalColWidth = 30;
-			const costColWidth = 12;
-			const MAX_BAR_WIDTH = 30;
+			// Compute horizontal layout limits
+			const prefixWidth = 21; // 11 (interval) + 2 (spaces) + 6 (cost) + 2 (spaces)
+			const finalWidth = Math.max(width, 40);
+			const maxBarWidth = finalWidth - prefixWidth;
 
-			let out = `📊 Where The F***ing Tokens?! (Total Session Cost: ${formatCost(totalSessionCost)})\n\n`;
-			out += `${padString(`Interval (${interval} bins)`, intervalColWidth)}${padString("Cost ($)", costColWidth)}Stacked Bar Breakdown\n`;
-			out += "─".repeat(intervalColWidth + costColWidth + MAX_BAR_WIDTH) + "\n";
+			const widgetLines: string[] = [];
+			widgetLines.push(`📊 \x1b[1mWhere The F***ing Tokens?!\x1b[0m (Total Session Cost: \x1b[36m${formatCost(totalSessionCost)}\x1b[0m)`);
+			widgetLines.push("");
 
+			// Render tick labels and marker lines above the bars if there's non-zero cost
+			if (maxCostInDisplayed > 0) {
+				const prefix = " ".repeat(prefixWidth);
+				const { labelsLine, markersLine } = buildTickLines(maxCostInDisplayed, maxBarWidth);
+				if (labelsLine) {
+					widgetLines.push(prefix + `\x1b[2m${labelsLine}\x1b[0m`);
+				}
+				if (markersLine) {
+					widgetLines.push(prefix + `\x1b[2m${markersLine}\x1b[0m`);
+				}
+			}
+
+			// Render binned stacked bars
 			for (const bin of displayedBins) {
-				const barWidth = maxCostInDisplayed > 0 ? Math.round((bin.total_cost / maxCostInDisplayed) * MAX_BAR_WIDTH) : 0;
+				const barWidth = maxCostInDisplayed > 0 ? Math.round((bin.total_cost / maxCostInDisplayed) * maxBarWidth) : 0;
 				const chars = distributeChars(bin.spec_cost, bin.code_cost, bin.other_cost, barWidth);
 
 				let barStr = "";
@@ -459,12 +555,17 @@ export default function wtftExtension(pi: ExtensionAPI) {
 					barStr += `\x1b[34m${"░".repeat(chars.other)}\x1b[0m`;
 				}
 
-				out += `${padString(bin.label, intervalColWidth)}${padString(formatCost(bin.total_cost), costColWidth)}${barStr}\n`;
+				const labelPart = padString(bin.label, 11);
+				const costPart = padString(formatCost(bin.total_cost), 6);
+				widgetLines.push(`${labelPart}  ${costPart}  ${barStr}`);
 			}
 
-			out += `\nLegend:  \x1b[38;5;208m█\x1b[0m Spec (Orange)   \x1b[32m█\x1b[0m Code (Green)   \x1b[34m░\x1b[0m Other (Blue)\n`;
+			widgetLines.push("");
+			widgetLines.push(`Legend:  \x1b[38;5;208m█\x1b[0m Spec (Orange)   \x1b[32m█\x1b[0m Code (Green)   \x1b[34m░\x1b[0m Other (Blue)`);
 
-			console.log(out);
+			// Display the widget below the editor
+			ctx.ui.setWidget("wtft", widgetLines, { placement: "belowEditor" });
+			ctx.ui.notify("Token cost audit widget updated below the editor.", "info");
 		}
 	});
 }
