@@ -178,8 +178,8 @@ function parseArgs(argsStr: string = "") {
 /**
  * Classifies an interaction based on file modifications/reads, executed bash commands,
  * and text keywords. The logic enforces strict priority to handle overlap accurately:
- * 1. Spec Work (spec): touches docs, AGENTS.md, ARCHITECTURE.md, README.md or contains design planning terms.
- * 2. Code Work (code): touches .pi/extensions, src, tests, public or runs development bash commands.
+ * 1. Code Work (code): touches .pi/extensions, src, tests, public or runs development bash commands.
+ * 2. Spec Work (spec): touches docs, AGENTS.md, ARCHITECTURE.md, README.md or contains design planning terms.
  * 3. Other Work (other): conversation, setup, or untraced exchanges (rendered as unclassified in elegant grey).
  *
  * NOTE: This classification runs 100% locally in JavaScript and consumes ZERO LLM tokens!
@@ -209,27 +209,19 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
 		}
 	}
 
-	// Spec Work (Green) takes absolute priority over Code Work (Orange) for clear spec mapping
-	if (hasSpecFile) {
-		return "spec";
-	}
+	// Code Work (Orange) takes priority over Spec Work (Green) because active code modifications represent direct engineering effort
 	if (hasCodeFile) {
 		return "code";
+	}
+	if (hasSpecFile) {
+		return "spec";
 	}
 
 	// Analyze executed shell commands
 	for (const cmd of interaction.commands) {
 		const lowerCmd = cmd.toLowerCase();
 		
-		// Paths inside bash commands
-		if (
-			lowerCmd.includes("docs/") ||
-			lowerCmd.includes("agents.md") ||
-			lowerCmd.includes("architecture.md") ||
-			lowerCmd.includes("readme.md")
-		) {
-			return "spec";
-		}
+		// Paths inside bash commands (Code Work takes priority)
 		if (
 			lowerCmd.includes(".pi/extensions/") ||
 			lowerCmd.includes("src/") ||
@@ -237,6 +229,14 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
 			lowerCmd.includes("public/")
 		) {
 			return "code";
+		}
+		if (
+			lowerCmd.includes("docs/") ||
+			lowerCmd.includes("agents.md") ||
+			lowerCmd.includes("architecture.md") ||
+			lowerCmd.includes("readme.md")
+		) {
+			return "spec";
 		}
 
 		// Development/Test indicators
