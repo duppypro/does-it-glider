@@ -327,6 +327,38 @@ function getZonedParts(timestamp: number, tz?: string): { year: number; month: n
 }
 
 /**
+ * Calculates the ISO week number and the preceding Monday for a given date.
+ * ISO 8601 weeks always start on Monday.
+ */
+function getIsoWeekAndMonday(parts: { year: number; month: number; day: number }): { weekNum: number; mondayMonth: number; mondayDay: number; mondayYear: number } {
+	const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+	const day = date.getUTCDay();
+	
+	// Preceding Monday offset: Sunday (0) goes back 6 days, Mon (1) goes back 0 days...
+	const diffToMonday = day === 0 ? 6 : day - 1;
+	const mondayDate = new Date(date.getTime() - diffToMonday * 24 * 60 * 60 * 1000);
+	
+	// Find the Thursday of this ISO week
+	const thursdayDate = new Date(mondayDate.getTime() + 3 * 24 * 60 * 60 * 1000);
+	const targetYear = thursdayDate.getUTCFullYear();
+	
+	// First Thursday of targetYear
+	const jan1 = new Date(Date.UTC(targetYear, 0, 1));
+	const jan1Day = jan1.getUTCDay();
+	const firstThursday = new Date(jan1.getTime() + ((4 - jan1Day + 7) % 7) * 24 * 60 * 60 * 1000);
+	
+	// Calculate weeks difference
+	const weekNum = 1 + Math.round((thursdayDate.getTime() - firstThursday.getTime()) / (7 * 24 * 60 * 60 * 1000));
+	
+	return {
+		weekNum,
+		mondayYear: mondayDate.getUTCFullYear(),
+		mondayMonth: mondayDate.getUTCMonth() + 1,
+		mondayDay: mondayDate.getUTCDate()
+	};
+}
+
+/**
  * Maps a timestamp to an interval key, a shortened formatted display label,
  * and a standardized date string. Evaluates in the configured timezone.
  */
@@ -357,18 +389,11 @@ function getBinInfo(timestamp: number, config: IntervalConfig, tz?: string): { k
 		const key = `${parts.year}-${pad(parts.month)}-${pad(startDay)}T00:00:00`;
 		return { key, label, dateStr: label };
 	} else {
-		// unit === "w"
-		const localDate = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
-		const dayOfWeek = localDate.getUTCDay(); // Sunday is 0, Monday is 1...
-		const sundayDate = new Date(localDate.getTime() - dayOfWeek * 24 * 60 * 60 * 1000);
-		
-		const sundayYear = sundayDate.getUTCFullYear();
-		const sundayMonth = sundayDate.getUTCMonth() + 1;
-		const sundayDay = sundayDate.getUTCDate();
-		
-		const label = `W-${pad(sundayMonth)}-${pad(sundayDay)}`;
-		const key = `${sundayYear}-${pad(sundayMonth)}-${pad(sundayDay)}T00:00:00`;
-		return { key, label, dateStr: `${sundayYear}-${pad(sundayMonth)}-${pad(sundayDay)}` };
+		// unit === "w" (ISO 8601 week number & Monday)
+		const info = getIsoWeekAndMonday(parts);
+		const label = `W${pad(info.weekNum)} ${pad(info.mondayMonth)}-${pad(info.mondayDay)}`;
+		const key = `${info.mondayYear}-${pad(info.mondayMonth)}-${pad(info.mondayDay)}T00:00:00`;
+		return { key, label, dateStr: `${info.mondayYear}-${pad(info.mondayMonth)}-${pad(info.mondayDay)}` };
 	}
 }
 
