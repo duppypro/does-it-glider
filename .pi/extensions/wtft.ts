@@ -32,10 +32,11 @@ interface Bin {
  */
 function parseArgs(argsStr: string) {
 	const args = argsStr.trim().split(/\s+/).filter(Boolean);
-	let interval: "6m" | "1h" | "1d" | "1w" = "1h";
+	let interval: "1m" | "1h" | "1d" | "1w" = "1h";
 	let limit = 10;
 	let width = 80;
 	let hideWidget = false;
+	let showWidget = false;
 	let showHelp = false;
 
 	for (let i = 0; i < args.length; i++) {
@@ -44,9 +45,11 @@ function parseArgs(argsStr: string) {
 			showHelp = true;
 		} else if (arg === "--hide" || arg === "-H") {
 			hideWidget = true;
+		} else if (arg === "--show" || arg === "-S") {
+			showWidget = true;
 		} else if (arg === "-i" || arg === "--interval") {
 			const val = args[i + 1];
-			if (val === "6m" || val === "1h" || val === "1d" || val === "1w") {
+			if (val === "1m" || val === "1h" || val === "1d" || val === "1w") {
 				interval = val;
 				i++;
 			}
@@ -66,7 +69,7 @@ function parseArgs(argsStr: string) {
 			}
 		} else if (arg.startsWith("--interval=")) {
 			const val = arg.split("=")[1];
-			if (val === "6m" || val === "1h" || val === "1d" || val === "1w") {
+			if (val === "1m" || val === "1h" || val === "1d" || val === "1w") {
 				interval = val;
 			}
 		} else if (arg.startsWith("--limit=")) {
@@ -84,7 +87,7 @@ function parseArgs(argsStr: string) {
 		}
 	}
 
-	return { interval, limit, width, hideWidget, showHelp };
+	return { interval, limit, width, hideWidget, showWidget, showHelp };
 }
 
 // ---
@@ -187,13 +190,13 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
  * Maps a timestamp to an interval key and a shortened formatted display label
  * down to the absolute necessary characters to save row space.
  */
-function getBinInfo(timestamp: number, interval: "6m" | "1h" | "1d" | "1w"): { key: string; label: string } {
+function getBinInfo(timestamp: number, interval: "1m" | "1h" | "1d" | "1w"): { key: string; label: string } {
 	const d = new Date(timestamp);
 	const pad = (n: number) => String(n).padStart(2, "0");
 	const monthDay = `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-	if (interval === "6m" || interval === "1h") {
-		const m = interval === "6m" ? Math.floor(d.getMinutes() / 6) * 6 : 0;
+	if (interval === "1m" || interval === "1h") {
+		const m = interval === "1m" ? d.getMinutes() : 0;
 		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), m, 0, 0);
 		const startStr = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
 		return {
@@ -356,7 +359,7 @@ export default function wtftExtension(pi: ExtensionAPI) {
 	pi.registerCommand("wtft", {
 		description: "Where The F***ing Tokens?! (WTFT) - Cost Auditing Widget",
 		handler: async (args, ctx) => {
-			const { interval, limit, width, hideWidget, showHelp } = parseArgs(args);
+			const { interval, limit, width, hideWidget, showWidget, showHelp } = parseArgs(args);
 
 			// Render manifest help menu if requested
 			if (showHelp) {
