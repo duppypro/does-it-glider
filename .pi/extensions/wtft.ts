@@ -28,7 +28,7 @@ interface Bin {
 
 /**
  * Parses raw command argument string into typed options.
- * Supports standard flags (-i, --interval, -l, --limit, -w, --width, -H, --hide, -S, --show, -h, --help).
+ * Supports standard flags (-i, --interval, -l, --limit, -w, --width, -c, --cumulative, -b, --bucket, --ticks, --no-ticks, -H, --hide, -S, --show, -h, --help).
  */
 function parseArgs(argsStr: string) {
 	const args = argsStr.trim().split(/\s+/).filter(Boolean);
@@ -38,6 +38,8 @@ function parseArgs(argsStr: string) {
 	let hideWidget = false;
 	let showWidget = false;
 	let showHelp = false;
+	let showTicks = true;
+	let mode: "bucket" | "cumulative" = "bucket";
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -47,6 +49,14 @@ function parseArgs(argsStr: string) {
 			hideWidget = true;
 		} else if (arg === "--show" || arg === "-S") {
 			showWidget = true;
+		} else if (arg === "--ticks") {
+			showTicks = true;
+		} else if (arg === "--no-ticks") {
+			showTicks = false;
+		} else if (arg === "--cumulative" || arg === "-c") {
+			mode = "cumulative";
+		} else if (arg === "--bucket" || arg === "-b") {
+			mode = "bucket";
 		} else if (arg === "-i" || arg === "--interval") {
 			const val = args[i + 1];
 			if (val === "1m" || val === "1h" || val === "1d" || val === "1w") {
@@ -87,7 +97,7 @@ function parseArgs(argsStr: string) {
 		}
 	}
 
-	return { interval, limit, width, hideWidget, showWidget, showHelp };
+	return { interval, limit, width, hideWidget, showWidget, showTicks, mode, showHelp };
 }
 
 // ---
@@ -353,6 +363,8 @@ function getSettings(ctx: any) {
 	let limit = 10;
 	let width = 80;
 	let visible = false; // Default invisible on fresh session
+	let showTicks = true;
+	let mode: "bucket" | "cumulative" = "bucket";
 
 	for (const entry of ctx.sessionManager.getEntries()) {
 		if (entry.type === "custom" && entry.customType === "wtft-settings") {
@@ -361,11 +373,13 @@ function getSettings(ctx: any) {
 				if (typeof entry.data.limit === "number") limit = entry.data.limit;
 				if (typeof entry.data.width === "number") width = entry.data.width;
 				if (typeof entry.data.visible === "boolean") visible = entry.data.visible;
+				if (typeof entry.data.showTicks === "boolean") showTicks = entry.data.showTicks;
+				if (entry.data.mode) mode = entry.data.mode;
 			}
 		}
 	}
 
-	return { interval, limit, width, visible };
+	return { interval, limit, width, visible, showTicks, mode };
 }
 
 // ---
@@ -391,13 +405,22 @@ function formatCost(cost: number): string {
 function updateWtftWidget(
 	ctx: any,
 	pi: ExtensionAPI,
-	opts?: { interval?: "1m" | "1h" | "1d" | "1w"; limit?: number; width?: number; visible?: boolean }
+	opts?: {
+		interval?: "1m" | "1h" | "1d" | "1w";
+		limit?: number;
+		width?: number;
+		visible?: boolean;
+		showTicks?: boolean;
+		mode?: "bucket" | "cumulative";
+	}
 ) {
 	const current = getSettings(ctx);
 	const interval = opts?.interval ?? current.interval;
 	const limit = opts?.limit ?? current.limit;
 	const width = opts?.width ?? current.width;
 	const visible = opts?.visible ?? current.visible;
+	const showTicks = opts?.showTicks ?? current.showTicks;
+	const mode = opts?.mode ?? current.mode;
 
 	if (!visible) {
 		ctx.ui.setWidget("wtft", undefined);
@@ -522,7 +545,25 @@ function updateWtftWidget(
 		.sort((a, b) => a[0].localeCompare(b[0]))
 		.map(([_, val]) => val);
 
-	const displayedBins = sortedBins.slice(-limit);
+	// Apply cumulative mode summing if requested on the full set of chronological bins
+	if (mode === "cumulative") {
+		let specSum = 0;
+		let codeSum = 0;
+		let otherSum = 0;
+		for (const bin of sortedBins) {
+			specSum += bin.spec_cost;
+			codeSum += bin.code_cost;
+			otherSum += bin.other_cost;
+
+			bin.spec_cost = specSum;
+			bin.code_cost = codeSum;
+			bin.other_cost = otherSum;
+			bin.total_cost = specSum + codeSum + otherSum;
+		}
+	}
+
+	// Slice and reverse so that the most recent interval is displayed on top (first)
+	const displayedBins = sortedBins.slice(-limit).reverse();
 	const maxCostInDisplayed = Math.max(...displayedBins.map(b => b.total_cost), 0);
 
 	const prefixWidth = 21;
@@ -530,10 +571,13 @@ function updateWtftWidget(
 	const maxBarWidth = finalWidth - prefixWidth;
 
 	const widgetLines: string[] = [];
-	widgetLines.push(`📊 \x1b[1mWhere The F***ing Tokens?!\x1b[0m (Total Session Cost: \x1b[36m${formatCost(totalSessionCost)}\x1b[0m)`);
+	
+	const displayModeLabel = mode === "cumulative" ? "Cumulative Session Cost" : "Total Session Cost";
+	widgetLines.push(`📊 \x1b[1mWhere The F***ing Tokens?!\x1b[0m (${displayModeLabel}: \x1b[36m${formatCost(totalSessionCost)}\x1b[0m)`);
 	widgetLines.push("");
 
-	if (maxCostInDisplayed > 0) {
+	// Render tick labels and marker lines above the bars if enabled
+	if (showTicks && maxCostInDisplayed > 0) {
 		const prefix = " ".repeat(prefixWidth);
 		const { labelsLine, markersLine } = buildTickLines(maxCostInDisplayed, maxBarWidth);
 		if (labelsLine) {
@@ -595,7 +639,7 @@ export default function wtftExtension(pi: ExtensionAPI) {
 	pi.registerCommand("wtft", {
 		description: "Where The F***ing Tokens?! (WTFT) - Cost Auditing Widget",
 		handler: async (args, ctx) => {
-			const { interval, limit, width, hideWidget, showWidget, showHelp } = parseArgs(args);
+			const { interval, limit, width, hideWidget, showWidget, showTicks, mode, showHelp } = parseArgs(args);
 
 			// Render manifest help menu if requested
 			if (showHelp) {
@@ -631,7 +675,9 @@ export default function wtftExtension(pi: ExtensionAPI) {
 					interval: current.interval,
 					limit: current.limit,
 					width: current.width,
-					visible: false
+					visible: false,
+					showTicks: current.showTicks,
+					mode: current.mode
 				});
 				ctx.ui.setWidget("wtft", undefined);
 				ctx.ui.notify("Token cost audit widget hidden.", "info");
@@ -642,23 +688,31 @@ export default function wtftExtension(pi: ExtensionAPI) {
 			const hasInterval = /\b(-i|--interval)\b/.test(args);
 			const hasLimit = /\b(-l|--limit)\b/.test(args);
 			const hasWidth = /\b(-w|--width)\b/.test(args);
+			const hasTicks = /\b(--ticks|--no-ticks)\b/.test(args);
+			const hasMode = /\b(-c|--cumulative|-b|--bucket)\b/.test(args);
 
 			const nextInterval = hasInterval ? interval : current.interval;
 			const nextLimit = hasLimit ? limit : current.limit;
 			const nextWidth = hasWidth ? width : current.width;
+			const nextTicks = hasTicks ? showTicks : current.showTicks;
+			const nextMode = hasMode ? mode : current.mode;
 
 			pi.appendEntry("wtft-settings", {
 				interval: nextInterval,
 				limit: nextLimit,
 				width: nextWidth,
-				visible: true
+				visible: true,
+				showTicks: nextTicks,
+				mode: nextMode
 			});
 
 			updateWtftWidget(ctx, pi, {
 				interval: nextInterval,
 				limit: nextLimit,
 				width: nextWidth,
-				visible: true
+				visible: true,
+				showTicks: nextTicks,
+				mode: nextMode
 			});
 
 			ctx.ui.notify("Token cost audit widget updated below the editor.", "info");
