@@ -574,7 +574,6 @@ function updateWtftWidget(
 	
 	const displayModeLabel = mode === "cumulative" ? "Cumulative Session Cost" : "Total Session Cost";
 	widgetLines.push(`📊 \x1b[1mWhere The F***ing Tokens?!\x1b[0m (${displayModeLabel}: \x1b[36m${formatCost(totalSessionCost)}\x1b[0m)`);
-	widgetLines.push("");
 
 	// Render tick labels and marker lines above the bars if enabled
 	if (showTicks && maxCostInDisplayed > 0) {
@@ -608,7 +607,6 @@ function updateWtftWidget(
 		widgetLines.push(`${labelPart}  ${costPart}  ${barStr}`);
 	}
 
-	widgetLines.push("");
 	widgetLines.push(`Legend:  \x1b[38;5;208m█\x1b[0m Spec (Orange)   \x1b[32m█\x1b[0m Code (Green)   \x1b[38;5;244m░\x1b[0m Other (Grey)`);
 
 	ctx.ui.setWidget("wtft", widgetLines, { placement: "belowEditor" });
