@@ -49,11 +49,16 @@
     <h3>Command Reference</h3>
     <div style="background: var(--box-bg); padding: 15px; border-radius: 8px; border: 1px solid #404040; margin-bottom: 20px;">
         <p><strong><code>/wtft</code></strong> [options]</p>
-        <p>Analyze and display the session cost breakdown.</p>
+        <p>Analyze and display the session cost breakdown in a persistent TUI widget below the editor.</p>
         <h4 style="color: var(--accent-yellow); margin-bottom: 5px;">Options</h4>
         <ul>
-            <li><code>-i, --interval &lt;6m|1h|1d|1w&gt;</code> - Group cost data into 6-minute, 1-hour, 1-day, or 1-week bins (default: <code>1h</code>).</li>
+            <li><code>-i, --interval &lt;size&gt;&lt;m|h|d|w&gt;</code> - Group cost data into arbitrary binned intervals of minutes, hours, days, or weeks (e.g., 1m, 7m, 4h, 1d, 2w; default: <code>1h</code>).</li>
             <li><code>-l, --limit &lt;number&gt;</code> - Limit the number of interval bars displayed (default: <code>10</code>).</li>
+            <li><code>-w, --width &lt;number&gt;</code> - Set the maximum character width of the TUI widget (default: <code>80</code>).</li>
+            <li><code>-c, --cumulative</code> - Render running cumulative sums (default behavior).</li>
+            <li><code>-b, --bucket</code> - Render discrete binned interval cost buckets.</li>
+            <li><code>--ticks</code> / <code>--no-ticks</code> - Enable or disable the proportional cost scale ticks above the bars (default: <code>true</code>).</li>
+            <li><code>-S, --show</code> / <code>-H, --hide</code> - Show (force refresh) or hide the cost audit widget.</li>
         </ul>
     </div>
 
