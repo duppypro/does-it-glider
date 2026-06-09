@@ -39,7 +39,7 @@ function parseArgs(argsStr: string) {
 	let showWidget = false;
 	let showHelp = false;
 	let showTicks = true;
-	let mode: "bucket" | "cumulative" = "bucket";
+	let mode: "bucket" | "cumulative" = "cumulative";
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -364,7 +364,7 @@ function getSettings(ctx: any) {
 	let width = 80;
 	let visible = false; // Default invisible on fresh session
 	let showTicks = true;
-	let mode: "bucket" | "cumulative" = "bucket";
+	let mode: "bucket" | "cumulative" = "cumulative";
 
 	for (const entry of ctx.sessionManager.getEntries()) {
 		if (entry.type === "custom" && entry.customType === "wtft-settings") {

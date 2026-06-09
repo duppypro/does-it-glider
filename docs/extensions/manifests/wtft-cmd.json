@@ -6,8 +6,8 @@
     { "flags": "-i, --interval <1m|1h|1d|1w>", "desc": "Group cost data into 1-minute, 1-hour, 1-day, or 1-week bins (default: 1h)." },
     { "flags": "-l, --limit <number>", "desc": "Limit the number of interval bars displayed (default: 10)." },
     { "flags": "-w, --width <number>", "desc": "Set the maximum character width of the TUI widget (default: 80)." },
-    { "flags": "-c, --cumulative", "desc": "Render bars as cumulative sums over time (each bar is sum of current and all prior intervals)." },
-    { "flags": "-b, --bucket", "desc": "Render bars as discrete interval cost buckets (default behavior)." },
+    { "flags": "-c, --cumulative", "desc": "Render bars as cumulative sums over time (each bar is sum of current and all prior intervals) (default behavior)." },
+    { "flags": "-b, --bucket", "desc": "Render bars as discrete interval cost buckets." },
     { "flags": "--ticks", "desc": "Display proportional cost scale tick marks above the bars (default behavior)." },
     { "flags": "--no-ticks", "desc": "Disable cost scale tick marks above the bars." },
     { "flags": "-S, --show", "desc": "Show or refresh the WTFT cost-auditing widget (default behavior)." },
@@ -16,7 +16,7 @@
   ],
   "examples": [
     { "cmd": "/wtft", "desc": "Analyze session cost breakdown in a widget below the editor (80 chars wide)." },
-    { "cmd": "/wtft --cumulative", "desc": "Show cumulative token cost growth over time binned by hour." },
+    { "cmd": "/wtft --bucket", "desc": "Show discrete token cost buckets binned by hour." },
     { "cmd": "/wtft -i 1m -l 20 --no-ticks", "desc": "Show last 20 1-minute interval bars with scale ticks hidden." },
     { "cmd": "/wtft --show", "desc": "Force show or refresh the cost audit widget." },
     { "cmd": "/wtft --hide", "desc": "Hide the cost audit widget from the display." }
