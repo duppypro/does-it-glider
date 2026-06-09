@@ -40,8 +40,12 @@
 
     <h3>Command Reference</h3>
     <div style="background: var(--box-bg); padding: 15px; border-radius: 8px; border: 1px solid #404040; margin-bottom: 20px;">
-        <p><strong><code>/merge</code></strong> [options]</p>
-        <p>Automate the verification and merging of the current worktree's branch into the <code>main</code> worktree branch.</p>
+        <p><strong><code>/merge</code></strong> [commit-ish] [options]</p>
+        <p>Automate the verification and merging of a specific commit or the current worktree's branch into the <code>main</code> worktree branch.</p>
+        <h4 style="color: var(--accent-yellow); margin-bottom: 5px;">Arguments</h4>
+        <ul>
+            <li><code>commit-ish</code> - Optional commit hash, branch, or reference to merge (defaults to <code>HEAD</code>).</li>
+        </ul>
         <h4 style="color: var(--accent-yellow); margin-bottom: 5px;">Options</h4>
         <ul>
             <li><code>--help</code> / <code>-h</code> - Display help information.</li>
@@ -53,17 +57,17 @@
     <ol>
         <li><strong>No Self-Merge:</strong> Rejects running the command if the active worktree is already on the <code>main</code> branch.</li>
         <li><strong>Clean Feature Worktree:</strong> Verifies that the current feature worktree contains no uncommitted (staged or unstaged) modifications.</li>
-        <li><strong>In Sync with Origin:</strong> Fetches origin and ensures the local HEAD hash matches the remote branch HEAD hash exactly (preventing unpushed commits or pending pulls).</li>
-        <li><strong>Step 5 Validation:</strong> Validates that the last commit message begins with <code>Code and Spec Approved:</code> (conforming to Step 5 of the Princess-Pi standard).</li>
+        <li><strong>In Sync with Origin:</strong> Fetches origin and ensures the targeted commit-ish is present in the history of the remote tracking branch (preventing unpushed commits).</li>
+        <li><strong>Step 5 Validation:</strong> Validates that the targeted commit's message begins with <code>Code and Spec Approved:</code> (conforming to Step 5 of the Princess-Pi standard). If it does not, the command fails and automatically suggests the command to merge the most recent historical commit that <em>does</em> meet this standard.</li>
         <li><strong>Clean Main Worktree:</strong> Finds the <code>main</code> worktree directory and verifies that it contains no uncommitted changes.</li>
     </ol>
 
     <h3>Merge and Push Execution</h3>
-    <p>Once all validations pass, the utility performs the integration automatically inside the <code>main</code> worktree directory using <code>git -C &lt;main_path&gt;</code> commands:</p>
+    <p>Once all validations pass, the utility performs the integration automatically inside the <code>main</code> worktree directory using <code>git</code> commands in that path:</p>
     <ol>
         <li>Switches/ensures the main worktree is on the <code>main</code> branch.</li>
         <li>Pulls the latest updates from <code>origin/main</code>.</li>
-        <li>Merges the validated feature branch into the <code>main</code> branch.</li>
+        <li>Merges the validated target commit into the <code>main</code> branch (leaving any subsequent unapproved commits on the feature branch).</li>
         <li>Pushes the newly merged <code>main</code> branch to origin.</li>
         <li>Logs absolute success and returns focus to the active worktree, ready for the next development task.</li>
     </ol>

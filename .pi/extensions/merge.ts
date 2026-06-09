@@ -55,29 +55,78 @@ export default function mergeExtension(pi: ExtensionAPI) {
 					throw new Error(`Your current branch worktree (${currentBranch}) is not clean. Please commit or stash changes first.\n${currentStatus}`);
 				}
 
-				// 3. Fetch remote and check if up to date
-				ctx.ui.notify(`📡 Fetching origin to verify '${currentBranch}' sync status...`, "info");
+				// 3. Fetch remote first to ensure our remote-tracking reference is current
+				ctx.ui.notify("📡 Fetching origin to update remote tracking references...", "info");
 				execSync("git fetch origin", { cwd: currentCwd, stdio: "ignore" });
 
+				// 4. Determine target commit
 				const localHash = execSync("git rev-parse HEAD", { cwd: currentCwd, encoding: "utf8" }).trim();
-				let remoteHash = "";
+				let targetHash = "";
+				const ref = argsList[0];
+
+				if (ref) {
+					try {
+						targetHash = execSync(`git rev-parse ${ref}`, { cwd: currentCwd, encoding: "utf8" }).trim();
+					} catch {
+						throw new Error(`The provided reference '${ref}' is not a valid Git commit or branch name.`);
+					}
+
+					// Verify targetHash is an ancestor of local HEAD (belongs to this branch's history)
+					try {
+						execSync(`git merge-base --is-ancestor ${targetHash} HEAD`, { cwd: currentCwd });
+					} catch {
+						throw new Error(`The target commit '${ref}' (${targetHash.substring(0, 7)}) is not in the history of the current branch '${currentBranch}'.`);
+					}
+				} else {
+					targetHash = localHash;
+				}
+
+				// 5. Check if target commit has been pushed to remote
+				let isPushed = false;
 				try {
-					remoteHash = execSync(`git rev-parse origin/${currentBranch}`, { cwd: currentCwd, encoding: "utf8" }).trim();
+					execSync(`git merge-base --is-ancestor ${targetHash} origin/${currentBranch}`, { cwd: currentCwd });
+					isPushed = true;
 				} catch {
-					throw new Error(`Remote branch 'origin/${currentBranch}' does not exist on origin. Please push your branch first.`);
+					isPushed = false;
 				}
 
-				if (localHash !== remoteHash) {
-					throw new Error(`Your local branch '${currentBranch}' is out of sync with origin.\nLocal:  ${localHash.substring(0, 7)}\nRemote: ${remoteHash.substring(0, 7)}\nPlease push or pull your changes first.`);
+				if (!isPushed) {
+					throw new Error(`The target commit ${targetHash.substring(0, 7)} has not been pushed to 'origin/${currentBranch}'. Please push your changes first.`);
 				}
 
-				// 4. Validate that the last commit was a "Code and Spec Approved" Step 5 commit
-				const lastCommitMsg = execSync("git log -1 --pretty=%B", { cwd: currentCwd, encoding: "utf8" }).trim();
-				if (!lastCommitMsg.startsWith("Code and Spec Approved:")) {
-					throw new Error(`The last commit is not a Step 5 'Code and Spec Approved' commit.\nLast commit message: "${lastCommitMsg.split("\n")[0]}"\nMerges to main are only permitted when the branch is in the Step 5 Approved state.`);
+				// 6. Validate that the target commit was a "Code and Spec Approved" Step 5 commit
+				const targetCommitMsg = execSync(`git log -1 --pretty=%B ${targetHash}`, { cwd: currentCwd, encoding: "utf8" }).trim();
+				if (!targetCommitMsg.startsWith("Code and Spec Approved:")) {
+					// Search for the most recent Step 5 commit in history to suggest
+					let suggestedStep5Hash = "";
+					let suggestedStep5Msg = "";
+					try {
+						const logLines = execSync("git log --pretty=format:\"%H %s\" -n 50", { cwd: currentCwd, encoding: "utf8" }).trim().split("\n");
+						for (const line of logLines) {
+							const spaceIdx = line.indexOf(" ");
+							if (spaceIdx !== -1) {
+								const hash = line.substring(0, spaceIdx).trim();
+								const msg = line.substring(spaceIdx + 1).trim();
+								if (msg.startsWith("Code and Spec Approved:")) {
+									suggestedStep5Hash = hash;
+									suggestedStep5Msg = msg;
+									break;
+								}
+							}
+						}
+					} catch {
+						// ignore
+					}
+
+					let errorMsg = `The target commit ${targetHash.substring(0, 7)} is not a Step 5 'Code and Spec Approved' commit.\nTarget commit message: "${targetCommitMsg.split("\n")[0]}"\nMerges to main are only permitted for commits in the Step 5 Approved state.`;
+
+					if (suggestedStep5Hash) {
+						errorMsg += `\n\n💡 Suggestion: A previous Step 5 commit was found in your history:\n   Hash: \x1b[33m${suggestedStep5Hash.substring(0, 7)}\x1b[0m\n   Message: "${suggestedStep5Msg}"\n\nTo merge up to that stable checkpoint, run:\n   \x1b[36m/merge ${suggestedStep5Hash.substring(0, 7)}\x1b[0m`;
+					}
+					throw new Error(errorMsg);
 				}
 
-				// 5. Find the 'main' worktree
+				// 7. Find the 'main' worktree
 				const worktreeLines = execSync("git worktree list", { cwd: currentCwd, encoding: "utf8" }).trim().split("\n");
 				let mainCwd = "";
 				for (const line of worktreeLines) {
@@ -97,26 +146,26 @@ export default function mergeExtension(pi: ExtensionAPI) {
 					throw new Error("Could not find the 'main' branch worktree from 'git worktree list'.");
 				}
 
-				// 6. Verify main worktree is clean
+				// 8. Verify main worktree is clean
 				const mainStatus = execSync("git status --porcelain", { cwd: mainCwd, encoding: "utf8" }).trim();
 				if (mainStatus !== "") {
 					throw new Error(`The 'main' branch worktree at ${mainCwd} is not clean. Please clean or stash changes there first.\n${mainStatus}`);
 				}
 
-				// 7. Pull the latest 'main' branch in main worktree to ensure it is up-to-date with remote
+				// 9. Pull the latest 'main' branch in main worktree to ensure it is up-to-date with remote
 				ctx.ui.notify("📡 Pulling latest 'main' from origin...", "info");
 				execSync("git checkout main", { cwd: mainCwd, stdio: "ignore" });
 				execSync("git pull origin main", { cwd: mainCwd, stdio: "ignore" });
 
-				// 8. Merge the feature branch into 'main'
-				ctx.ui.notify(`🔀 Merging '${currentBranch}' into 'main' in the main worktree...`, "info");
-				execSync(`git merge ${currentBranch}`, { cwd: mainCwd, stdio: "ignore" });
+				// 10. Merge the target commit into 'main'
+				ctx.ui.notify(`🔀 Merging target commit ${targetHash.substring(0, 7)} into 'main' in the main worktree...`, "info");
+				execSync(`git merge ${targetHash}`, { cwd: mainCwd, stdio: "ignore" });
 
-				// 9. Push 'main' to origin
+				// 11. Push 'main' to origin
 				ctx.ui.notify("📡 Pushing merged 'main' branch to origin...", "info");
 				execSync("git push origin main", { cwd: mainCwd, stdio: "ignore" });
 
-				ctx.ui.notify(`🎉 Success! Merged '${currentBranch}' into 'main' and pushed to origin.`, "info");
+				ctx.ui.notify(`🎉 Success! Merged target commit ${targetHash.substring(0, 7)} into 'main' and pushed to origin.`, "info");
 				ctx.ui.notify(`💪 Ready for the next task! You are in worktree '${currentCwd}' on branch '${currentBranch}'.`, "info");
 
 			} catch (err: any) {
