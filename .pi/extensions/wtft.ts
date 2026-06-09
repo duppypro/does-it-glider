@@ -16,6 +16,7 @@ interface Interaction {
 
 interface Bin {
 	label: string;
+	dateStr: string;
 	spec_cost: number;
 	code_cost: number;
 	other_cost: number;
@@ -138,8 +139,8 @@ function parseArgs(argsStr: string = "") {
 /**
  * Classifies an interaction based on file modifications/reads, executed bash commands,
  * and text keywords. The logic enforces strict priority to handle overlap accurately:
- * 1. Code Work (code): touches .pi/extensions, src, tests, public or runs development bash commands.
- * 2. Spec Work (spec): touches docs, AGENTS.md, ARCHITECTURE.md, README.md or contains design planning terms.
+ * 1. Spec Work (spec): touches docs, AGENTS.md, ARCHITECTURE.md, README.md or contains design planning terms.
+ * 2. Code Work (code): touches .pi/extensions, src, tests, public or runs development bash commands.
  * 3. Other Work (other): conversation, setup, or untraced exchanges (rendered as unclassified in elegant grey).
  *
  * NOTE: This classification runs 100% locally in JavaScript and consumes ZERO LLM tokens!
@@ -169,25 +170,17 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
 		}
 	}
 
-	// Code file changes take absolute priority over planning/docs
-	if (hasCodeFile) {
-		return "code";
-	}
+	// Spec Work (Green) takes absolute priority over Code Work (Orange) for clear spec mapping
 	if (hasSpecFile) {
 		return "spec";
+	}
+	if (hasCodeFile) {
+		return "code";
 	}
 
 	// Analyze executed shell commands
 	for (const cmd of interaction.commands) {
 		const lowerCmd = cmd.toLowerCase();
-		
-		// Development/Test indicators
-		if (
-			/\b(npm|pnpm|yarn|bun)\s+(run\s+)?(test|build|compile)\b/.test(lowerCmd) ||
-			/\b(vitest|jest|pytest|tsc|cargo\s+test|go\s+test)\b/.test(lowerCmd)
-		) {
-			return "code";
-		}
 		
 		// Paths inside bash commands
 		if (
@@ -203,6 +196,14 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
 			lowerCmd.includes("src/") ||
 			lowerCmd.includes("tests/") ||
 			lowerCmd.includes("public/")
+		) {
+			return "code";
+		}
+
+		// Development/Test indicators
+		if (
+			/\b(npm|pnpm|yarn|bun)\s+(run\s+)?(test|build|compile)\b/.test(lowerCmd) ||
+			/\b(vitest|jest|pytest|tsc|cargo\s+test|go\s+test)\b/.test(lowerCmd)
 		) {
 			return "code";
 		}
@@ -230,13 +231,14 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
 // ---
 
 /**
- * Maps a timestamp to an interval key and a shortened formatted display label
- * down to the absolute necessary characters to save row space.
+ * Maps a timestamp to an interval key, a shortened formatted display label,
+ * and a standardized date string. Evaluates entirely in local time.
  */
-function getBinInfo(timestamp: number, interval: "1m" | "1h" | "1d" | "1w"): { key: string; label: string } {
+function getBinInfo(timestamp: number, interval: "1m" | "1h" | "1d" | "1w"): { key: string; label: string; dateStr: string } {
 	const d = new Date(timestamp);
 	const pad = (n: number) => String(n).padStart(2, "0");
 	const monthDay = `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+	const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
 	if (interval === "1m" || interval === "1h") {
 		const m = interval === "1m" ? d.getMinutes() : 0;
@@ -244,20 +246,23 @@ function getBinInfo(timestamp: number, interval: "1m" | "1h" | "1d" | "1w"): { k
 		const startStr = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
 		return {
 			key: start.toISOString(),
-			label: `${startStr} ${monthDay}` // e.g. "16:24 06-08" (11 chars)
+			label: startStr, // Just "hh:mm" (no date part, to maximize row space)
+			dateStr
 		};
 	} else if (interval === "1d") {
 		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
 		return {
 			key: start.toISOString(),
-			label: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` // e.g. "2026-06-08" (10 chars)
+			label: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+			dateStr
 		};
 	} else {
 		// 1w (Weeks starting on Sunday)
 		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay(), 0, 0, 0, 0);
 		return {
 			key: start.toISOString(),
-			label: `W-${pad(start.getMonth() + 1)}-${pad(start.getDate())}` // e.g. "W-06-07" (7 chars)
+			label: `W-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`,
+			dateStr
 		};
 	}
 }
@@ -388,6 +393,7 @@ function buildTickLines(maxCost: number, barWidth: number): { labelsLine: string
 
 /**
  * Retrieves setting configurations stored persistently in the session log.
+ * Defaults mode to "cumulative" for cohesive cost progression tracks.
  */
 function getSettings(ctx: any) {
 	let interval: "1m" | "1h" | "1d" | "1w" = "1h";
@@ -425,13 +431,19 @@ function formatCost(cost: number): string {
 	return `$${cost.toFixed(2)}`;
 }
 
+function formatLocalMmmDd(date: Date): string {
+	const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+	const pad = (n: number) => String(n).padStart(2, "0");
+	return `${months[date.getMonth()]}-${pad(date.getDate())}`;
+}
+
 // ---
 // TUI WIDGET UPDATE ENGINE
 // ---
 
 /**
  * Dynamically computes costs binned by interval and updates the TUI widget
- * positioned below the editor.
+ * positioned below the editor. Operates entirely in local timezone.
  */
 function updateWtftWidget(
 	ctx: any,
@@ -553,12 +565,12 @@ function updateWtftWidget(
 
 	for (const interaction of interactions) {
 		const classification = classifyInteraction(interaction);
-		const { key, label } = getBinInfo(interaction.timestamp, interval);
+		const { key, label, dateStr } = getBinInfo(interaction.timestamp, interval);
 		totalSessionCost += interaction.cost;
 
 		let bin = binMap.get(key);
 		if (!bin) {
-			bin = { label, spec_cost: 0, code_cost: 0, other_cost: 0, total_cost: 0 };
+			bin = { label, dateStr, spec_cost: 0, code_cost: 0, other_cost: 0, total_cost: 0 };
 			binMap.set(key, bin);
 		}
 
@@ -601,10 +613,15 @@ function updateWtftWidget(
 	const finalWidth = Math.max(width, 40);
 	const maxBarWidth = finalWidth - prefixWidth;
 
+	// Resolve the title date indicator (newest local date in MMM-DD format)
+	const newestBin = displayedBins[0];
+	const newestDate = newestBin ? new Date(newestBin.dateStr + "T00:00:00") : new Date();
+	const titleDateStr = formatLocalMmmDd(newestDate);
+
 	const widgetLines: string[] = [];
 	
 	const displayModeLabel = mode === "cumulative" ? "Cumulative Session Cost" : "Total Session Cost";
-	widgetLines.push(`📊 \x1b[1mWhere The F***ing Tokens?!\x1b[0m (${displayModeLabel}: \x1b[36m${formatCost(totalSessionCost)}\x1b[0m)`);
+	widgetLines.push(`📊 \x1b[1mWhere The F***ing Tokens?!\x1b[0m (${displayModeLabel}: \x1b[36m${formatCost(totalSessionCost)}\x1b[0m) - ${titleDateStr}`);
 
 	// Render tick labels and marker lines above the bars if enabled
 	if (showTicks && maxCostInDisplayed > 0) {
@@ -618,19 +635,32 @@ function updateWtftWidget(
 		}
 	}
 
-	for (const bin of displayedBins) {
+	// Render binned stacked bars
+	for (let i = 0; i < displayedBins.length; i++) {
+		const bin = displayedBins[i];
+
+		// If crossing a local day boundary (current bin date is different from previous in descending loop),
+		// draw a visual day change indicator line before rendering this older bin.
+		if (i > 0 && bin.dateStr !== displayedBins[i - 1].dateStr) {
+			const dateOfBin = new Date(bin.dateStr + "T00:00:00");
+			const labelDay = formatLocalMmmDd(dateOfBin);
+			const dayChangeText = `─── ${labelDay} `;
+			const dividerLine = dayChangeText + "─".repeat(Math.max(0, finalWidth - dayChangeText.length));
+			widgetLines.push(`\x1b[2m${dividerLine}\x1b[0m`);
+		}
+
 		const barWidth = maxCostInDisplayed > 0 ? Math.round((bin.total_cost / maxCostInDisplayed) * maxBarWidth) : 0;
 		const chars = distributeChars(bin.spec_cost, bin.code_cost, bin.other_cost, barWidth);
 
 		let barStr = "";
 		if (chars.spec > 0) {
-			barStr += `\x1b[38;5;208m${"█".repeat(chars.spec)}\x1b[0m`;
+			barStr += `\x1b[92m${"█".repeat(chars.spec)}\x1b[0m`; // Spec Work (Green)
 		}
 		if (chars.code > 0) {
-			barStr += `\x1b[32m${"█".repeat(chars.code)}\x1b[0m`;
+			barStr += `\x1b[38;5;208m${"█".repeat(chars.code)}\x1b[0m`; // Code Work (Orange)
 		}
 		if (chars.other > 0) {
-			barStr += `\x1b[38;5;244m${"░".repeat(chars.other)}\x1b[0m`; // ANSI Grey for elegant unclassified data
+			barStr += `\x1b[38;5;244m${"░".repeat(chars.other)}\x1b[0m`; // Other Work (Grey)
 		}
 
 		const labelPart = padString(bin.label, 11);
@@ -638,7 +668,7 @@ function updateWtftWidget(
 		widgetLines.push(`${labelPart}  ${costPart}  ${barStr}`);
 	}
 
-	widgetLines.push(`Legend:  \x1b[38;5;208m█\x1b[0m Spec (Orange)   \x1b[32m█\x1b[0m Code (Green)   \x1b[38;5;244m░\x1b[0m Other (Grey)`);
+	widgetLines.push(`Legend:  \x1b[92m█\x1b[0m Spec (Green)   \x1b[38;5;208m█\x1b[0m Code (Orange)   \x1b[38;5;244m░\x1b[0m Other (Grey)`);
 
 	ctx.ui.setWidget("wtft", widgetLines, { placement: "belowEditor" });
 }
