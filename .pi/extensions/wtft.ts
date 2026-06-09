@@ -533,7 +533,7 @@ function getSettings(ctx: any) {
 	let visible = false; // Default invisible on fresh session
 	let showTicks = true;
 	let mode: "bucket" | "cumulative" = "cumulative";
-	let timezone: string | undefined = undefined;
+	let timezone: string | undefined = "America/Los_Angeles";
 
 	for (const entry of ctx.sessionManager.getEntries()) {
 		if (entry.type === "custom" && entry.customType === "wtft-settings") {
