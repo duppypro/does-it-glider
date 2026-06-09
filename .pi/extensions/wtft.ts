@@ -28,7 +28,7 @@ interface Bin {
 
 /**
  * Parses raw command argument string into typed options.
- * Supports standard flags (-i, --interval, -l, --limit, -w, --width, -H, --hide, -h, --help).
+ * Supports standard flags (-i, --interval, -l, --limit, -w, --width, -H, --hide, -S, --show, -h, --help).
  */
 function parseArgs(argsStr: string) {
 	const args = argsStr.trim().split(/\s+/).filter(Boolean);
@@ -99,7 +99,9 @@ function parseArgs(argsStr: string) {
  * and text keywords. The logic enforces strict priority to handle overlap accurately:
  * 1. Code Work (code): touches .pi/extensions, src, tests, public or runs development bash commands.
  * 2. Spec Work (spec): touches docs, AGENTS.md, ARCHITECTURE.md, README.md or contains design planning terms.
- * 3. Other Work (other): conversation, setup, or untraced exchanges.
+ * 3. Other Work (other): conversation, setup, or untraced exchanges (rendered as unclassified in elegant grey).
+ *
+ * NOTE: This classification runs 100% locally in JavaScript and consumes ZERO LLM tokens!
  */
 function classifyInteraction(interaction: Interaction): "spec" | "code" | "other" {
 	let hasSpecFile = false;
@@ -340,6 +342,33 @@ function buildTickLines(maxCost: number, barWidth: number): { labelsLine: string
 }
 
 // ---
+// STATE PERSISTENCE (STORE/RETRIEVE)
+// ---
+
+/**
+ * Retrieves setting configurations stored persistently in the session log.
+ */
+function getSettings(ctx: any) {
+	let interval: "1m" | "1h" | "1d" | "1w" = "1h";
+	let limit = 10;
+	let width = 80;
+	let visible = false; // Default invisible on fresh session
+
+	for (const entry of ctx.sessionManager.getEntries()) {
+		if (entry.type === "custom" && entry.customType === "wtft-settings") {
+			if (entry.data) {
+				if (entry.data.interval) interval = entry.data.interval;
+				if (typeof entry.data.limit === "number") limit = entry.data.limit;
+				if (typeof entry.data.width === "number") width = entry.data.width;
+				if (typeof entry.data.visible === "boolean") visible = entry.data.visible;
+			}
+		}
+	}
+
+	return { interval, limit, width, visible };
+}
+
+// ---
 // FORMATTING HELPERS
 // ---
 
@@ -352,10 +381,217 @@ function formatCost(cost: number): string {
 }
 
 // ---
+// TUI WIDGET UPDATE ENGINE
+// ---
+
+/**
+ * Dynamically computes costs binned by interval and updates the TUI widget
+ * positioned below the editor.
+ */
+function updateWtftWidget(
+	ctx: any,
+	pi: ExtensionAPI,
+	opts?: { interval?: "1m" | "1h" | "1d" | "1w"; limit?: number; width?: number; visible?: boolean }
+) {
+	const current = getSettings(ctx);
+	const interval = opts?.interval ?? current.interval;
+	const limit = opts?.limit ?? current.limit;
+	const width = opts?.width ?? current.width;
+	const visible = opts?.visible ?? current.visible;
+
+	if (!visible) {
+		ctx.ui.setWidget("wtft", undefined);
+		return;
+	}
+
+	const branch = ctx.sessionManager.getBranch();
+	const interactions: Interaction[] = [];
+
+	for (let i = 0; i < branch.length; i++) {
+		const entry = branch[i];
+		if (entry.type === "message" && entry.message && entry.message.role === "assistant") {
+			const assistantMsg = entry.message;
+			const cost = assistantMsg.usage?.cost?.total || 0;
+			const timestamp = assistantMsg.timestamp || new Date(entry.timestamp).getTime();
+
+			const files = new Set<string>();
+			const commands: string[] = [];
+			const texts: string[] = [];
+
+			if (Array.isArray(assistantMsg.content)) {
+				for (const block of assistantMsg.content) {
+					if (block.type === "text") {
+						texts.push(block.text);
+					} else if (block.type === "toolCall") {
+						const toolName = block.name || "";
+						const tArgs = block.arguments || {};
+						if (tArgs.path) files.add(String(tArgs.path));
+						if (tArgs.filepath) files.add(String(tArgs.filepath));
+						if (tArgs.file) files.add(String(tArgs.file));
+						if (toolName.includes("bash") && tArgs.command) {
+							commands.push(String(tArgs.command));
+						}
+					}
+				}
+			} else if (typeof assistantMsg.content === "string") {
+				texts.push(assistantMsg.content);
+			}
+
+			// Preceding user prompt
+			for (let j = i - 1; j >= 0; j--) {
+				const prev = branch[j];
+				if (prev.type === "message" && prev.message) {
+					if (prev.message.role === "user") {
+						if (typeof prev.message.content === "string") {
+							texts.push(prev.message.content);
+						} else if (Array.isArray(prev.message.content)) {
+							for (const b of prev.message.content) {
+								if (b.type === "text") texts.push(b.text);
+							}
+						}
+						break;
+					}
+				}
+			}
+
+			// Sibling tool results / bash executions
+			for (let j = i + 1; j < branch.length; j++) {
+				const nextEntry = branch[j];
+				if (nextEntry.type === "message" && nextEntry.message) {
+					const msg = nextEntry.message;
+					if (msg.role === "assistant" || msg.role === "user") {
+						break;
+					}
+					if (msg.role === "toolResult") {
+						if (msg.details && (msg.details.path || msg.details.filepath || msg.details.file)) {
+							files.add(String(msg.details.path || msg.details.filepath || msg.details.file));
+						}
+					} else if ((msg as any).role === "bashExecution") {
+						const bashMsg = msg as any;
+						if (bashMsg.command) {
+							commands.push(bashMsg.command);
+						}
+					}
+				} else if (nextEntry.type === "bashExecution") {
+					if ((nextEntry as any).command) {
+						commands.push((nextEntry as any).command);
+					}
+				}
+			}
+
+			interactions.push({
+				timestamp,
+				cost,
+				files,
+				commands,
+				texts
+			});
+		}
+	}
+
+	if (interactions.length === 0) {
+		ctx.ui.setWidget("wtft", undefined);
+		return;
+	}
+
+	const binMap = new Map<string, Bin>();
+	let totalSessionCost = 0;
+
+	for (const interaction of interactions) {
+		const classification = classifyInteraction(interaction);
+		const { key, label } = getBinInfo(interaction.timestamp, interval);
+		totalSessionCost += interaction.cost;
+
+		let bin = binMap.get(key);
+		if (!bin) {
+			bin = { label, spec_cost: 0, code_cost: 0, other_cost: 0, total_cost: 0 };
+			binMap.set(key, bin);
+		}
+
+		if (classification === "spec") {
+			bin.spec_cost += interaction.cost;
+		} else if (classification === "code") {
+			bin.code_cost += interaction.cost;
+		} else {
+			bin.other_cost += interaction.cost;
+		}
+		bin.total_cost += interaction.cost;
+	}
+
+	const sortedBins = Array.from(binMap.entries())
+		.sort((a, b) => a[0].localeCompare(b[0]))
+		.map(([_, val]) => val);
+
+	const displayedBins = sortedBins.slice(-limit);
+	const maxCostInDisplayed = Math.max(...displayedBins.map(b => b.total_cost), 0);
+
+	const prefixWidth = 21;
+	const finalWidth = Math.max(width, 40);
+	const maxBarWidth = finalWidth - prefixWidth;
+
+	const widgetLines: string[] = [];
+	widgetLines.push(`📊 \x1b[1mWhere The F***ing Tokens?!\x1b[0m (Total Session Cost: \x1b[36m${formatCost(totalSessionCost)}\x1b[0m)`);
+	widgetLines.push("");
+
+	if (maxCostInDisplayed > 0) {
+		const prefix = " ".repeat(prefixWidth);
+		const { labelsLine, markersLine } = buildTickLines(maxCostInDisplayed, maxBarWidth);
+		if (labelsLine) {
+			widgetLines.push(prefix + `\x1b[2m${labelsLine}\x1b[0m`);
+		}
+		if (markersLine) {
+			widgetLines.push(prefix + `\x1b[2m${markersLine}\x1b[0m`);
+		}
+	}
+
+	for (const bin of displayedBins) {
+		const barWidth = maxCostInDisplayed > 0 ? Math.round((bin.total_cost / maxCostInDisplayed) * maxBarWidth) : 0;
+		const chars = distributeChars(bin.spec_cost, bin.code_cost, bin.other_cost, barWidth);
+
+		let barStr = "";
+		if (chars.spec > 0) {
+			barStr += `\x1b[38;5;208m${"█".repeat(chars.spec)}\x1b[0m`;
+		}
+		if (chars.code > 0) {
+			barStr += `\x1b[32m${"█".repeat(chars.code)}\x1b[0m`;
+		}
+		if (chars.other > 0) {
+			barStr += `\x1b[38;5;244m${"░".repeat(chars.other)}\x1b[0m`; // ANSI Grey for elegant unclassified data
+		}
+
+		const labelPart = padString(bin.label, 11);
+		const costPart = padString(formatCost(bin.total_cost), 6);
+		widgetLines.push(`${labelPart}  ${costPart}  ${barStr}`);
+	}
+
+	widgetLines.push("");
+	widgetLines.push(`Legend:  \x1b[38;5;208m█\x1b[0m Spec (Orange)   \x1b[32m█\x1b[0m Code (Green)   \x1b[38;5;244m░\x1b[0m Other (Grey)`);
+
+	ctx.ui.setWidget("wtft", widgetLines, { placement: "belowEditor" });
+}
+
+// ---
 // MAIN EXTENSION ENTRY POINT
 // ---
 
 export default function wtftExtension(pi: ExtensionAPI) {
+	// 1. Auto-restore on startup
+	pi.on("session_start", async (_event, ctx) => {
+		const current = getSettings(ctx);
+		if (current.visible) {
+			updateWtftWidget(ctx, pi);
+		}
+	});
+
+	// 2. Auto-refresh on turn completion (zero token cost)
+	pi.on("agent_end", async (_event, ctx) => {
+		const current = getSettings(ctx);
+		if (current.visible) {
+			updateWtftWidget(ctx, pi);
+		}
+	});
+
+	// 3. Command registration
 	pi.registerCommand("wtft", {
 		description: "Where The F***ing Tokens?! (WTFT) - Cost Auditing Widget",
 		handler: async (args, ctx) => {
@@ -388,186 +624,43 @@ export default function wtftExtension(pi: ExtensionAPI) {
 				return;
 			}
 
-			// Handle widget hiding command
+			const current = getSettings(ctx);
+
 			if (hideWidget) {
+				pi.appendEntry("wtft-settings", {
+					interval: current.interval,
+					limit: current.limit,
+					width: current.width,
+					visible: false
+				});
 				ctx.ui.setWidget("wtft", undefined);
 				ctx.ui.notify("Token cost audit widget hidden.", "info");
 				return;
 			}
 
-			// Retrieve the active branch entries representing the session timeline
-			const branch = ctx.sessionManager.getBranch();
-			const interactions: Interaction[] = [];
+			// Determine if options are explicitly overridden by user-supplied flags
+			const hasInterval = /\b(-i|--interval)\b/.test(args);
+			const hasLimit = /\b(-l|--limit)\b/.test(args);
+			const hasWidth = /\b(-w|--width)\b/.test(args);
 
-			// Group messages and associated metadata into cohesive turns/interactions
-			for (let i = 0; i < branch.length; i++) {
-				const entry = branch[i];
-				if (entry.type === "message" && entry.message && entry.message.role === "assistant") {
-					const assistantMsg = entry.message;
-					const cost = assistantMsg.usage?.cost?.total || 0;
-					const timestamp = assistantMsg.timestamp || new Date(entry.timestamp).getTime();
+			const nextInterval = hasInterval ? interval : current.interval;
+			const nextLimit = hasLimit ? limit : current.limit;
+			const nextWidth = hasWidth ? width : current.width;
 
-					const files = new Set<string>();
-					const commands: string[] = [];
-					const texts: string[] = [];
+			pi.appendEntry("wtft-settings", {
+				interval: nextInterval,
+				limit: nextLimit,
+				width: nextWidth,
+				visible: true
+			});
 
-					// Gather data from assistant message content blocks
-					if (Array.isArray(assistantMsg.content)) {
-						for (const block of assistantMsg.content) {
-							if (block.type === "text") {
-								texts.push(block.text);
-							} else if (block.type === "toolCall") {
-								const toolName = block.name || "";
-								const tArgs = block.arguments || {};
-								if (tArgs.path) files.add(String(tArgs.path));
-								if (tArgs.filepath) files.add(String(tArgs.filepath));
-								if (tArgs.file) files.add(String(tArgs.file));
-								if (toolName.includes("bash") && tArgs.command) {
-									commands.push(String(tArgs.command));
-								}
-							}
-						}
-					} else if (typeof assistantMsg.content === "string") {
-						texts.push(assistantMsg.content);
-					}
+			updateWtftWidget(ctx, pi, {
+				interval: nextInterval,
+				limit: nextLimit,
+				width: nextWidth,
+				visible: true
+			});
 
-					// Look backward for the immediate user prompt to gather user-side keywords
-					for (let j = i - 1; j >= 0; j--) {
-						const prev = branch[j];
-						if (prev.type === "message" && prev.message) {
-							if (prev.message.role === "user") {
-								if (typeof prev.message.content === "string") {
-									texts.push(prev.message.content);
-								} else if (Array.isArray(prev.message.content)) {
-									for (const b of prev.message.content) {
-										if (b.type === "text") texts.push(b.text);
-									}
-								}
-								break;
-							}
-						}
-					}
-
-					// Look forward for tools results/bash execution details before the next user/assistant message
-					for (let j = i + 1; j < branch.length; j++) {
-						const nextEntry = branch[j];
-						if (nextEntry.type === "message" && nextEntry.message) {
-							const msg = nextEntry.message;
-							if (msg.role === "assistant" || msg.role === "user") {
-								break;
-							}
-							if (msg.role === "toolResult") {
-								if (msg.details && (msg.details.path || msg.details.filepath || msg.details.file)) {
-									files.add(String(msg.details.path || msg.details.filepath || msg.details.file));
-								}
-							} else if ((msg as any).role === "bashExecution") {
-								const bashMsg = msg as any;
-								if (bashMsg.command) {
-									commands.push(bashMsg.command);
-								}
-							}
-						} else if (nextEntry.type === "bashExecution") {
-							if ((nextEntry as any).command) {
-								commands.push((nextEntry as any).command);
-							}
-						}
-					}
-
-					interactions.push({
-						timestamp,
-						cost,
-						files,
-						commands,
-						texts
-					});
-				}
-			}
-
-			if (interactions.length === 0) {
-				ctx.ui.notify("📊 No assistant interactions recorded in this session yet.", "warning");
-				return;
-			}
-
-			// Aggregate interaction costs into chronological bins
-			const binMap = new Map<string, Bin>();
-			let totalSessionCost = 0;
-
-			for (const interaction of interactions) {
-				const classification = classifyInteraction(interaction);
-				const { key, label } = getBinInfo(interaction.timestamp, interval);
-				totalSessionCost += interaction.cost;
-
-				let bin = binMap.get(key);
-				if (!bin) {
-					bin = { label, spec_cost: 0, code_cost: 0, other_cost: 0, total_cost: 0 };
-					binMap.set(key, bin);
-				}
-
-				if (classification === "spec") {
-					bin.spec_cost += interaction.cost;
-				} else if (classification === "code") {
-					bin.code_cost += interaction.cost;
-				} else {
-					bin.other_cost += interaction.cost;
-				}
-				bin.total_cost += interaction.cost;
-			}
-
-			// Sort bins chronologically and apply requested limit
-			const sortedBins = Array.from(binMap.entries())
-				.sort((a, b) => a[0].localeCompare(b[0]))
-				.map(([_, val]) => val);
-
-			const displayedBins = sortedBins.slice(-limit);
-			const maxCostInDisplayed = Math.max(...displayedBins.map(b => b.total_cost), 0);
-
-			// Compute horizontal layout limits
-			const prefixWidth = 21; // 11 (interval) + 2 (spaces) + 6 (cost) + 2 (spaces)
-			const finalWidth = Math.max(width, 40);
-			const maxBarWidth = finalWidth - prefixWidth;
-
-			const widgetLines: string[] = [];
-			widgetLines.push(`📊 \x1b[1mWhere The F***ing Tokens?!\x1b[0m (Total Session Cost: \x1b[36m${formatCost(totalSessionCost)}\x1b[0m)`);
-			widgetLines.push("");
-
-			// Render tick labels and marker lines above the bars if there's non-zero cost
-			if (maxCostInDisplayed > 0) {
-				const prefix = " ".repeat(prefixWidth);
-				const { labelsLine, markersLine } = buildTickLines(maxCostInDisplayed, maxBarWidth);
-				if (labelsLine) {
-					widgetLines.push(prefix + `\x1b[2m${labelsLine}\x1b[0m`);
-				}
-				if (markersLine) {
-					widgetLines.push(prefix + `\x1b[2m${markersLine}\x1b[0m`);
-				}
-			}
-
-			// Render binned stacked bars
-			for (const bin of displayedBins) {
-				const barWidth = maxCostInDisplayed > 0 ? Math.round((bin.total_cost / maxCostInDisplayed) * maxBarWidth) : 0;
-				const chars = distributeChars(bin.spec_cost, bin.code_cost, bin.other_cost, barWidth);
-
-				let barStr = "";
-				if (chars.spec > 0) {
-					barStr += `\x1b[38;5;208m${"█".repeat(chars.spec)}\x1b[0m`;
-				}
-				if (chars.code > 0) {
-					barStr += `\x1b[32m${"█".repeat(chars.code)}\x1b[0m`;
-				}
-				if (chars.other > 0) {
-					barStr += `\x1b[34m${"░".repeat(chars.other)}\x1b[0m`;
-				}
-
-				const labelPart = padString(bin.label, 11);
-				const costPart = padString(formatCost(bin.total_cost), 6);
-				widgetLines.push(`${labelPart}  ${costPart}  ${barStr}`);
-			}
-
-			widgetLines.push("");
-			widgetLines.push(`Legend:  \x1b[38;5;208m█\x1b[0m Spec (Orange)   \x1b[32m█\x1b[0m Code (Green)   \x1b[34m░\x1b[0m Other (Blue)`);
-
-			// Display the widget below the editor
-			ctx.ui.setWidget("wtft", widgetLines, { placement: "belowEditor" });
 			ctx.ui.notify("Token cost audit widget updated below the editor.", "info");
 		}
 	});
