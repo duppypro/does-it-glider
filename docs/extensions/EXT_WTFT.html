@@ -87,18 +87,38 @@
     </table>
 
     <h3>TUI Visualization Style</h3>
-    <p>The TUI outputs a stacked, horizontal ASCII bar graph using standard block-drawing characters (<code>█</code>) to represent absolute cost, scaled relative to the maximum interval cost. Each interval shows the timestamp and cost breakdown:</p>
+    <p>The TUI outputs a stacked, horizontal ASCII bar graph in a persistent widget below the editor. It uses standard block-drawing characters (<code>█</code> and <code>░</code>) to represent absolute cost, scaled relative to the maximum interval cost. To maximize horizontal space for bars, dates are omitted from individual time labels (which display in local <code>hh:mm</code> 24hr format) and instead, the most recent date is appended to the title in <code>MMM-DD</code> format. If intervals cross a day boundary, a visual day change indicator line is rendered between those intervals.</p>
     
+    <h4 style="color: var(--accent-yellow); margin-bottom: 5px;">Example 1: Granular 1-Minute Cumulative Widget (Single Day)</h4>
     <pre style="background: var(--box-bg); padding: 12px; border-radius: 6px; border: 1px solid #404040; overflow-x: auto; color: #f0f0f0; font-family: monospace;">
-📊 Where The F***ing Tokens?! (Total Session Cost: $0.1245)
+📊 Where The F***ing Tokens?! (Cumulative Session Cost: $0.12) - Jun-09
+
+Interval (1m bins)             Cost ($)    Stacked Bar Breakdown
+────────────────────────────────────────────────────────────────────────────────
+                      $0.00      $0.03      $0.06      $0.09      $0.12
+                      ┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿
+16:25                  $0.12       ██████████████████░░
+16:24                  $0.09       ██████████████░░
+16:23                  $0.05       ████████░
+
+Legend:  █ Spec (Orange)   █ Code (Green)   ░ Other (Grey)
+    </pre>
+
+    <h4 style="color: var(--accent-yellow); margin-bottom: 5px;">Example 2: 1-Hour Bucket Widget Crossing Day Boundary</h4>
+    <pre style="background: var(--box-bg); padding: 12px; border-radius: 6px; border: 1px solid #404040; overflow-x: auto; color: #f0f0f0; font-family: monospace;">
+📊 Where The F***ing Tokens?! (Total Session Cost: $0.25) - Jun-09
 
 Interval (1h bins)             Cost ($)    Stacked Bar Breakdown
 ────────────────────────────────────────────────────────────────────────────────
-16:00 - 17:00 (06-05)          $0.0240     ████████░
-17:00 - 18:00 (06-05)          $0.0450     ██████████████░░
-18:00 - 19:00 (06-05)          $0.0555     ██████████████████░░
+                      $0.00      $0.03      $0.06      $0.09      $0.12
+                      ┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿
+01:00                  $0.12       ██████████████████░░
+00:00                  $0.09       ██████████████░░
+─── Jun-08 ─────────────────────────────────────────────────────────────────────
+23:00                  $0.06       ████████░
+22:00                  $0.02       ████░
 
-Legend:  █ Spec (Orange)   █ Code (Green)   ░ Other (Blue)
+Legend:  █ Spec (Orange)   █ Code (Green)   ░ Other (Grey)
     </pre>
 
     <h3>Architectural Design</h3>
