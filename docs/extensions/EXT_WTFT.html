@@ -87,30 +87,30 @@
     </table>
 
     <h3>TUI Visualization Style</h3>
-    <p>The TUI outputs a stacked, horizontal ASCII bar graph in a persistent widget below the editor. It uses standard block-drawing characters (<code>█</code> and <code>░</code>) to represent absolute cost, scaled relative to the maximum interval cost. To maximize horizontal space for bars, dates are omitted from individual time labels (which display in local <code>hh:mm</code> 24hr format) and instead, the most recent date is appended right after the emoji in the title in <code>MMM-DD</code> format. The title cost label is changed to "Total Cost" and is right-justified so that the total session cost lines up exactly where the rightmost cost boundary of the bar/ticks scale would be if <code>--ticks</code> was enabled. If intervals cross a day boundary, a visual day change indicator line is rendered between those intervals.</p>
+    <p>The TUI outputs a stacked, horizontal ASCII bar graph in a persistent widget below the editor. It uses standard block-drawing characters (<code>█</code> and <code>░</code>) to represent absolute cost, scaled relative to the maximum interval cost. To maximize horizontal space for bars, dates are omitted from individual time labels (which display in local <code>hh:mm</code> 24hr format) and instead, the most recent date is appended to the ticks labels row above the bars (if ticks are enabled). The title row displays the winged money emoji and the command name, and right-justifies the cost as a single block: <code>Total Cost: $6.83</code>, aligned with the rightmost boundary of the bar region. In <code>--cumulative</code> mode (the default), an extra field showing the incremental cost for each bucket is displayed between the time label and the cumulative cost column. If intervals cross a day boundary and <code>--ticks</code> is enabled, a visual day change indicator line is rendered between those intervals.</p>
     
     <h4 style="color: var(--accent-yellow); margin-bottom: 5px;">Example 1: Granular 1-Minute Cumulative Widget (Single Day)</h4>
     <pre style="background: var(--box-bg); padding: 12px; border-radius: 6px; border: 1px solid #404040; overflow-x: auto; color: #f0f0f0; font-family: monospace;">
-💸 Jun-09 Where The F***ing Tokens?! (Total Cost:                     $0.12)
+💸 Where The F***ing Tokens?!                             Total Cost: $6.83
 
 Interval (1m bins)             Cost ($)    Stacked Bar Breakdown
 ────────────────────────────────────────────────────────────────────────────────
-                                           $0.00      $0.03      $0.06      $0.09      $0.12
+Jun-09                                     $0.00      $1.70      $3.41      $5.12      $6.83
                                            ┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿
-16:25                  $0.12               <span style="color: #2ecc71;">████████████████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░░</span>
-16:24                  $0.09               <span style="color: #2ecc71;">████████████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░░</span>
-16:23                  $0.05               <span style="color: #2ecc71;">██████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░</span>
+16:25                  +$0.03  $6.83       <span style="color: #2ecc71;">████████████████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░░</span>
+16:24                  +$0.05  $6.80       <span style="color: #2ecc71;">████████████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░░</span>
+16:23                  +$0.02  $6.75       <span style="color: #2ecc71;">██████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░</span>
 
 Legend:  <span style="color: #2ecc71;">█</span> Spec (Green)   <span style="color: #ff8c00;">█</span> Code (Orange)   <span style="color: #888888;">░</span> Other (Grey)
     </pre>
 
     <h4 style="color: var(--accent-yellow); margin-bottom: 5px;">Example 2: 1-Hour Bucket Widget Crossing Day Boundary</h4>
     <pre style="background: var(--box-bg); padding: 12px; border-radius: 6px; border: 1px solid #404040; overflow-x: auto; color: #f0f0f0; font-family: monospace;">
-💸 Jun-09 Where The F***ing Tokens?! (Total Cost:                     $0.25)
+💸 Where The F***ing Tokens?!                             Total Cost: $0.25
 
 Interval (1h bins)             Cost ($)    Stacked Bar Breakdown
 ────────────────────────────────────────────────────────────────────────────────
-                                           $0.00      $0.03      $0.06      $0.09      $0.12
+Jun-09                                     $0.00      $0.03      $0.06      $0.09      $0.12
                                            ┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿
 01:00                  $0.12               <span style="color: #2ecc71;">████████████████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░░</span>
 00:00                  $0.09               <span style="color: #2ecc71;">████████████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░░</span>
