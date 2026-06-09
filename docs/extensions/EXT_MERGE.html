@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- (c) 2026 David 'Duppy' Proctor, Interface Arts -->
+    <meta charset="UTF-8">
+    <title>Pi Extensions: Multi-Worktree Git Merger Spec</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #d4d4d4;
+            --box-bg: #2d2d2d;
+            --accent-blue: #569cd6;
+            --accent-green: #6a9955;
+            --accent-orange: #ce9178;
+            --accent-yellow: #dcdcaa;
+            --anchor-red: #e74c3c;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 2rem; 
+        }
+        h1, h2, h3 { color: var(--accent-blue); }
+        h1 { border-bottom: 2px solid var(--accent-blue); padding-bottom: 10px; }
+        h2 { margin-top: 2rem; }
+        a { color: var(--accent-blue); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h2>Multi-Worktree Git Merger Utility (<code>merge.ts</code>)</h2>
+    <p><strong>Domain:</strong> Git Automation, Multi-Worktree Workflows & Step-Based Releases</p>
+
+    <h3>Overview</h3>
+    <p>The <code>/merge</code> extension provides a zero-token, local command to automate the validation and integration of completed feature branches from separate Git worktrees into the <code>main</code> branch. It ensures compliance with the Princess-Pi 5-Step Development Flow without invoking costly LLM reasoning turns.</p>
+
+    <h3>Command Reference</h3>
+    <div style="background: var(--box-bg); padding: 15px; border-radius: 8px; border: 1px solid #404040; margin-bottom: 20px;">
+        <p><strong><code>/merge</code></strong> [options]</p>
+        <p>Automate the verification and merging of the current worktree's branch into the <code>main</code> worktree branch.</p>
+        <h4 style="color: var(--accent-yellow); margin-bottom: 5px;">Options</h4>
+        <ul>
+            <li><code>--help</code> / <code>-h</code> - Display help information.</li>
+        </ul>
+    </div>
+
+    <h3>Verification Rules</h3>
+    <p>Before any merge operations occur, the extension strictly enforces the following rules in sequence:</p>
+    <ol>
+        <li><strong>No Self-Merge:</strong> Rejects running the command if the active worktree is already on the <code>main</code> branch.</li>
+        <li><strong>Clean Feature Worktree:</strong> Verifies that the current feature worktree contains no uncommitted (staged or unstaged) modifications.</li>
+        <li><strong>In Sync with Origin:</strong> Fetches origin and ensures the local HEAD hash matches the remote branch HEAD hash exactly (preventing unpushed commits or pending pulls).</li>
+        <li><strong>Step 5 Validation:</strong> Validates that the last commit message begins with <code>Code and Spec Approved:</code> (conforming to Step 5 of the Princess-Pi standard).</li>
+        <li><strong>Clean Main Worktree:</strong> Finds the <code>main</code> worktree directory and verifies that it contains no uncommitted changes.</li>
+    </ol>
+
+    <h3>Merge and Push Execution</h3>
+    <p>Once all validations pass, the utility performs the integration automatically inside the <code>main</code> worktree directory using <code>git -C &lt;main_path&gt;</code> commands:</p>
+    <ol>
+        <li>Switches/ensures the main worktree is on the <code>main</code> branch.</li>
+        <li>Pulls the latest updates from <code>origin/main</code>.</li>
+        <li>Merges the validated feature branch into the <code>main</code> branch.</li>
+        <li>Pushes the newly merged <code>main</code> branch to origin.</li>
+        <li>Logs absolute success and returns focus to the active worktree, ready for the next development task.</li>
+    </ol>
+</body>
+</html>

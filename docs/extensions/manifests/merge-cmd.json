@@ -1,0 +1,11 @@
+{
+  "name": "/merge",
+  "tagline": "Safe Multi-Worktree Git Merger",
+  "description": "Automates the integration of a completed Step 5 feature branch from its local worktree into the 'main' worktree and pushes the changes to origin, without executing any LLM turns or consuming API tokens.",
+  "usage": [
+    { "flags": "--help, -h", "desc": "Display this help information." }
+  ],
+  "examples": [
+    { "cmd": "/merge", "desc": "Safely verify, merge, and push the current feature branch into main, keeping the local worktree active." }
+  ]
+}
