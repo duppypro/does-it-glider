@@ -19,6 +19,7 @@ interface Bin {
 	dateStr: string;
 	spec_cost: number;
 	code_cost: number;
+	mixed_cost: number; // For overlapping Spec and Code efforts in the same turn
 	other_cost: number;
 	total_cost: number;
 	incremental_cost?: number; // Stores the original bucket cost before cumulative summing
@@ -177,16 +178,13 @@ function parseArgs(argsStr: string = "") {
 
 /**
  * Classifies an interaction based on file modifications/reads, executed bash commands,
- * and text keywords. The logic enforces strict priority to handle overlap accurately:
- * 1. Code Work (code): touches .pi/extensions, src, tests, public or runs development bash commands.
- * 2. Spec Work (spec): touches docs, AGENTS.md, ARCHITECTURE.md, README.md or contains design planning terms.
- * 3. Other Work (other): conversation, setup, or untraced exchanges (rendered as unclassified in elegant grey).
- *
+ * and text keywords. If both spec and code indicators are triggered, it is classified as "mixed".
+ * 
  * NOTE: This classification runs 100% locally in JavaScript and consumes ZERO LLM tokens!
  */
-function classifyInteraction(interaction: Interaction): "spec" | "code" | "other" {
-	let hasSpecFile = false;
-	let hasCodeFile = false;
+function classifyInteraction(interaction: Interaction): "spec" | "code" | "mixed" | "other" {
+	let hasSpec = false;
+	let hasCode = false;
 
 	// Check file paths accessed or modified via tools
 	for (const f of interaction.files) {
@@ -197,7 +195,7 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
 			norm.endsWith("ARCHITECTURE.md") ||
 			norm.endsWith("README.md")
 		) {
-			hasSpecFile = true;
+			hasSpec = true;
 		}
 		if (
 			norm.startsWith(".pi/extensions/") ||
@@ -205,30 +203,22 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
 			norm.startsWith("tests/") ||
 			norm.startsWith("public/")
 		) {
-			hasCodeFile = true;
+			hasCode = true;
 		}
-	}
-
-	// Code Work (Orange) takes priority over Spec Work (Green) because active code modifications represent direct engineering effort
-	if (hasCodeFile) {
-		return "code";
-	}
-	if (hasSpecFile) {
-		return "spec";
 	}
 
 	// Analyze executed shell commands
 	for (const cmd of interaction.commands) {
 		const lowerCmd = cmd.toLowerCase();
 		
-		// Paths inside bash commands (Code Work takes priority)
+		// Paths inside bash commands
 		if (
 			lowerCmd.includes(".pi/extensions/") ||
 			lowerCmd.includes("src/") ||
 			lowerCmd.includes("tests/") ||
 			lowerCmd.includes("public/")
 		) {
-			return "code";
+			hasCode = true;
 		}
 		if (
 			lowerCmd.includes("docs/") ||
@@ -236,7 +226,7 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
 			lowerCmd.includes("architecture.md") ||
 			lowerCmd.includes("readme.md")
 		) {
-			return "spec";
+			hasSpec = true;
 		}
 
 		// Development/Test indicators
@@ -244,7 +234,7 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
 			/\b(npm|pnpm|yarn|bun)\s+(run\s+)?(test|build|compile)\b/.test(lowerCmd) ||
 			/\b(vitest|jest|pytest|tsc|cargo\s+test|go\s+test)\b/.test(lowerCmd)
 		) {
-			return "code";
+			hasCode = true;
 		}
 	}
 
@@ -257,11 +247,20 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
 		const lowerText = text.toLowerCase();
 		for (const keyword of specKeywords) {
 			if (lowerText.includes(keyword)) {
-				return "spec";
+				hasSpec = true;
 			}
 		}
 	}
 
+	if (hasSpec && hasCode) {
+		return "mixed";
+	}
+	if (hasCode) {
+		return "code";
+	}
+	if (hasSpec) {
+		return "spec";
+	}
 	return "other";
 }
 
@@ -378,37 +377,44 @@ function getBinInfo(timestamp: number, config: IntervalConfig, tz?: string): { k
 // ---
 
 /**
- * Distributes character counts across spec, code, and other segments using
+ * Distributes character counts across spec, mixed, code, and other segments using
  * the Largest Remainder Method, ensuring the total matches barWidth exactly.
  */
 function distributeChars(
 	spec_cost: number,
+	mixed_cost: number,
 	code_cost: number,
 	other_cost: number,
 	barWidth: number
-): { spec: number; code: number; other: number } {
-	const total = spec_cost + code_cost + other_cost;
+): { spec: number; mixed: number; code: number; other: number } {
+	const total = spec_cost + mixed_cost + code_cost + other_cost;
 	if (total <= 0 || barWidth <= 0) {
-		return { spec: 0, code: 0, other: 0 };
+		return { spec: 0, mixed: 0, code: 0, other: 0 };
 	}
 
 	const raw_spec = (spec_cost / total) * barWidth;
+	const raw_mixed = (mixed_cost / total) * barWidth;
 	const raw_code = (code_cost / total) * barWidth;
 	const raw_other = (other_cost / total) * barWidth;
 
 	let spec = Math.floor(raw_spec);
+	let mixed = Math.floor(raw_mixed);
 	let code = Math.floor(raw_code);
 	let other = Math.floor(raw_other);
 
 	const remainder_spec = raw_spec - spec;
+	const remainder_mixed = raw_mixed - mixed;
 	const remainder_code = raw_code - code;
 	const remainder_other = raw_other - other;
 
-	let allocated = spec + code + other;
+	let allocated = spec + mixed + code + other;
 	while (allocated < barWidth) {
-		if (remainder_spec >= remainder_code && remainder_spec >= remainder_other) {
+		const maxRemainder = Math.max(remainder_spec, remainder_mixed, remainder_code, remainder_other);
+		if (maxRemainder === remainder_spec) {
 			spec++;
-		} else if (remainder_code >= remainder_spec && remainder_code >= remainder_other) {
+		} else if (maxRemainder === remainder_mixed) {
+			mixed++;
+		} else if (maxRemainder === remainder_code) {
 			code++;
 		} else {
 			other++;
@@ -416,7 +422,7 @@ function distributeChars(
 		allocated++;
 	}
 
-	return { spec, code, other };
+	return { spec, mixed, code, other };
 }
 
 // ---
@@ -664,7 +670,7 @@ function updateWtftWidget(
 
 		let bin = binMap.get(key);
 		if (!bin) {
-			bin = { label, dateStr, spec_cost: 0, code_cost: 0, other_cost: 0, total_cost: 0 };
+			bin = { label, dateStr, spec_cost: 0, code_cost: 0, mixed_cost: 0, other_cost: 0, total_cost: 0 };
 			binMap.set(key, bin);
 		}
 
@@ -672,6 +678,8 @@ function updateWtftWidget(
 			bin.spec_cost += interaction.cost;
 		} else if (classification === "code") {
 			bin.code_cost += interaction.cost;
+		} else if (classification === "mixed") {
+			bin.mixed_cost += interaction.cost;
 		} else {
 			bin.other_cost += interaction.cost;
 		}
@@ -687,6 +695,7 @@ function updateWtftWidget(
 	if (mode === "cumulative") {
 		let running_spec = 0;
 		let running_code = 0;
+		let running_mixed = 0;
 		let running_other = 0;
 		let running_total = 0;
 
@@ -694,11 +703,13 @@ function updateWtftWidget(
 			bin.incremental_cost = bin.total_cost; // Preserve binned cost
 			running_spec += bin.spec_cost;
 			running_code += bin.code_cost;
+			running_mixed += bin.mixed_cost;
 			running_other += bin.other_cost;
 			running_total += bin.total_cost;
 
 			bin.spec_cost = running_spec;
 			bin.code_cost = running_code;
+			bin.mixed_cost = running_mixed;
 			bin.other_cost = running_other;
 			bin.total_cost = running_total;
 		}
@@ -773,11 +784,15 @@ function updateWtftWidget(
 		}
 
 		const barWidth = maxCostInDisplayed > 0 ? Math.round((bin.total_cost / maxCostInDisplayed) * maxBarWidth) : 0;
-		const chars = distributeChars(bin.spec_cost, bin.code_cost, bin.other_cost, barWidth);
+		const chars = distributeChars(bin.spec_cost, bin.mixed_cost, bin.code_cost, bin.other_cost, barWidth);
 
 		let barStr = "";
 		if (chars.spec > 0) {
 			barStr += `\x1b[92m${"█".repeat(chars.spec)}\x1b[0m`; // Spec Work (Green)
+		}
+		if (chars.mixed > 0) {
+			// Blended Spec + Code (Green foreground, Orange background, Medium Shade glyph)
+			barStr += `\x1b[38;5;120;48;5;208m${"▒".repeat(chars.mixed)}\x1b[0m`; // Mixed Work (Blended)
 		}
 		if (chars.code > 0) {
 			barStr += `\x1b[38;5;208m${"█".repeat(chars.code)}\x1b[0m`; // Code Work (Orange)
@@ -802,7 +817,7 @@ function updateWtftWidget(
 		}
 	}
 
-	widgetLines.push(`Legend:  \x1b[92m█\x1b[0m Spec (Green)   \x1b[38;5;208m█\x1b[0m Code (Orange)   \x1b[38;5;244m░\x1b[0m Other (Grey)`);
+	widgetLines.push(`Legend:  \x1b[92m█\x1b[0m Spec (Green)   \x1b[38;5;120;48;5;208m▒\x1b[0m Mixed (Blend)   \x1b[38;5;208m█\x1b[0m Code (Orange)   \x1b[38;5;244m░\x1b[0m Other (Grey)`);
 
 	ctx.ui.setWidget("wtft", widgetLines, { placement: "belowEditor" });
 }
