@@ -51,7 +51,7 @@ function parseInterval(val: string): IntervalConfig {
 
 /**
  * Parses raw command argument string into typed options.
- * Supports standard flags (-i, --interval, -l, --limit, -w, --width, -c, --cumulative, -b, --bucket, --ticks, --no-ticks, -H, --hide, -S, --show, -h, --help).
+ * Supports standard flags (-i, --interval, -l, --limit, -w, --width, -c, --cumulative, -b, --bucket, --ticks, --no-ticks, -H, --hide, -S, --show, -h, --help, -t, --tz, --timezone).
  */
 function parseArgs(argsStr: string = "") {
 	const str = argsStr || "";
@@ -59,6 +59,7 @@ function parseArgs(argsStr: string = "") {
 	let interval = "1h";
 	let limit = 10;
 	let width = 80;
+	let timezone: string | undefined = undefined;
 	let hideWidget = false;
 	let showWidget = false;
 	let showHelp = false;
@@ -70,6 +71,7 @@ function parseArgs(argsStr: string = "") {
 	let hasWidth = false;
 	let hasTicks = false;
 	let hasMode = false;
+	let hasTimezone = false;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -114,6 +116,13 @@ function parseArgs(argsStr: string = "") {
 				hasWidth = true;
 				i++;
 			}
+		} else if (arg === "-t" || arg === "--tz" || arg === "--timezone") {
+			const val = args[i + 1];
+			if (val && !val.startsWith("-")) {
+				timezone = val;
+				hasTimezone = true;
+				i++;
+			}
 		} else if (arg.startsWith("--interval=")) {
 			const val = arg.split("=")[1];
 			if (val && /^(\d+)([mhdw])$/.test(val)) {
@@ -134,6 +143,12 @@ function parseArgs(argsStr: string = "") {
 				width = num;
 				hasWidth = true;
 			}
+		} else if (arg.startsWith("--tz=")) {
+			timezone = arg.split("=")[1];
+			hasTimezone = true;
+		} else if (arg.startsWith("--timezone=")) {
+			timezone = arg.split("=")[1];
+			hasTimezone = true;
 		}
 	}
 
@@ -141,6 +156,7 @@ function parseArgs(argsStr: string = "") {
 		interval,
 		limit,
 		width,
+		timezone,
 		hideWidget,
 		showWidget,
 		showTicks,
@@ -150,7 +166,8 @@ function parseArgs(argsStr: string = "") {
 		hasLimit,
 		hasWidth,
 		hasTicks,
-		hasMode
+		hasMode,
+		hasTimezone
 	};
 }
 
@@ -249,70 +266,110 @@ function classifyInteraction(interaction: Interaction): "spec" | "code" | "other
 }
 
 // ---
-// TIME BINNING
+// TIMEZONE AND TIME BINNING
 // ---
 
 /**
- * Maps a timestamp to an interval key, a shortened formatted display label,
- * and a standardized date string. Evaluates entirely in local time and supports arbitrary integer-sized buckets.
+ * Returns year, month (1-indexed), day, hour, minute, second for a timestamp in a given timezone.
+ * Defaults to the local system time if tz is undefined or invalid.
  */
-function getBinInfo(timestamp: number, config: IntervalConfig): { key: string; label: string; dateStr: string } {
+function getZonedParts(timestamp: number, tz?: string): { year: number; month: number; day: number; hour: number; minute: number; second: number } {
 	const d = new Date(timestamp);
+	if (!tz) {
+		return {
+			year: d.getFullYear(),
+			month: d.getMonth() + 1,
+			day: d.getDate(),
+			hour: d.getHours(),
+			minute: d.getMinutes(),
+			second: d.getSeconds()
+		};
+	}
+
+	try {
+		const formatter = new Intl.DateTimeFormat("en-US", {
+			timeZone: tz,
+			year: "numeric",
+			month: "numeric",
+			day: "numeric",
+			hour: "numeric",
+			minute: "numeric",
+			second: "numeric",
+			hour12: false
+		});
+		const parts = formatter.formatToParts(d);
+		const partMap: Record<string, string> = {};
+		for (const p of parts) {
+			partMap[p.type] = p.value;
+		}
+
+		let hour = parseInt(partMap.hour, 10);
+		if (hour === 24) hour = 0; // en-US standard sometimes returns 24 instead of 00 at midnight when hour12 is false
+
+		return {
+			year: parseInt(partMap.year, 10),
+			month: parseInt(partMap.month, 10),
+			day: parseInt(partMap.day, 10),
+			hour,
+			minute: parseInt(partMap.minute, 10),
+			second: parseInt(partMap.second, 10)
+		};
+	} catch {
+		// Fallback to local system time if timezone is invalid
+		return {
+			year: d.getFullYear(),
+			month: d.getMonth() + 1,
+			day: d.getDate(),
+			hour: d.getHours(),
+			minute: d.getMinutes(),
+			second: d.getSeconds()
+		};
+	}
+}
+
+/**
+ * Maps a timestamp to an interval key, a shortened formatted display label,
+ * and a standardized date string. Evaluates in the configured timezone.
+ */
+function getBinInfo(timestamp: number, config: IntervalConfig, tz?: string): { key: string; label: string; dateStr: string } {
+	const parts = getZonedParts(timestamp, tz);
 	const pad = (n: number) => String(n).padStart(2, "0");
-	const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+	const dateStr = `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
 	const { size, unit } = config;
 
 	if (unit === "m") {
-		const totalMins = d.getHours() * 60 + d.getMinutes();
+		const totalMins = parts.hour * 60 + parts.minute;
 		const binnedMins = Math.floor(totalMins / size) * size;
 		const startHours = Math.floor(binnedMins / 60);
 		const startMins = binnedMins % 60;
-		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), startHours, startMins, 0, 0);
 		
-		const label = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
-		return {
-			key: start.toISOString(),
-			label, // Just "hh:mm" (no date part, to maximize row space)
-			dateStr
-		};
+		const label = `${pad(startHours)}:${pad(startMins)}`;
+		const key = `${dateStr}T${pad(startHours)}:${pad(startMins)}:00`;
+		return { key, label, dateStr };
 	} else if (unit === "h") {
-		const startHours = Math.floor(d.getHours() / size) * size;
-		const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), startHours, 0, 0, 0);
-		
-		const label = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
-		return {
-			key: start.toISOString(),
-			label, // Just "hh:mm" (no date part, to maximize row space)
-			dateStr
-		};
+		const startHours = Math.floor(parts.hour / size) * size;
+		const label = `${pad(startHours)}:00`;
+		const key = `${dateStr}T${pad(startHours)}:00:00`;
+		return { key, label, dateStr };
 	} else if (unit === "d") {
-		// Align days within the month (1-indexed, so we subtract 1 first)
-		const binnedDays = Math.floor((d.getDate() - 1) / size) * size;
-		const start = new Date(d.getFullYear(), d.getMonth(), binnedDays + 1, 0, 0, 0, 0);
-		
-		const label = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
-		return {
-			key: start.toISOString(),
-			label,
-			dateStr
-		};
+		const binnedDays = Math.floor((parts.day - 1) / size) * size;
+		const startDay = binnedDays + 1;
+		const label = `${parts.year}-${pad(parts.month)}-${pad(startDay)}`;
+		const key = `${parts.year}-${pad(parts.month)}-${pad(startDay)}T00:00:00`;
+		return { key, label, dateStr: label };
 	} else {
 		// unit === "w"
-		// Find Sunday of the current week in local time
-		const sunday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay(), 0, 0, 0, 0);
-		const epochMilli = sunday.getTime();
-		const weekMilli = 7 * 24 * 60 * 60 * 1000;
+		const localDate = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+		const dayOfWeek = localDate.getUTCDay(); // Sunday is 0, Monday is 1...
+		const sundayDate = new Date(localDate.getTime() - dayOfWeek * 24 * 60 * 60 * 1000);
 		
-		// Align weeks absolute
-		const binnedMilli = Math.floor(epochMilli / (size * weekMilli)) * (size * weekMilli);
-		const start = new Date(binnedMilli);
+		const sundayYear = sundayDate.getUTCFullYear();
+		const sundayMonth = sundayDate.getUTCMonth() + 1;
+		const sundayDay = sundayDate.getUTCDate();
 		
-		const label = `W-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
-		return {
-			key: start.toISOString(),
-			label,
-			dateStr
-		};
+		const label = `W-${pad(sundayMonth)}-${pad(sundayDay)}`;
+		const key = `${sundayYear}-${pad(sundayMonth)}-${pad(sundayDay)}T00:00:00`;
+		return { key, label, dateStr: `${sundayYear}-${pad(sundayMonth)}-${pad(sundayDay)}` };
 	}
 }
 
@@ -330,74 +387,73 @@ function distributeChars(
 	other_cost: number,
 	barWidth: number
 ): { spec: number; code: number; other: number } {
-	if (barWidth === 0) return { spec: 0, code: 0, other: 0 };
 	const total = spec_cost + code_cost + other_cost;
-	if (total === 0) return { spec: 0, code: 0, other: 0 };
-
-	const spec_float = (spec_cost / total) * barWidth;
-	const code_float = (code_cost / total) * barWidth;
-	const other_float = (other_cost / total) * barWidth;
-
-	let spec_int = Math.floor(spec_float);
-	let code_int = Math.floor(code_float);
-	let other_int = Math.floor(other_float);
-
-	const remainder = barWidth - (spec_int + code_int + other_int);
-	if (remainder > 0) {
-		const items = [
-			{ key: "spec", diff: spec_float - spec_int, val: spec_int },
-			{ key: "code", diff: code_float - code_int, val: code_int },
-			{ key: "other", diff: other_float - other_int, val: other_int }
-		];
-		items.sort((a, b) => b.diff - a.diff);
-		for (let i = 0; i < remainder; i++) {
-			if (items[i].key === "spec") spec_int++;
-			else if (items[i].key === "code") code_int++;
-			else if (items[i].key === "other") other_int++;
-		}
+	if (total <= 0 || barWidth <= 0) {
+		return { spec: 0, code: 0, other: 0 };
 	}
 
-	return { spec: spec_int, code: code_int, other: other_int };
+	const raw_spec = (spec_cost / total) * barWidth;
+	const raw_code = (code_cost / total) * barWidth;
+	const raw_other = (other_cost / total) * barWidth;
+
+	let spec = Math.floor(raw_spec);
+	let code = Math.floor(raw_code);
+	let other = Math.floor(raw_other);
+
+	const remainder_spec = raw_spec - spec;
+	const remainder_code = raw_code - code;
+	const remainder_other = raw_other - other;
+
+	let allocated = spec + code + other;
+	while (allocated < barWidth) {
+		if (remainder_spec >= remainder_code && remainder_spec >= remainder_other) {
+			spec++;
+		} else if (remainder_code >= remainder_spec && remainder_code >= remainder_other) {
+			code++;
+		} else {
+			other++;
+		}
+		allocated++;
+	}
+
+	return { spec, code, other };
 }
 
 // ---
-// COST SCALE TICK MARKS GENERATION
+// SCALE TICKS GENERATOR
 // ---
 
 /**
- * Generates cost scale labels and heavy aligned markers to fit perfectly above
- * the stacked horizontal bars. Performs overlap detection to scale labels dynamically.
+ * Places tick markers above the bars at mathematically proportional intervals.
  */
-function buildTickLines(maxCost: number, barWidth: number): { labelsLine: string; markersLine: string } {
-	if (barWidth <= 0) {
-		return { labelsLine: "", markersLine: "" };
+function buildTickLines(maxCost: number, barWidth: number): { labelsLine: string | null; markersLine: string | null } {
+	if (maxCost <= 0 || barWidth < 15) {
+		return { labelsLine: null, markersLine: null };
 	}
 
-	// Markers row (heavy vertical cross and heavy horizontal bar characters)
-	const markerArr = Array(barWidth).fill("━");
-	markerArr[0] = "┿";
-	markerArr[barWidth - 1] = "┿";
-
-	const midIdx = Math.floor((barWidth - 1) / 2);
-	const q1Idx = Math.floor((barWidth - 1) / 4);
-	const q3Idx = Math.floor(((barWidth - 1) * 3) / 4);
-
-	if (q1Idx > 0 && q1Idx < barWidth - 1) markerArr[q1Idx] = "┿";
-	if (midIdx > 0 && midIdx < barWidth - 1) markerArr[midIdx] = "┿";
-	if (q3Idx > 0 && q3Idx < barWidth - 1) markerArr[q3Idx] = "┿";
-
-	const markersLine = markerArr.join("");
-
-	// Labels row (allocates label text and avoids overlaps by tracking occupied slots)
 	const labelArr = Array(barWidth).fill(" ");
+	const markerArr = Array(barWidth).fill("─");
 	const occupied = Array(barWidth).fill(false);
 
-	const tryPlaceLabel = (text: string, centerIdx: number) => {
+	const midIdx = Math.floor(barWidth / 2);
+	const q1Idx = Math.floor(barWidth / 4);
+	const q3Idx = Math.floor((barWidth * 3) / 4);
+
+	markerArr[0] = "┿";
+	markerArr[barWidth - 1] = "┿";
+	markerArr[midIdx] = "┿";
+	markerArr[q1Idx] = "┿";
+	markerArr[q3Idx] = "┿";
+	const markersLine = markerArr.join("");
+
+	const tryPlaceLabel = (text: string, startIdx: number): boolean => {
 		const len = text.length;
-		let startIdx = centerIdx - Math.floor(len / 2);
-		
-		if (startIdx < 0) startIdx = 0;
-		if (startIdx + len > barWidth) startIdx = barWidth - len;
+		if (startIdx + len > barWidth) {
+			startIdx = barWidth - len;
+		}
+		if (startIdx < 0) {
+			return false;
+		}
 
 		for (let i = startIdx; i < startIdx + len; i++) {
 			if (occupied[i]) return false;
@@ -405,10 +461,8 @@ function buildTickLines(maxCost: number, barWidth: number): { labelsLine: string
 
 		for (let i = 0; i < len; i++) {
 			labelArr[startIdx + i] = text[i];
-			occupied[startIdx + i] = true;
 		}
 
-		// Prevent adjacent labels from grouping too tightly
 		const padStart = Math.max(0, startIdx - 1);
 		const padEnd = Math.min(barWidth - 1, startIdx + len);
 		for (let i = padStart; i <= padEnd; i++) {
@@ -417,16 +471,13 @@ function buildTickLines(maxCost: number, barWidth: number): { labelsLine: string
 		return true;
 	};
 
-	// Priority 1: Left/Right boundaries ($0.00 and maxCost)
 	tryPlaceLabel("$0.00", 0);
 	tryPlaceLabel(`$${maxCost.toFixed(2)}`, barWidth - 1);
 
-	// Priority 2: Midpoint (1/2)
 	if (maxCost > 0) {
 		tryPlaceLabel(`$${(maxCost / 2).toFixed(2)}`, midIdx);
 	}
 
-	// Priority 3: Quarter (1/4) and Three-Quarter (3/4) points
 	if (maxCost > 0) {
 		tryPlaceLabel(`$${(maxCost / 4).toFixed(2)}`, q1Idx);
 		tryPlaceLabel(`$${((maxCost * 3) / 4).toFixed(2)}`, q3Idx);
@@ -451,6 +502,7 @@ function getSettings(ctx: any) {
 	let visible = false; // Default invisible on fresh session
 	let showTicks = true;
 	let mode: "bucket" | "cumulative" = "cumulative";
+	let timezone: string | undefined = undefined;
 
 	for (const entry of ctx.sessionManager.getEntries()) {
 		if (entry.type === "custom" && entry.customType === "wtft-settings") {
@@ -461,11 +513,12 @@ function getSettings(ctx: any) {
 				if (typeof entry.data.visible === "boolean") visible = entry.data.visible;
 				if (typeof entry.data.showTicks === "boolean") showTicks = entry.data.showTicks;
 				if (entry.data.mode) mode = entry.data.mode;
+				if (entry.data.timezone) timezone = entry.data.timezone;
 			}
 		}
 	}
 
-	return { interval, limit, width, visible, showTicks, mode };
+	return { interval, limit, width, visible, showTicks, mode, timezone };
 }
 
 // ---
@@ -480,10 +533,21 @@ function formatCost(cost: number): string {
 	return `$${cost.toFixed(2)}`;
 }
 
-function formatLocalMmmDd(date: Date): string {
-	const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-	const pad = (n: number) => String(n).padStart(2, "0");
-	return `${months[date.getMonth()]}-${pad(date.getDate())}`;
+/**
+ * Formats a standardized date string of format YYYY-MM-DD into a localized Mmm-Dd string.
+ */
+function formatMmmDdStr(dateStr: string): string {
+	const parts = dateStr.split("-");
+	if (parts.length === 3) {
+		const monthIdx = parseInt(parts[1], 10) - 1;
+		const day = parseInt(parts[2], 10);
+		const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+		const pad = (n: number) => String(n).padStart(2, "0");
+		if (monthIdx >= 0 && monthIdx < 12) {
+			return `${months[monthIdx]}-${pad(day)}`;
+		}
+	}
+	return dateStr;
 }
 
 /**
@@ -512,7 +576,7 @@ function getVisualLength(str: string): number {
 
 /**
  * Dynamically computes costs binned by interval and updates the TUI widget
- * positioned below the editor. Operates entirely in local timezone.
+ * positioned below the editor. Operates in the configured timezone.
  */
 function updateWtftWidget(
 	ctx: any,
@@ -524,15 +588,17 @@ function updateWtftWidget(
 		visible?: boolean;
 		showTicks?: boolean;
 		mode?: "bucket" | "cumulative";
+		timezone?: string;
 	}
 ) {
 	const current = getSettings(ctx);
-	const intervalStr = opts?.interval ?? current.interval;
-	const limit = opts?.limit ?? current.limit;
-	const width = opts?.width ?? current.width;
-	const visible = opts?.visible ?? current.visible;
-	const showTicks = opts?.showTicks ?? current.showTicks;
-	const mode = opts?.mode ?? current.mode;
+	const intervalStr = opts?.interval !== undefined ? opts.interval : current.interval;
+	const limit = opts?.limit !== undefined ? opts.limit : current.limit;
+	const width = opts?.width !== undefined ? opts.width : current.width;
+	const visible = opts?.visible !== undefined ? opts.visible : current.visible;
+	const showTicks = opts?.showTicks !== undefined ? opts.showTicks : current.showTicks;
+	const mode = opts?.mode !== undefined ? opts.mode : current.mode;
+	const tz = opts?.timezone !== undefined ? opts.timezone : current.timezone;
 
 	if (!visible) {
 		ctx.ui.setWidget("wtft", undefined);
@@ -558,84 +624,42 @@ function updateWtftWidget(
 				for (const block of assistantMsg.content) {
 					if (block.type === "text") {
 						texts.push(block.text);
-					} else if (block.type === "toolCall") {
-						const toolName = block.name || "";
-						const tArgs = block.arguments || {};
-						if (tArgs.path) files.add(String(tArgs.path));
-						if (tArgs.filepath) files.add(String(tArgs.filepath));
-						if (tArgs.file) files.add(String(tArgs.file));
-						if (toolName.includes("bash") && tArgs.command) {
-							commands.push(String(tArgs.command));
-						}
 					}
 				}
-			} else if (typeof assistantMsg.content === "string") {
-				texts.push(assistantMsg.content);
 			}
 
-			// Preceding user prompt
-			for (let j = i - 1; j >= 0; j--) {
+			// Capture accessed files & terminal commands from tool calls in this turn
+			let j = i - 1;
+			while (j >= 0) {
 				const prev = branch[j];
-				if (prev.type === "message" && prev.message) {
-					if (prev.message.role === "user") {
-						if (typeof prev.message.content === "string") {
-							texts.push(prev.message.content);
-						} else if (Array.isArray(prev.message.content)) {
-							for (const b of prev.message.content) {
-								if (b.type === "text") texts.push(b.text);
-							}
-						}
-						break;
+				if (prev.type === "message" && prev.message && prev.message.role === "assistant") {
+					break; // Hit prior turn boundary
+				}
+				if (prev.type === "tool_call" && prev.toolCall) {
+					const tc = prev.toolCall;
+					if (tc.name === "read" || tc.name === "write" || tc.name === "edit") {
+						const f = tc.input?.path;
+						if (f) files.add(f);
+					}
+					if (tc.name === "bash") {
+						const cmd = tc.input?.command;
+						if (cmd) commands.push(cmd);
 					}
 				}
+				j--;
 			}
 
-			// Sibling tool results / bash executions
-			for (let j = i + 1; j < branch.length; j++) {
-				const nextEntry = branch[j];
-				if (nextEntry.type === "message" && nextEntry.message) {
-					const msg = nextEntry.message;
-					if (msg.role === "assistant" || msg.role === "user") {
-						break;
-					}
-					if (msg.role === "toolResult") {
-						if (msg.details && (msg.details.path || msg.details.filepath || msg.details.file)) {
-							files.add(String(msg.details.path || msg.details.filepath || msg.details.file));
-						}
-					} else if ((msg as any).role === "bashExecution") {
-						const bashMsg = msg as any;
-						if (bashMsg.command) {
-							commands.push(bashMsg.command);
-						}
-					}
-				} else if (nextEntry.type === "bashExecution") {
-					if ((nextEntry as any).command) {
-						commands.push((nextEntry as any).command);
-					}
-				}
-			}
-
-			interactions.push({
-				timestamp,
-				cost,
-				files,
-				commands,
-				texts
-			});
+			interactions.push({ timestamp, cost, files, commands, texts });
 		}
 	}
 
-	if (interactions.length === 0) {
-		ctx.ui.setWidget("wtft", undefined);
-		return;
-	}
-
+	// Group interactions into binned intervals
 	const binMap = new Map<string, Bin>();
 	let totalSessionCost = 0;
 
 	for (const interaction of interactions) {
 		const classification = classifyInteraction(interaction);
-		const { key, label, dateStr } = getBinInfo(interaction.timestamp, intervalConfig);
+		const { key, label, dateStr } = getBinInfo(interaction.timestamp, intervalConfig, tz);
 		totalSessionCost += interaction.cost;
 
 		let bin = binMap.get(key);
@@ -654,34 +678,41 @@ function updateWtftWidget(
 		bin.total_cost += interaction.cost;
 	}
 
+	// Sort bins chronological (ascending)
 	const sortedBins = Array.from(binMap.entries())
 		.sort((a, b) => a[0].localeCompare(b[0]))
-		.map(([_, val]) => val);
+		.map(entry => entry[1]);
 
-	// Populate the original bucket incremental cost for each bin
-	for (const bin of sortedBins) {
-		bin.incremental_cost = bin.total_cost;
-	}
-
-	// Apply cumulative mode summing if requested on the full set of chronological bins
+	// Apply mode conversions
 	if (mode === "cumulative") {
-		let specSum = 0;
-		let codeSum = 0;
-		let otherSum = 0;
-		for (const bin of sortedBins) {
-			specSum += bin.spec_cost;
-			codeSum += bin.code_cost;
-			otherSum += bin.other_cost;
+		let running_spec = 0;
+		let running_code = 0;
+		let running_other = 0;
+		let running_total = 0;
 
-			bin.spec_cost = specSum;
-			bin.code_cost = codeSum;
-			bin.other_cost = otherSum;
-			bin.total_cost = specSum + codeSum + otherSum; // This becomes the cumulative sum
+		for (const bin of sortedBins) {
+			bin.incremental_cost = bin.total_cost; // Preserve binned cost
+			running_spec += bin.spec_cost;
+			running_code += bin.code_cost;
+			running_other += bin.other_cost;
+			running_total += bin.total_cost;
+
+			bin.spec_cost = running_spec;
+			bin.code_cost = running_code;
+			bin.other_cost = running_other;
+			bin.total_cost = running_total;
 		}
 	}
 
-	// Slice and reverse so that the most recent interval is displayed on top (first)
-	const displayedBins = sortedBins.slice(-limit).reverse();
+	// Descending order for binned bars display
+	const reversedBins = sortedBins.reverse();
+	const displayedBins = reversedBins.slice(0, limit);
+
+	if (displayedBins.length === 0) {
+		ctx.ui.setWidget("wtft", undefined);
+		return;
+	}
+
 	const maxCostInDisplayed = Math.max(...displayedBins.map(b => b.total_cost), 0);
 
 	// Compute dynamic horizontal layouts
@@ -691,8 +722,15 @@ function updateWtftWidget(
 
 	// Resolve the newest local date for display on the ticks line
 	const newestBin = displayedBins[0];
-	const newestDate = newestBin ? new Date(newestBin.dateStr + "T00:00:00") : new Date();
-	const titleDateStr = formatLocalMmmDd(newestDate);
+	let titleDateStr = "";
+	if (newestBin) {
+		titleDateStr = formatMmmDdStr(newestBin.dateStr);
+	} else {
+		const nowParts = getZonedParts(Date.now(), tz);
+		const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+		const pad = (n: number) => String(n).padStart(2, "0");
+		titleDateStr = `${months[nowParts.month - 1]}-${pad(nowParts.day)}`;
+	}
 
 	const widgetLines: string[] = [];
 	
@@ -728,8 +766,7 @@ function updateWtftWidget(
 		// If crossing a local day boundary (current bin date is different from previous in descending loop),
 		// draw a visual day change indicator line only if ticks are enabled!
 		if (showTicks && i > 0 && bin.dateStr !== displayedBins[i - 1].dateStr) {
-			const dateOfBin = new Date(bin.dateStr + "T00:00:00");
-			const labelDay = formatLocalMmmDd(dateOfBin);
+			const labelDay = formatMmmDdStr(bin.dateStr);
 			const dayChangeText = `─── ${labelDay} `;
 			const dividerLine = dayChangeText + "─".repeat(Math.max(0, finalWidth - dayChangeText.length));
 			widgetLines.push(`\x1b[2m${dividerLine}\x1b[0m`);
@@ -799,6 +836,7 @@ export default function wtftExtension(pi: ExtensionAPI) {
 				interval,
 				limit,
 				width,
+				timezone,
 				hideWidget,
 				showWidget,
 				showTicks,
@@ -808,7 +846,8 @@ export default function wtftExtension(pi: ExtensionAPI) {
 				hasLimit,
 				hasWidth,
 				hasTicks,
-				hasMode
+				hasMode,
+				hasTimezone
 			} = parseArgs(args);
 
 			// Render manifest help menu if requested
@@ -847,7 +886,8 @@ export default function wtftExtension(pi: ExtensionAPI) {
 					width: current.width,
 					visible: false,
 					showTicks: current.showTicks,
-					mode: current.mode
+					mode: current.mode,
+					timezone: current.timezone
 				});
 				ctx.ui.setWidget("wtft", undefined);
 				ctx.ui.notify("Token cost audit widget hidden.", "info");
@@ -859,6 +899,7 @@ export default function wtftExtension(pi: ExtensionAPI) {
 			const nextWidth = hasWidth ? width : current.width;
 			const nextTicks = hasTicks ? showTicks : current.showTicks;
 			const nextMode = hasMode ? mode : current.mode;
+			const nextTimezone = hasTimezone ? timezone : current.timezone;
 
 			pi.appendEntry("wtft-settings", {
 				interval: nextInterval,
@@ -866,7 +907,8 @@ export default function wtftExtension(pi: ExtensionAPI) {
 				width: nextWidth,
 				visible: true,
 				showTicks: nextTicks,
-				mode: nextMode
+				mode: nextMode,
+				timezone: nextTimezone
 			});
 
 			updateWtftWidget(ctx, pi, {
@@ -875,7 +917,8 @@ export default function wtftExtension(pi: ExtensionAPI) {
 				width: nextWidth,
 				visible: true,
 				showTicks: nextTicks,
-				mode: nextMode
+				mode: nextMode,
+				timezone: nextTimezone
 			});
 
 			ctx.ui.notify("Token cost audit widget updated below the editor.", "info");
