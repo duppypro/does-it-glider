@@ -30,8 +30,9 @@ interface Bin {
  * Parses raw command argument string into typed options.
  * Supports standard flags (-i, --interval, -l, --limit, -w, --width, -c, --cumulative, -b, --bucket, --ticks, --no-ticks, -H, --hide, -S, --show, -h, --help).
  */
-function parseArgs(argsStr: string) {
-	const args = argsStr.trim().split(/\s+/).filter(Boolean);
+function parseArgs(argsStr: string = "") {
+	const str = argsStr || "";
+	const args = str.trim().split(/\s+/).filter(Boolean);
 	let interval: "1m" | "1h" | "1d" | "1w" = "1h";
 	let limit = 10;
 	let width = 80;
@@ -40,6 +41,12 @@ function parseArgs(argsStr: string) {
 	let showHelp = false;
 	let showTicks = true;
 	let mode: "bucket" | "cumulative" = "cumulative";
+
+	let hasInterval = false;
+	let hasLimit = false;
+	let hasWidth = false;
+	let hasTicks = false;
+	let hasMode = false;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -51,16 +58,21 @@ function parseArgs(argsStr: string) {
 			showWidget = true;
 		} else if (arg === "--ticks") {
 			showTicks = true;
+			hasTicks = true;
 		} else if (arg === "--no-ticks") {
 			showTicks = false;
+			hasTicks = true;
 		} else if (arg === "--cumulative" || arg === "-c") {
 			mode = "cumulative";
+			hasMode = true;
 		} else if (arg === "--bucket" || arg === "-b") {
 			mode = "bucket";
+			hasMode = true;
 		} else if (arg === "-i" || arg === "--interval") {
 			const val = args[i + 1];
 			if (val === "1m" || val === "1h" || val === "1d" || val === "1w") {
 				interval = val;
+				hasInterval = true;
 				i++;
 			}
 		} else if (arg === "-l" || arg === "--limit") {
@@ -68,6 +80,7 @@ function parseArgs(argsStr: string) {
 			const num = parseInt(val, 10);
 			if (!isNaN(num) && num > 0) {
 				limit = num;
+				hasLimit = true;
 				i++;
 			}
 		} else if (arg === "-w" || arg === "--width") {
@@ -75,29 +88,47 @@ function parseArgs(argsStr: string) {
 			const num = parseInt(val, 10);
 			if (!isNaN(num) && num > 0) {
 				width = num;
+				hasWidth = true;
 				i++;
 			}
 		} else if (arg.startsWith("--interval=")) {
 			const val = arg.split("=")[1];
 			if (val === "1m" || val === "1h" || val === "1d" || val === "1w") {
 				interval = val;
+				hasInterval = true;
 			}
 		} else if (arg.startsWith("--limit=")) {
 			const val = arg.split("=")[1];
 			const num = parseInt(val, 10);
 			if (!isNaN(num) && num > 0) {
 				limit = num;
+				hasLimit = true;
 			}
 		} else if (arg.startsWith("--width=")) {
 			const val = arg.split("=")[1];
 			const num = parseInt(val, 10);
 			if (!isNaN(num) && num > 0) {
 				width = num;
+				hasWidth = true;
 			}
 		}
 	}
 
-	return { interval, limit, width, hideWidget, showWidget, showTicks, mode, showHelp };
+	return {
+		interval,
+		limit,
+		width,
+		hideWidget,
+		showWidget,
+		showTicks,
+		mode,
+		showHelp,
+		hasInterval,
+		hasLimit,
+		hasWidth,
+		hasTicks,
+		hasMode
+	};
 }
 
 // ---
@@ -637,7 +668,21 @@ export default function wtftExtension(pi: ExtensionAPI) {
 	pi.registerCommand("wtft", {
 		description: "Where The F***ing Tokens?! (WTFT) - Cost Auditing Widget",
 		handler: async (args, ctx) => {
-			const { interval, limit, width, hideWidget, showWidget, showTicks, mode, showHelp } = parseArgs(args);
+			const {
+				interval,
+				limit,
+				width,
+				hideWidget,
+				showWidget,
+				showTicks,
+				mode,
+				showHelp,
+				hasInterval,
+				hasLimit,
+				hasWidth,
+				hasTicks,
+				hasMode
+			} = parseArgs(args);
 
 			// Render manifest help menu if requested
 			if (showHelp) {
@@ -681,13 +726,6 @@ export default function wtftExtension(pi: ExtensionAPI) {
 				ctx.ui.notify("Token cost audit widget hidden.", "info");
 				return;
 			}
-
-			// Determine if options are explicitly overridden by user-supplied flags
-			const hasInterval = /\b(-i|--interval)\b/.test(args);
-			const hasLimit = /\b(-l|--limit)\b/.test(args);
-			const hasWidth = /\b(-w|--width)\b/.test(args);
-			const hasTicks = /\b(--ticks|--no-ticks)\b/.test(args);
-			const hasMode = /\b(-c|--cumulative|-b|--bucket)\b/.test(args);
 
 			const nextInterval = hasInterval ? interval : current.interval;
 			const nextLimit = hasLimit ? limit : current.limit;
