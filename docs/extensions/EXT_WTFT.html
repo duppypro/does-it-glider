@@ -69,18 +69,18 @@
         </thead>
         <tbody>
             <tr>
-                <td style="color: var(--accent-orange); font-weight: bold;">Spec Work (spec)</td>
-                <td>ANSI Orange (<code>\x1b[38;5;208m</code>)</td>
+                <td style="color: var(--accent-green); font-weight: bold;">Spec Work (spec)</td>
+                <td>ANSI Bright Green (<code>\x1b[92m</code>)</td>
                 <td>Touches files under <code>docs/</code> or matching <code>AGENTS.md</code>, <code>ARCHITECTURE.md</code>, <code>README.md</code>, or contains prominent spec planning keywords.</td>
             </tr>
             <tr>
-                <td style="color: var(--accent-green); font-weight: bold;">Code Work (code)</td>
-                <td>ANSI Green (<code>\x1b[32m</code>)</td>
+                <td style="color: var(--accent-orange); font-weight: bold;">Code Work (code)</td>
+                <td>ANSI Orange (<code>\x1b[38;5;208m</code>)</td>
                 <td>Touches files under <code>.pi/extensions/</code>, <code>src/</code>, <code>tests/</code>, <code>public/</code>, or executes test/compilation terminal commands via `bash`.</td>
             </tr>
             <tr>
-                <td style="color: var(--accent-blue); font-weight: bold;">Other Work (other)</td>
-                <td>ANSI Blue (<code>\x1b[34m</code>)</td>
+                <td style="color: var(--text-color); font-weight: bold;">Other Work (other)</td>
+                <td>ANSI Grey (<code>\x1b[38;5;244m</code>)</td>
                 <td>General conversation, session initialization, model system prompts, or untraced exchanges that do not cleanly match the other two categories.</td>
             </tr>
         </tbody>
@@ -95,13 +95,13 @@
 
 Interval (1m bins)             Cost ($)    Stacked Bar Breakdown
 ────────────────────────────────────────────────────────────────────────────────
-                      $0.00      $0.03      $0.06      $0.09      $0.12
-                      ┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿
-16:25                  $0.12       ██████████████████░░
-16:24                  $0.09       ██████████████░░
-16:23                  $0.05       ████████░
+                                           $0.00      $0.03      $0.06      $0.09      $0.12
+                                           ┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿
+16:25                  $0.12               <span style="color: #2ecc71;">████████████████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░░</span>
+16:24                  $0.09               <span style="color: #2ecc71;">████████████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░░</span>
+16:23                  $0.05               <span style="color: #2ecc71;">██████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░</span>
 
-Legend:  █ Spec (Orange)   █ Code (Green)   ░ Other (Grey)
+Legend:  <span style="color: #2ecc71;">█</span> Spec (Green)   <span style="color: #ff8c00;">█</span> Code (Orange)   <span style="color: #888888;">░</span> Other (Grey)
     </pre>
 
     <h4 style="color: var(--accent-yellow); margin-bottom: 5px;">Example 2: 1-Hour Bucket Widget Crossing Day Boundary</h4>
@@ -110,15 +110,15 @@ Legend:  █ Spec (Orange)   █ Code (Green)   ░ Other (Grey)
 
 Interval (1h bins)             Cost ($)    Stacked Bar Breakdown
 ────────────────────────────────────────────────────────────────────────────────
-                      $0.00      $0.03      $0.06      $0.09      $0.12
-                      ┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿
-01:00                  $0.12       ██████████████████░░
-00:00                  $0.09       ██████████████░░
+                                           $0.00      $0.03      $0.06      $0.09      $0.12
+                                           ┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━┿
+01:00                  $0.12               <span style="color: #2ecc71;">████████████████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░░</span>
+00:00                  $0.09               <span style="color: #2ecc71;">████████████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░░</span>
 ─── Jun-08 ─────────────────────────────────────────────────────────────────────
-23:00                  $0.06       ████████░
-22:00                  $0.02       ████░
+23:00                  $0.06               <span style="color: #2ecc71;">██████</span><span style="color: #ff8c00;">█</span><span style="color: #888888;">░</span>
+22:00                  $0.02               <span style="color: #2ecc71;">██</span><span style="color: #ff8c00;">█</span>
 
-Legend:  █ Spec (Orange)   █ Code (Green)   ░ Other (Grey)
+Legend:  <span style="color: #2ecc71;">█</span> Spec (Green)   <span style="color: #ff8c00;">█</span> Code (Orange)   <span style="color: #888888;">░</span> Other (Grey)
     </pre>
 
     <h3>Architectural Design</h3>
