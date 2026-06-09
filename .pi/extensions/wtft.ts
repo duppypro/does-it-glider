@@ -485,6 +485,26 @@ function formatLocalMmmDd(date: Date): string {
 	return `${months[date.getMonth()]}-${pad(date.getDate())}`;
 }
 
+/**
+ * Computes visual width of strings, correctly treating surrogate pairs and double-width emojis as 2.
+ */
+function getVisualLength(str: string): number {
+	const clean = str.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
+	let len = 0;
+	for (let i = 0; i < clean.length; i++) {
+		const code = clean.charCodeAt(i);
+		if (code >= 0xD800 && code <= 0xDBFF && i + 1 < clean.length) {
+			len += 2;
+			i++;
+		} else if (code >= 0x3000 && code <= 0x9FFF) {
+			len += 2;
+		} else {
+			len += 1;
+		}
+	}
+	return len;
+}
+
 // ---
 // TUI WIDGET UPDATE ENGINE
 // ---
@@ -669,8 +689,15 @@ function updateWtftWidget(
 
 	const widgetLines: string[] = [];
 	
-	const displayModeLabel = mode === "cumulative" ? "Cumulative Session Cost" : "Total Session Cost";
-	widgetLines.push(`📊 \x1b[1mWhere The F***ing Tokens?!\x1b[0m (${displayModeLabel}: \x1b[36m${formatCost(totalSessionCost)}\x1b[0m) - ${titleDateStr}`);
+	// Format tight-justified title using the money-with-wings emoji 💸
+	const titleLeft = `💸 ${titleDateStr} Where The F***ing Tokens?! (Total Cost: `;
+	const titleRight = `${formatCost(totalSessionCost)})`;
+	const leftLen = getVisualLength(titleLeft);
+	const rightLen = getVisualLength(titleRight);
+	const spacesNeeded = Math.max(1, finalWidth - leftLen - rightLen);
+	const titleLine = titleLeft + " ".repeat(spacesNeeded) + titleRight;
+	
+	widgetLines.push(titleLine);
 
 	// Render tick labels and marker lines above the bars if enabled
 	if (showTicks && maxCostInDisplayed > 0) {
