@@ -744,8 +744,9 @@ function updateWtftWidget(
 
 	const maxCostInDisplayed = Math.max(...displayedBins.map(b => b.total_cost), 0);
 
-	// Compute dynamic horizontal layouts
-	const prefixWidth = mode === "cumulative" ? 29 : 21;
+	// Compute dynamic column and prefix widths based on the max width of binned labels in this redraw
+	const labelWidth = Math.max(...displayedBins.map(b => b.label.length), 5);
+	const prefixWidth = mode === "cumulative" ? (labelWidth + 18) : (labelWidth + 10);
 	const finalWidth = Math.max(width, 40);
 	const maxBarWidth = finalWidth - prefixWidth;
 
@@ -819,19 +820,25 @@ function updateWtftWidget(
 			barStr += `\x1b[38;5;244m${"░".repeat(chars.other)}\x1b[0m`; // Other Work (Grey)
 		}
 
-		const labelPart = padString(bin.label, 11);
+		const labelPart = padString(bin.label, labelWidth);
+		const coloredLabel = `\x1b[2m${labelPart}\x1b[0m`; // Dim White
 		
 		if (mode === "cumulative") {
 			// Prepend plus to the incremental cost
 			const incSign = (bin.incremental_cost ?? 0) >= 0 ? "+" : "";
 			const incStr = `${incSign}${formatCost(bin.incremental_cost ?? 0)}`;
 			const incPart = padString(incStr, 6);
+			const coloredInc = `\x1b[37m${incPart}\x1b[0m`; // Slightly brighter than dim (Normal grey/white)
+
 			const costPart = padString(formatCost(bin.total_cost), 6);
-			widgetLines.push(`${labelPart}  ${incPart}  ${costPart}  ${barStr}`);
+			const coloredCost = `\x1b[1;37m${costPart}\x1b[0m`; // Normal/Bright White
+			
+			widgetLines.push(`${coloredLabel}  ${coloredInc}  ${coloredCost}  ${barStr}`);
 		} else {
 			// Bucket mode (no cumulative or incremental, just simple bucket cost)
 			const costPart = padString(formatCost(bin.total_cost), 6);
-			widgetLines.push(`${labelPart}  ${costPart}  ${barStr}`);
+			const coloredCost = `\x1b[1;37m${costPart}\x1b[0m`; // Normal/Bright White
+			widgetLines.push(`${coloredLabel}  ${coloredCost}  ${barStr}`);
 		}
 	}
 
