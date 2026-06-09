@@ -630,29 +630,22 @@ function updateWtftWidget(
 				for (const block of assistantMsg.content) {
 					if (block.type === "text") {
 						texts.push(block.text);
+					} else if (block.type === "thinking") {
+						texts.push(block.thinking);
+					} else if (block.type === "toolCall") {
+						const name = block.name;
+						const args = block.arguments || {};
+						if (name === "read" || name === "write" || name === "edit") {
+							if (args.path) {
+								files.add(args.path);
+							}
+						} else if (name === "bash") {
+							if (args.command) {
+								commands.push(args.command);
+							}
+						}
 					}
 				}
-			}
-
-			// Capture accessed files & terminal commands from tool calls in this turn
-			let j = i - 1;
-			while (j >= 0) {
-				const prev = branch[j];
-				if (prev.type === "message" && prev.message && prev.message.role === "assistant") {
-					break; // Hit prior turn boundary
-				}
-				if (prev.type === "tool_call" && prev.toolCall) {
-					const tc = prev.toolCall;
-					if (tc.name === "read" || tc.name === "write" || tc.name === "edit") {
-						const f = tc.input?.path;
-						if (f) files.add(f);
-					}
-					if (tc.name === "bash") {
-						const cmd = tc.input?.command;
-						if (cmd) commands.push(cmd);
-					}
-				}
-				j--;
 			}
 
 			interactions.push({ timestamp, cost, files, commands, texts });
