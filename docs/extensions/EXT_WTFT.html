@@ -87,16 +87,16 @@
     </table>
 
     <h3>TUI Visualization Style</h3>
-    <p>The TUI outputs a stacked, horizontal ASCII bar graph using standard block-drawing characters (<code>█</code>) to represent relative cost, scaled to the maximum interval cost. Each interval shows the timestamp and cost breakdown:</p>
+    <p>The TUI outputs a stacked, horizontal ASCII bar graph using standard block-drawing characters (<code>█</code>) to represent absolute cost, scaled relative to the maximum interval cost. Each interval shows the timestamp and cost breakdown:</p>
     
     <pre style="background: var(--box-bg); padding: 12px; border-radius: 6px; border: 1px solid #404040; overflow-x: auto; color: #f0f0f0; font-family: monospace;">
 📊 Where The F***ing Tokens?! (Total Session Cost: $0.1245)
 
 Interval (1h bins)             Cost ($)    Stacked Bar Breakdown
 ────────────────────────────────────────────────────────────────────────────────
-16:00 - 17:00 (06-05)          $0.0240     ████████░░░░░░░░░░░░  [S: 40% | C: 40% | O: 20%]
-17:00 - 18:00 (06-05)          $0.0450     ████████████████░░░░  [S: 10% | C: 70% | O: 20%]
-18:00 - 19:00 (06-05)          $0.0555     ████████████████████  [S:  0% | C: 90% | O: 10%]
+16:00 - 17:00 (06-05)          $0.0240     ████████░
+17:00 - 18:00 (06-05)          $0.0450     ██████████████░░
+18:00 - 19:00 (06-05)          $0.0555     ██████████████████░░
 
 Legend:  █ Spec (Orange)   █ Code (Green)   ░ Other (Blue)
     </pre>
@@ -105,7 +105,7 @@ Legend:  █ Spec (Orange)   █ Code (Green)   ░ Other (Blue)
     <div style="background: var(--box-bg); padding: 15px; border-radius: 8px; border: 1px solid #404040; margin-bottom: 20px;">
         <p><strong>1. Log Parser:</strong> Reads <code>ctx.sessionManager.getEntries()</code> (which includes raw historical messages, tool calls, and exact usage/costs) or reads the `.jsonl` session file directly if more raw history is needed.</p>
         <p><strong>2. Binning Engine:</strong> Groups entries by their <code>timestamp</code> into chronological bins based on the requested interval (e.g., 6-minute windows for granular auditing, or 1-day windows for multi-day tracks).</p>
-        <p><strong>3. Scaling & Layout:</strong> Normalizes the length of the ASCII bar based on the maximum cost in any single interval (typically capped at 30-40 characters wide to fit standard terminal outputs gracefully).</p>
+        <p><strong>3. Scaling & Layout:</strong> Normalizes the absolute length of each interval's ASCII bar based on the maximum cost in any single interval (typically capped at 30-40 characters wide to fit standard terminal outputs gracefully). Each sub-segment (Spec, Code, Other) within that bar is allocated its proportional share of characters based on its absolute cost contribution, without rendering percentages or additional trailing text.</p>
     </div>
 
     <h3>Proposed Verification Plan</h3>
