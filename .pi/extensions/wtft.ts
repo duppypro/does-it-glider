@@ -21,6 +21,7 @@ interface Bin {
 	code_cost: number;
 	other_cost: number;
 	total_cost: number;
+	incremental_cost?: number; // Stores the original bucket cost before cumulative summing
 }
 
 interface IntervalConfig {
@@ -657,6 +658,11 @@ function updateWtftWidget(
 		.sort((a, b) => a[0].localeCompare(b[0]))
 		.map(([_, val]) => val);
 
+	// Populate the original bucket incremental cost for each bin
+	for (const bin of sortedBins) {
+		bin.incremental_cost = bin.total_cost;
+	}
+
 	// Apply cumulative mode summing if requested on the full set of chronological bins
 	if (mode === "cumulative") {
 		let specSum = 0;
@@ -670,7 +676,7 @@ function updateWtftWidget(
 			bin.spec_cost = specSum;
 			bin.code_cost = codeSum;
 			bin.other_cost = otherSum;
-			bin.total_cost = specSum + codeSum + otherSum;
+			bin.total_cost = specSum + codeSum + otherSum; // This becomes the cumulative sum
 		}
 	}
 
@@ -678,20 +684,21 @@ function updateWtftWidget(
 	const displayedBins = sortedBins.slice(-limit).reverse();
 	const maxCostInDisplayed = Math.max(...displayedBins.map(b => b.total_cost), 0);
 
-	const prefixWidth = 21;
+	// Compute dynamic horizontal layouts
+	const prefixWidth = mode === "cumulative" ? 29 : 21;
 	const finalWidth = Math.max(width, 40);
 	const maxBarWidth = finalWidth - prefixWidth;
 
-	// Resolve the title date indicator (newest local date in MMM-DD format)
+	// Resolve the newest local date for display on the ticks line
 	const newestBin = displayedBins[0];
 	const newestDate = newestBin ? new Date(newestBin.dateStr + "T00:00:00") : new Date();
 	const titleDateStr = formatLocalMmmDd(newestDate);
 
 	const widgetLines: string[] = [];
 	
-	// Format tight-justified title using the money-with-wings emoji 💸
-	const titleLeft = `💸 ${titleDateStr} Where The F***ing Tokens?! (Total Cost: `;
-	const titleRight = `${formatCost(totalSessionCost)})`;
+	// Format tight-justified title using the money-with-wings emoji 💸 (no date, right-justified Total Cost unit)
+	const titleLeft = "💸 Where The F***ing Tokens?!";
+	const titleRight = `Total Cost: ${formatCost(totalSessionCost)}`;
 	const leftLen = getVisualLength(titleLeft);
 	const rightLen = getVisualLength(titleRight);
 	const spacesNeeded = Math.max(1, finalWidth - leftLen - rightLen);
@@ -701,13 +708,16 @@ function updateWtftWidget(
 
 	// Render tick labels and marker lines above the bars if enabled
 	if (showTicks && maxCostInDisplayed > 0) {
-		const prefix = " ".repeat(prefixWidth);
+		// Embed the date right-aligned inside the prefix spaces before the first tick label starts!
+		const labelPrefix = padString(titleDateStr, prefixWidth);
+		const markerPrefix = " ".repeat(prefixWidth);
+
 		const { labelsLine, markersLine } = buildTickLines(maxCostInDisplayed, maxBarWidth);
 		if (labelsLine) {
-			widgetLines.push(prefix + `\x1b[2m${labelsLine}\x1b[0m`);
+			widgetLines.push(labelPrefix + `\x1b[2m${labelsLine}\x1b[0m`);
 		}
 		if (markersLine) {
-			widgetLines.push(prefix + `\x1b[2m${markersLine}\x1b[0m`);
+			widgetLines.push(markerPrefix + `\x1b[2m${markersLine}\x1b[0m`);
 		}
 	}
 
@@ -716,8 +726,8 @@ function updateWtftWidget(
 		const bin = displayedBins[i];
 
 		// If crossing a local day boundary (current bin date is different from previous in descending loop),
-		// draw a visual day change indicator line before rendering this older bin.
-		if (i > 0 && bin.dateStr !== displayedBins[i - 1].dateStr) {
+		// draw a visual day change indicator line only if ticks are enabled!
+		if (showTicks && i > 0 && bin.dateStr !== displayedBins[i - 1].dateStr) {
 			const dateOfBin = new Date(bin.dateStr + "T00:00:00");
 			const labelDay = formatLocalMmmDd(dateOfBin);
 			const dayChangeText = `─── ${labelDay} `;
@@ -740,8 +750,19 @@ function updateWtftWidget(
 		}
 
 		const labelPart = padString(bin.label, 11);
-		const costPart = padString(formatCost(bin.total_cost), 6);
-		widgetLines.push(`${labelPart}  ${costPart}  ${barStr}`);
+		
+		if (mode === "cumulative") {
+			// Prepend plus to the incremental cost
+			const incSign = (bin.incremental_cost ?? 0) >= 0 ? "+" : "";
+			const incStr = `${incSign}${formatCost(bin.incremental_cost ?? 0)}`;
+			const incPart = padString(incStr, 6);
+			const costPart = padString(formatCost(bin.total_cost), 6);
+			widgetLines.push(`${labelPart}  ${incPart}  ${costPart}  ${barStr}`);
+		} else {
+			// Bucket mode (no cumulative or incremental, just simple bucket cost)
+			const costPart = padString(formatCost(bin.total_cost), 6);
+			widgetLines.push(`${labelPart}  ${costPart}  ${barStr}`);
+		}
 	}
 
 	widgetLines.push(`Legend:  \x1b[92m█\x1b[0m Spec (Green)   \x1b[38;5;208m█\x1b[0m Code (Orange)   \x1b[38;5;244m░\x1b[0m Other (Grey)`);
