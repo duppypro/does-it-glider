@@ -191,85 +191,15 @@
         </ul>
     </p>
 
-    <h2>5. Clean Glider Escape (No Border Debris) & Visual-Border Tracking</h2>
-    <p>When a glider reaches the absolute edge of the <code>2048x2048</code> universe, it would normally crash on the boundary and leave static <code>2x2 block</code> debris. To prevent this, and to ensure the player is credited instantly when gliders soar off-screen, we maintain a dual-stage <strong>Active Glider Escape Engine</strong>:</p>
-    <ul>
-        <li><strong>Instant Visual-Border Escape Tracking:</strong> The moment all cells of a mature glider cross fully outside the current <strong>Visual Grid</strong> boundary, we mark the glider as officially escaped and increment the <code>escaped_gliders_count</code>. This guarantees the player is credited instantly, even if the core visible simulation stabilizes and pauses before the glider reaches the outer edge of the universe!</li>
-        <li><strong>Background Physics & Edge Evaporation:</strong> After crossing the visual border, the glider continues its flight silently in the background of the <code>2048x2048</code> algorithmic grid. If it comes within 2 cells of the absolute <code>2048x2048</code> algorithmic grid boundary (i.e., <code>x <= 2 || y <= 2 || x >= 2045 || y >= 2045</code>), we cleanly evaporate all of its cells from both the grid buffers and <code>live_cells</code> so it does not leave border debris.</li>
-    </ul>
-
-    <h3>5.1 State Persistence and the Glider Overcounting Bug</h3>
-    <p style="background: rgba(231, 76, 60, 0.1); border-left: 4px solid var(--anchor-red); padding: 15px; border-radius: 4px; font-size: 13.5px;">
-        <strong>The Overcounting Bug:</strong> During zero-shot testing of the <code>Wordle 1,811</code> seed, a severe overcounting bug was discovered where a single run reported over 13,000 escaped gliders! 
-        <br><br>
-        <strong>Root Cause:</strong> The glider detection engine (<code>_detect_gliders()</code>) reconstructs the list of active gliders from scratch on every generation tick. It matches candidates against previous gliders to carry over properties like <code>id</code>, <code>age</code>, and <code>is_mature</code>. However, the custom state flag <code>counted_as_escaped</code> was <strong>not persisted or copied over</strong> during this matching step. As a result, the glider's escaped status was forgotten on every tick, causing it to increment the <code>escaped_gliders_count</code> on *every single generation* it traveled outside the visual boundary!
-    </p>
-    <p><strong>Refined Spec for State Persistence:</strong> To ensure stats are recorded with absolute mathematical precision for achievements, the glider identity matching loop must explicitly copy over all persistent state flags:</p>
-    <pre style="background: #000; padding: 10px; border-radius: 4px; color: var(--accent-orange); font-family: monospace; font-size: 12px;">
-// Ensure all custom persistent tracking properties are carried over to the updated glider:
-matched_id = prev.id
-age = prev.age + 1
-is_mature = prev.is_mature
-counted_as_escaped = prev.counted_as_escaped // Must be persisted!
-    </pre>
-
-    <h3>5.2 Delaying Stability for Crossing Gliders (Issue #42)</h3>
-    <p style="background: rgba(231, 76, 60, 0.1); border-left: 4px solid var(--anchor-red); padding: 15px; border-radius: 4px; font-size: 13.5px;">
-        <strong>The Premature Stability Bug (Issue #42):</strong> When testing the 2-row seed <code>🟩⬛🟨⬛⬛ \ 🟩🟩🟩🟩🟩</code>, the core non-glider reaction dies off quickly. Because any glider cells outside the visual boundary are excluded from stability state hashing, the filtered cell list becomes static or extinct <em>while the glider is still partially crossing the boundary</em>. This triggers a premature stability detection that freezes the simulation, stopping the glider in mid-crossing before it can be credited as an escape!
-    </p>
-    <p><strong>Refined Spec for Crossing Gliders:</strong> To guarantee that gliders have the physical time to escape completely, standard stability detection must be <strong>bypassed</strong> as long as any mature glider is still actively crossing the visual boundary (i.e. has at least 1 cell inside the visual area):</p>
-    <pre style="background: #000; padding: 10px; border-radius: 4px; color: var(--accent-orange); font-family: monospace; font-size: 12px;">
-// Inside _check_stability():
-let is_any_glider_crossing = false
-for (const glider of this.active_gliders) {
-    if (glider.is_mature) {
-        let has_cell_inside = false
-        for (const cell of glider.cells) {
-            if (cell.x >= this.vis_left && cell.x < this.vis_right && cell.y >= this.vis_top && cell.y < this.vis_bottom) {
-                has_cell_inside = true; break
-            }
-        }
-        if (has_cell_inside) {
-            is_any_glider_crossing = true; break
-        }
-    }
-}
-if (is_any_glider_crossing) {
-    return // Bypass stability; let the glider escape!
-}
-    </pre>
-
-    <h2>6. Interactive Study: Cosmic Glider Collisions</h2>
-    <p>A fascinating consequence of computing glider physics beyond the visual boundary is the occurrence of <strong>Cosmic Collisions</strong> in the outer void. If a pattern launches multiple gliders with intersecting paths, they will collide in invisible space. We define two distinct behaviors for these collisions:</p>
-    
-    <div style="display: flex; gap: 20px; margin: 20px 0;">
-        <div class="diagram" style="flex: 1; text-align: center; background: #1a1a1a; padding: 15px; border-radius: 8px;">
-            <h3>Scenario A: Complete Obliteration</h3>
-            <canvas id="annihilation-canvas" width="160" height="160" style="background:#111; border:1px solid #444; border-radius:4px;"></canvas>
-            <p style="font-size:12px; color:#aaa; margin-top:8px; text-align: left; line-height: 1.4;">
-                <strong>Mechanism:</strong> Gliders collide head-on and eventually completely annihilate each other. 
-                <br><br>
-                <strong>Boundary Impact:</strong> Even though the final state is total extinction, during the transition generations, the live cells <em>momentarily fail to match a valid glider pattern</em>. These intermediate chaotic frames represent "non-glider noise" outside the boundary, which **will trigger a visual expansion** to reveal the collision site to the player before it fades away.
-            </p>
-            <button id="restart-annihilation" style="background:#569cd6; border:none; color:white; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight: bold;">Restart Simulation</button>
-        </div>
-        <div class="diagram" style="flex: 1; text-align: center; background: #1a1a1a; padding: 15px; border-radius: 8px;">
-            <h3>Scenario B: Debris Creation</h3>
-            <canvas id="debris-canvas" width="160" height="160" style="background:#111; border:1px solid #444; border-radius:4px;"></canvas>
-            <p style="font-size:12px; color:#aaa; margin-top:8px; text-align: left; line-height: 1.4;">
-                <strong>Mechanism:</strong> Gliders collide at a specific phase offset and fuse into a stable, static <code>2x2 block</code>.
-                <br><br>
-                <strong>Boundary Impact:</strong> As soon as the gliders merge, they break up and cease to be recognized as active gliders. The resulting static debris represents a permanent non-glider breach, **permanently expanding the visual grid** to swallow the collision site.
-            </p>
-            <button id="restart-debris" style="background:#569cd6; border:none; color:white; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight: bold;">Restart Simulation</button>
-        </div>
-    </div>
-
-    <p style="background: rgba(206, 145, 120, 0.15); border-left: 4px solid var(--accent-orange); padding: 15px; border-radius: 4px; font-size: 13px;">
-        <strong>Philosophical Design Decision:</strong> We explicitly accept and preserve this behavior. Even though intermediate chaos momentarily enlarges the board, outer-void glider collisions are rare, magical phenomena. Treating them as expansion-triggering events ensures the player discovers them organically. This lays the groundwork for recording statistics that may unlock unique **Space Archaeology achievements** or rewards in the future!
+    <h2>5. Clean Glider Escape (No Border Debris)</h2>
+    <p>When a glider reaches the absolute edge of the <code>2048x2048</code> universe, it would normally crash on the boundary and leave static <code>2x2 block</code> debris. To prevent this, we maintain an <strong>Active Glider Evaporator</strong>:
+        <ul>
+            <li>If any tracked glider comes within 2 cells of the absolute <code>2048x2048</code> algorithmic grid boundary (i.e., <code>x <= 2 || y <= 2 || x >= 2045 || y >= 2045</code>), we cleanly evaporate all of its cells from both the grid buffers and <code>live_cells</code>.</li>
+            <li>This tracks the glider as successfully "escaped" into the wild, keeping the boundaries pristine.</li>
+        </ul>
     </p>
 
-    <h2>7. Baseline Verification & Benchmark Success</h2>
+    <h2>6. Baseline Verification & Benchmark Success</h2>
     <p>With this decoupled approach, we establish new natural gold standards for our performance suite. It proves that the core reactions stabilize cleanly without artificial boundary reflections:</p>
     <table class="tracking-table">
         <tr>
@@ -298,200 +228,70 @@ if (is_any_glider_crossing) {
         </tr>
     </table>
 
-    <div style="background: rgba(86, 156, 214, 0.1); border-left: 4px solid var(--accent-blue); padding: 20px; border-radius: 8px; margin: 30px 0;">
-        <h3 style="margin-top: 0; color: var(--accent-blue); display: flex; align-items: center; gap: 8px;">
-            <span>🌌</span> Space Archaeology Study: The Physics of Boundary Feedback Loops
-        </h3>
-        <p style="margin-bottom: 15px; font-size: 14px; line-height: 1.6;">
-            A profound and beautiful scientific discovery regarding the nature of cellular automata on different grid sizes was uncovered during headless simulation testing of the legendary <strong>Wordle 1,811</strong> seed. 
-            By running the exact same initial seed on various fixed grid sizes (with zero glider evaporation), we mapped out how boundaries act as mirrors that reflect physical chaos back into the universe:
-        </p>
-        <table class="tracking-table" style="font-size: 13px; background: #161616;">
-            <thead>
-                <tr>
-                    <th style="width: 20%;">Universe Size</th>
-                    <th style="width: 25%;">Generations to Stability</th>
-                    <th>The Physical Phenomenon Observed</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>128 x 128</strong></td>
-                    <td><strong>3,245 generations</strong></td>
-                    <td>Gliders hit the tight walls early, break apart, and collapse the entire system quickly.</td>
-                </tr>
-                <tr>
-                    <td style="background: rgba(231, 76, 60, 0.08); font-weight: bold; color: var(--anchor-red);">
-                        255 x 256<br><small style="color: #aaa; font-weight: normal;">(Legacy Deployed Grid)</small>
-                    </td>
-                    <td style="background: rgba(231, 76, 60, 0.08); font-weight: bold; color: var(--anchor-red);">
-                        9,952 generations
-                    </td>
-                    <td style="background: rgba(231, 76, 60, 0.08); line-height: 1.5;">
-                        💥 <strong>The Boundary Feedback Loop:</strong> Outgoing gliders hit the rigid walls at <em>precisely</em> the correct angles to break apart and reflect high-energy debris straight back into the center. This triggers a massive, artificial chaotic chain-reaction that sustains the universe's life-loop for an extra **4,714 generations**!
-                    </td>
-                </tr>
-                <tr>
-                    <td><strong>512 x 512</strong></td>
-                    <td><strong>4,214 generations</strong></td>
-                    <td>Gliders travel further. Some crash and die on the distant walls without ever feeding back energy into the core reaction.</td>
-                </tr>
-                <tr>
-                    <td style="background: rgba(106, 153, 85, 0.08); font-weight: bold; color: var(--accent-green);">
-                        2048 x 2048<br><small style="color: #aaa; font-weight: normal;">(Dynamic / Unbounded)</small>
-                    </td>
-                    <td style="background: rgba(106, 153, 85, 0.08); font-weight: bold; color: var(--accent-green);">
-                        5,238 generations
-                    </td>
-                    <td style="background: rgba(106, 153, 85, 0.08); line-height: 1.5;">
-                        🚀 <strong>Natural Unbounded Lifespan:</strong> Gliders fly off into deep space completely, never to return. Because they escape cleanly and do not feed artificial debris back into the center, the core system stabilizes at its **true, natural cosmic lifespan of 5,238 generations**.
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <p style="margin-top: 15px; margin-bottom: 0; font-size: 13.5px; line-height: 1.5; font-style: italic; color: #aaa;">
-            <strong>Conclusion:</strong> The legendary 9,952 generation record was a beautiful physical artifact of the old fixed 255x256 walls! In an unbounded universe, the gliders escape into the wild, letting the core reaction settle naturally. Our decoupled strategy perfectly honors this cosmic truth while keeping rendering overhead to a minimum.
-        </p>
-    </div>
+    <h2>7. The Escaped Gliders Paradox & Sizing Reconciliation</h2>
+    <p>In our decoupled strategy, we hit a subtle architectural paradox regarding how "Escaped Gliders" are tallied:</p>
+    <blockquote>
+        <em>"If a glider crosses outside the visual boundary and is flying in deep space, but the core visible reaction stabilizes early and triggers an immediate pause, the simulation will halt before the glider can traverse the hundreds of generations needed to reach the physical 2048x2048 edge, leading to undercounted escapes."</em>
+    </blockquote>
 
-    <script>
-        function createGOL(canvasId, isAnnihilation) {
-            const canvas = document.getElementById(canvasId);
-            const ctx = canvas.getContext('2d');
-            const width = 16, height = 16;
-            const cellSize = 10;
-            
-            let grid = Array.from({ length: height }, () => Array(width).fill(0));
-            
-            function init() {
-                grid = Array.from({ length: height }, () => Array(width).fill(0));
-                
-                // Glider 1 (Southeast-moving):
-                const g1 = [[2, 1], [3, 2], [1, 3], [2, 3], [3, 3]];
-                g1.forEach(([x, y]) => {
-                    grid[y][x] = 1;
-                });
-                
-                // Glider 2 (Northwest-moving):
-                const ox = 8;
-                const oy = isAnnihilation ? 9 : 8;
-                const g2 = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 2]];
-                g2.forEach(([x, y]) => {
-                    const tx = x + ox;
-                    const ty = y + oy;
-                    if (tx >= 0 && tx < width && ty >= 0 && ty < height) {
-                        grid[ty][tx] = 1;
-                    }
-                });
-            }
-            
-            function draw() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                // Draw Grid Lines
-                ctx.strokeStyle = '#222';
-                ctx.lineWidth = 1;
-                for (let i = 0; i <= width; i++) {
-                    ctx.beginPath();
-                    ctx.moveTo(i * cellSize, 0);
-                    ctx.lineTo(i * cellSize, height * cellSize);
-                    ctx.stroke();
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(0, i * cellSize);
-                    ctx.lineTo(width * cellSize, i * cellSize);
-                    ctx.stroke();
-                }
-                
-                // Count total live cells to detect if they have collided
-                let totalLive = 0;
-                for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
-                        if (grid[y][x]) totalLive++;
-                    }
-                }
+    <p>To resolve this perfectly, we propose and evaluate three design options:</p>
 
-                // If totalLive is exactly 10, we have two intact independent gliders (5 cells each)
-                // Color them with the cycling party-glider rainbow!
-                // As soon as they collide (totalLive != 10), color them solid white.
-                const isGlider = (totalLive === 10);
-                
-                // Draw Cells
-                for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
-                        if (grid[y][x]) {
-                            if (isGlider) {
-                                // Cycle length of 12 frames, similar to party-glider in main app
-                                const cycle = 12;
-                                const phase = ((stepCount + x + y) % cycle) / cycle;
-                                ctx.fillStyle = `hsl(${phase * 360}, 100%, 55%)`; // Cycling Rainbow
-                            } else {
-                                ctx.fillStyle = '#ffffff'; // Solid White for collision chaos and debris
-                            }
-                            ctx.fillRect(x * cellSize + 1, y * cellSize + 1, cellSize - 2, cellSize - 2);
-                        }
-                    }
-                }
-            }
-            
-            let stepCount = 0;
-            function step() {
-                const next = Array.from({ length: height }, () => Array(width).fill(0));
-                let changes = false;
-                for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
-                        let neighbors = 0;
-                        for (let dy = -1; dy <= 1; dy++) {
-                            for (let dx = -1; dx <= 1; dx++) {
-                                if (dx === 0 && dy === 0) continue;
-                                const ny = y + dy, nx = x + dx;
-                                if (ny >= 0 && ny < height && nx >= 0 && nx < width) {
-                                    neighbors += grid[ny][nx];
-                                }
-                            }
-                        }
-                        if (grid[y][x] === 1) {
-                            next[y][x] = (neighbors === 2 || neighbors === 3) ? 1 : 0;
-                        } else {
-                            next[y][x] = (neighbors === 3) ? 1 : 0;
-                        }
-                        if (next[y][x] !== grid[y][x]) {
-                            changes = true;
-                        }
-                    }
-                }
-                grid = next;
-                stepCount++;
-                return changes;
-            }
-            
-            init();
-            draw();
-            
-            let interval = setInterval(() => {
-                step();
-                draw();
-            }, 180);
-            
-            return {
-                reset: () => {
-                    clearInterval(interval);
-                    stepCount = 0;
-                    init();
-                    draw();
-                    interval = setInterval(() => {
-                        step();
-                        draw();
-                    }, 180);
-                }
-            };
-        }
-
-        const simA = createGOL('annihilation-canvas', true);
-        const simB = createGOL('debris-canvas', false);
-
-        document.getElementById('restart-annihilation').addEventListener('click', () => simA.reset());
-        document.getElementById('restart-debris').addEventListener('click', () => simB.reset());
-    </script>
+    <table class="tracking-table">
+        <tr>
+            <th>Option</th>
+            <th>Mechanics</th>
+            <th>Pros</th>
+            <th>Cons</th>
+            <th>Recommendation</th>
+        </tr>
+        <tr>
+            <td><strong>Option A: Real-Time Exit Promotion</strong></td>
+            <td>Promote and count a glider as "escaped" the exact tick its entire 5x5 bounding box completely crosses outside the active <strong>Visual Boundary</strong>. Delete its cells immediately upon crossing.</td>
+            <td>
+                <ul>
+                    <li>Real-time UI gratification as gliders fly off-screen.</li>
+                    <li>Highly performant (no outer cells to calculate).</li>
+                    <li>100% immune to early stability pauses.</li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li>Gliders are removed instantly rather than continuing their flight invisibly.</li>
+                </ul>
+            </td>
+            <td><strong>Highly Recommended (Option A)</strong></td>
+        </tr>
+        <tr>
+            <td><strong>Option B: End-of-Run Reconciliation</strong></td>
+            <td>Keep gliders flying invisibly in the 2048 coordinate plane. When the visible area stabilizes and triggers a halt, perform a final sweep of all <code>active_gliders</code> that are outside the visual bounds, and add them to the "escaped" tally instantly.</td>
+            <td>
+                <ul>
+                    <li>Gliders continue their full simulated flight.</li>
+                    <li>Guarantees 100% mathematical accuracy on end.</li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li>No real-time counter increment as the glider leaves the screen (it only increments at the end of the simulation).</li>
+                </ul>
+            </td>
+            <td><strong>Alternative</strong></td>
+        </tr>
+        <tr>
+            <td><strong>Option C: Background Linger</strong></td>
+            <td>If active gliders exist outside the visual bounds, prevent the simulation from pausing on visible stability. Continue running headless ticks in the background until all outer gliders reach the 2048 edge and evaporate naturally.</td>
+            <td>
+                <ul>
+                    <li>Preserves the full physical trajectory and evaporation cycle.</li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li>Extremely poor UX (the UI looks frozen but the simulation continues consuming CPU cycles in the background).</li>
+                </ul>
+            </td>
+            <td><strong>Not Recommended</strong></td>
+        </tr>
+    </table>
 </body>
 </html>
