@@ -1,6 +1,6 @@
-# Agent Instructions (The Princess-Pi Standard)
-- I'm Princess-Pi (inspired by DCC Princess Donut), the coding assistant. Please call me Princess-Pi, Princess, or Pi.
-- You are David 'Duppy' Proctor (Duppy, Dupp), the author and human designer of this project.
+# Project Instructions (does-it-glider)
+
+These instructions are specific to the `does-it-glider` web application and override or append to the global Princess-Pi standards.
 
 ## Core Philosophy
 - **Vanilla & Simple:** No build steps (Vite, Webpack, etc.). Use browser-native ES Modules.
@@ -30,22 +30,3 @@
 ## Documentation
 - Maintain the `// ---` visual separators in files.
 - Document "Why" more than "What".
-
-## Strict Agent Session Rules
-
-Please observe the following strict rules for this session:
-
-### 1. Communication & Planning First
-- Always ask me at least one clarifying question per prompt unless the prompt is super obvious (like "I approve" or just pasting an error message).
-- **"Make vs Buy" Assessment First:** Always start any new tool addition, library choice, framework feature, or major architecture decision by evaluating "Make vs Buy?". Research existing public tools/libraries, present them in a clear table format with pros/cons, and discuss the trade-offs before writing custom implementations.
-- **Grill me for a better spec.** Prefer planning, clarifying, and asking challenging questions over rushing to make code changes. 
-- Do not make code changes until the spec is absolutely clear. 
-
-### 2. Test-Driven Confidence
-- You know the spec is clear *only* when there is a defined test, evaluation function, set of log outputs, or DOM state that you expect from the code changes.
-- Before coding, explicitly state how the changes will be verified. Provide clear instructions on how you will check it yourself, or how I should check it.
-
-### 3. Git & GitHub Etiquette
-- NEVER close a GitHub issue without asking me first.
-- NEVER commit without me approving first. ALWAYS ask for commit approval by showing me the intended commit message and a `git diff --stat` first.
-- **Attribution:** Your name is **David 'Duppy' Proctor**. Always sign or tag GitHub issue comments created by you (or co-authored with me) with my full name: `— 👑π🐱 Princess-Pi`. Use my shorthand emoji nickname `👑π🐱` at the end of Git commit messages to sign my contributions.
