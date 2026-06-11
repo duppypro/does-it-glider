@@ -429,29 +429,6 @@ export class GameState {
     _check_stability() {
         if (this.is_stable) return
 
-        // Delay stability if any mature glider is still actively crossing the visual boundary
-        let is_any_glider_crossing = false
-        for (const glider of this.active_gliders) {
-            if (glider.is_mature) {
-                let has_cell_inside = false
-                for (const cell of glider.cells) {
-                    if (cell.x >= this.vis_left && cell.x < this.vis_right && cell.y >= this.vis_top && cell.y < this.vis_bottom) {
-                        has_cell_inside = true
-                        break
-                    }
-                }
-                if (has_cell_inside) {
-                    is_any_glider_crossing = true
-                    break
-                }
-            }
-        }
-
-        if (is_any_glider_crossing) {
-            // Keep running to let the glider fully cross the border and escape!
-            return
-        }
-
         const { hash, live_count } = this._get_state_hash()
 
         // 1. Check for Extinction
