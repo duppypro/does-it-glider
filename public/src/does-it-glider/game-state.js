@@ -55,6 +55,14 @@ export class GameState {
     }
 
     tick(msec_per_tick, force = false) {
+        // Always count down the intro animation timer so the initial seed
+        // fade-in completes regardless of play/pause state (Bug 1 fix).
+        if (this.new_pause_countdown > 0) {
+            this.new_pause_countdown -= msec_per_tick
+        } else {
+            this.new_pause_countdown = 0
+        }
+
         if (this.is_stable && !force) return false
         if (this.is_paused && !force) return false
 
@@ -88,12 +96,6 @@ export class GameState {
             }
         }
 
-        if (this.new_pause_countdown > 0) {
-            this.new_pause_countdown -= msec_per_tick
-        } else {
-            this.new_pause_countdown = 0
-        }
-        
         this.msec_to_next_gen -= msec_per_tick
 
         return gen_advanced

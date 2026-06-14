@@ -91,10 +91,16 @@
     font-weight: bold;
     cursor: pointer;
     border-radius: 4px;
+    transition: background 0.2s, border-color 0.2s;
 }
 
 .pause-btn:hover {
     background: var(--gray);
+}
+
+.pause-btn.active {
+    background: var(--vscode-blue);
+    border-color: var(--white);
 }
 
 .paste-line,
