@@ -36,3 +36,8 @@ While the core experience is functional, there are several broad concepts planne
 
 - **OAuth Integration & Global Leaderboards:** Allow users to sign in (starting with Google OAuth) to save their stats across devices. This will enable global leaderboards and potentially introduce premium, monetized features.
 - **Advanced Pattern Detection:** Beyond detecting gliders, the engine could be expanded to detect other famous Life patterns such as Spinners, Oscillators, and Tombstones.
+
+
+## 🤖 Agent Instructions (CLAUDE.md)
+We standardize on `CLAUDE.md` for all AI coding agent instructions. Even when using Pi Coding Agent or other harnesses, we adopt this naming convention to ensure cross-ecosystem compatibility (e.g., with Claude Code) without duplicating rules or managing symlinks.
+
