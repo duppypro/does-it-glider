@@ -63,6 +63,31 @@ async function run_test() {
         throw new Error("msec_per_gen did not reset to settings.MSEC_PER_GEN on new seed load");
     }
     console.log("PASSED: Speed multiplier logic is fully functional and correct.");
+
+    // --- Bug 1: new_pause_countdown must count down even when paused ---
+    console.log("Testing new_pause_countdown decrements while paused...");
+    state.load_new_seed(seeds.glider);
+    const initial_countdown = state.new_pause_countdown;
+    if (initial_countdown <= 0) throw new Error("new_pause_countdown should be > 0 after load_new_seed");
+    state.is_paused = true;
+    state.tick(settings.MSEC_PER_GEN);
+    if (state.new_pause_countdown >= initial_countdown) {
+        throw new Error(`new_pause_countdown should decrease when paused (was ${initial_countdown}, still ${state.new_pause_countdown})`);
+    }
+    if (state.gen_count !== 0) {
+        throw new Error("gen_count should not advance while paused during intro countdown");
+    }
+    console.log("PASSED: new_pause_countdown decrements correctly while paused.");
+
+    // --- Bug 2: tick(force) should allow _detect_gliders to run so stat updates work in STEP mode ---
+    console.log("Testing forced tick advances gen and runs glider detection...");
+    state.is_paused = true;
+    state.new_pause_countdown = 0;
+    const gen_before = state.gen_count;
+    const advanced = state.tick(settings.MSEC_PER_GEN, true);
+    if (!advanced) throw new Error("tick(force=true) should return true");
+    if (state.gen_count !== gen_before + 1) throw new Error("gen_count should have advanced by 1");
+    console.log("PASSED: Forced tick advances generation correctly even when paused.");
 }
 
 run_test().catch(err => {

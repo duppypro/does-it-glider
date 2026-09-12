@@ -49,10 +49,24 @@ const step_btn_sel = controls_sel.append('button')
             game_state.is_paused = true
             pause_btn_sel.html('PLAY')
         }
+        const was_stable = game_state.is_stable
+        const prev_mature = game_state.mature_gliders_count
+        const prev_fizzles = game_state.tragic_fizzles_count
         game_state.tick(game_state.msec_per_gen, true)
         draw_frame()
-        draw_gen_count()
-        draw_glider_count()
+        update_stats_after_gen(was_stable, prev_mature, prev_fizzles)
+    })
+
+// "Pause on Stat Update" toggle — pauses automatically after each frame where
+// any live stat (except Longest Lived) increases, so the causal generation is
+// visible for inspection.  Pressing Play/Step does NOT clear this toggle.
+let pause_on_stat_update = false
+const pause_on_stat_btn_sel = controls_sel.append('button')
+    .classed('pause-btn', true)
+    .html('⏸STAT')
+    .on('click', () => {
+        pause_on_stat_update = !pause_on_stat_update
+        pause_on_stat_btn_sel.classed('active', pause_on_stat_update)
     })
 
 const stats_grid = stats_sel.append('div').classed('stats-grid', true)
@@ -146,15 +160,81 @@ let prior_max_mature_gliders = local_stats.get_max_mature_gliders() || 0
 let prior_max_tragic_fizzles = local_stats.get_max_tragic_fizzles() || 0
 const msec_per_tick = 1000.0 / 60.0 
 let beat_pasted = MSEC_PER_BEAT
-let seed = [] 
+let seed = []
+
+// When pause_on_stat_update is enabled and a stat changes, this flag is set so
+// the event_loop pauses AFTER draw_frame() renders the causal generation (Bug 3).
+let pending_stat_pause = false
 
 function trigger_stat_animation(selection) {
     const flash_duration = 1000 // 1 second
     selection.node().flash_until = performance.now() + flash_duration
 }
 
+// update_stats_after_gen
+// INPUT was_stable, prev_mature, prev_fizzles captured BEFORE the tick() call
+// OUTPUT updates all stat DOM elements, triggers animations, persists personal
+//        maxes, and sets pending_stat_pause if pause_on_stat_update is enabled.
+function update_stats_after_gen(was_stable, prev_mature, prev_fizzles) {
+    draw_gen_count()
+
+    if (game_state.gen_count > prior_longest_lived) {
+        prior_longest_lived = game_state.gen_count
+        local_stats.set_longest_lived(prior_longest_lived)
+        draw_longest_lived()
+        trigger_stat_animation(gen_row)
+    }
+
+    if (was_stable === false && game_state.is_stable === true) {
+        draw_stable_cycle()
+        if (game_state.stable_cycle_length > prior_max_stable_cycle) {
+            prior_max_stable_cycle = game_state.stable_cycle_length
+            local_stats.set_max_stable_cycle(prior_max_stable_cycle)
+            draw_max_stable_cycle()
+            trigger_stat_animation(cycle_row)
+        }
+        if (pause_on_stat_update) pending_stat_pause = true
+    }
+
+    if (game_state.mature_gliders_count > prev_mature) {
+        draw_mature_gliders()
+        trigger_stat_animation(mature_row)
+        if (pause_on_stat_update) pending_stat_pause = true
+
+        if (game_state.mature_gliders_count > prior_max_mature_gliders) {
+            prior_max_mature_gliders = game_state.mature_gliders_count
+            local_stats.set_max_mature_gliders(prior_max_mature_gliders)
+            draw_max_mature_gliders()
+            trigger_stat_animation(mature_row)
+        }
+    }
+
+    if (game_state.tragic_fizzles_count > prev_fizzles) {
+        draw_tragic_fizzles()
+        trigger_stat_animation(fizzle_row)
+        if (pause_on_stat_update) pending_stat_pause = true
+
+        if (game_state.tragic_fizzles_count > prior_max_tragic_fizzles) {
+            prior_max_tragic_fizzles = game_state.tragic_fizzles_count
+            local_stats.set_max_tragic_fizzles(prior_max_tragic_fizzles)
+            draw_max_tragic_fizzles()
+            trigger_stat_animation(fizzle_row)
+        }
+    }
+}
+
 const event_loop = () => {
     draw_frame()
+
+    // Auto-pause AFTER draw_frame() renders the stat-change generation so it
+    // is fully visible on screen before halting (Bug 3 — pause on stat update).
+    if (pending_stat_pause) {
+        pending_stat_pause = false
+        if (!game_state.is_paused) {
+            game_state.is_paused = true
+            pause_btn_sel.html('PLAY')
+        }
+    }
 
     const was_stable = game_state.is_stable
     const prev_mature = game_state.mature_gliders_count
@@ -162,50 +242,7 @@ const event_loop = () => {
     const gen_advanced = game_state.tick(msec_per_tick)
 
     if (gen_advanced) {
-        draw_gen_count()
-        draw_mature_gliders()
-        draw_tragic_fizzles()
-        
-        if (game_state.gen_count > prior_longest_lived) {
-            prior_longest_lived = game_state.gen_count
-            local_stats.set_longest_lived(prior_longest_lived)
-            draw_longest_lived()
-            trigger_stat_animation(gen_row)
-        }
-
-        if (was_stable === false && game_state.is_stable === true) {
-            draw_stable_cycle()
-            if (game_state.stable_cycle_length > prior_max_stable_cycle) {
-                prior_max_stable_cycle = game_state.stable_cycle_length
-                local_stats.set_max_stable_cycle(prior_max_stable_cycle)
-                draw_max_stable_cycle()
-                trigger_stat_animation(cycle_row)
-            }
-        }
-
-        if (game_state.mature_gliders_count > prev_mature) {
-            draw_mature_gliders()
-            trigger_stat_animation(mature_row)
-            
-            if (game_state.mature_gliders_count > prior_max_mature_gliders) {
-                prior_max_mature_gliders = game_state.mature_gliders_count
-                local_stats.set_max_mature_gliders(prior_max_mature_gliders)
-                draw_max_mature_gliders()
-                trigger_stat_animation(mature_row)
-            }
-        }
-
-        if (game_state.tragic_fizzles_count > prev_fizzles) {
-            draw_tragic_fizzles()
-            trigger_stat_animation(fizzle_row)
-            
-            if (game_state.tragic_fizzles_count > prior_max_tragic_fizzles) {
-                prior_max_tragic_fizzles = game_state.tragic_fizzles_count
-                local_stats.set_max_tragic_fizzles(prior_max_tragic_fizzles)
-                draw_max_tragic_fizzles()
-                trigger_stat_animation(fizzle_row)
-            }
-        }
+        update_stats_after_gen(was_stable, prev_mature, prev_fizzles)
     }
 
     if (!was_stable && game_state.is_stable) {
