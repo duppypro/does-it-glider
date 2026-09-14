@@ -27,3 +27,6 @@ build/
 .env.production
 .env.development
 .env.test
+
+# Worktrees are in-tree; a per-clone exclude protects only one machine.
+.claude/worktrees/
